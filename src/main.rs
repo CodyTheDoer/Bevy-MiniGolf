@@ -5,7 +5,6 @@ use bevy::{prelude::*,
 
 use minigolf::{Fonts, OpIndex};
 use minigolf::level_handler::level_handler::{setup_gltf, setup_ground, setup_light};
-use minigolf::user_interface::camera_ui::setup_ui_camera;
 use minigolf::user_interface::camera_world::setup_3d_camera;
 use minigolf::user_interface::user_interface::{fire_ray, release_ray, draw_cursor, setup_ui};
 
@@ -37,7 +36,6 @@ fn main() {
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
-        .add_systems(Startup, setup_ui_camera)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Update, draw_cursor)
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))

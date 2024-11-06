@@ -10,7 +10,7 @@ impl InteractableEntities {
         index: u32,
     ) -> Option<InteractableEntities> {
         let mut interactable_entity_map = HashMap::new();
-        interactable_entity_map.insert(0 + op_index.ui_entities, InteractableEntities::Ent0);
+        interactable_entity_map.insert(0 + op_index.ui_entities, InteractableEntities::Ground);
         interactable_entity_map.insert(1 + op_index.ui_entities, InteractableEntities::Ent1);
         interactable_entity_map.insert(2 + op_index.ui_entities, InteractableEntities::Ent2);
         interactable_entity_map.insert(3 + op_index.ui_entities, InteractableEntities::Ent3);

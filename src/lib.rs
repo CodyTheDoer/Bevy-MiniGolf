@@ -51,7 +51,7 @@ pub struct Interactable;
 
 #[derive(Clone, Debug)]
 pub enum InteractableEntities {
-    Ent0,
+    Ground,
     Ent1,
     Ent2,
     Ent3,

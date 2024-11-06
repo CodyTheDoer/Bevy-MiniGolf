@@ -4,7 +4,7 @@ use bevy_mod_raycast::prelude::*;
 
 use std::collections::HashMap;
 
-use crate::{CameraWorld, Fonts, Ground, InfoCall, Interactable, InteractableEntities, OpIndex};
+use crate::{CameraUi, CameraWorld, Fonts, Ground, InfoCall, Interactable, InteractableEntities, OpIndex};
 
 impl InfoCall {
     pub fn from_index(
@@ -25,6 +25,7 @@ impl InfoCall {
 
 pub fn setup_ui(
     asset_server: Res<AssetServer>,
+    mut commands: Commands,
     mut fonts: ResMut<Fonts>,
 ) {
     let font = asset_server.load("fonts/MatrixtypeDisplay-KVELZ.ttf");
@@ -40,6 +41,50 @@ pub fn setup_ui(
     };
     fonts.fonts.push(matrix_display);
     fonts.fonts.push(matrix_display_small);
+
+    commands.spawn((
+        Camera2dBundle {
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            camera: Camera {
+                order: -1, // Render before the 3D scene
+                ..default()
+                },
+            ..default()
+        },
+        CameraUi,
+    ));
+
+    // Create a screen-sized UI node as a container
+    commands.spawn(NodeBundle {
+        style: Style {
+            display: Display::Flex,
+            align_items: AlignItems::Center,    // Center vertically within the container
+            justify_content: JustifyContent::Center, // Center horizontally within the container
+            position_type: PositionType::Absolute,
+            // Set this node to occupy the entire screen
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0), 
+            ..default()
+        },
+        ..default()
+    })
+    .with_children(|parent| {
+        parent.spawn(TextBundle {
+            text: Text {
+                sections: vec![TextSection::new(
+                    "Mini Golf",
+                    fonts.fonts[0].clone(),
+                )],
+                ..default()
+            },
+            style: Style {
+                position_type: PositionType::Absolute,
+                top: Val::Percent(2.0), 
+                ..default()
+            },
+            ..default()
+        });
+    });
 }
 
 pub fn draw_cursor(
@@ -122,8 +167,8 @@ pub fn fire_ray(
             let entity_index = entity.index();
             if let Some(entity) = InteractableEntities::from_index(&op_index, entity_index) {
                 match entity {
-                    InteractableEntities::Ent0 => {
-                        info!("Generic Call Cast");
+                    InteractableEntities::Ground => {
+                        info!("Cast: Ground");
                     },
                     _ => {
                     },
@@ -164,9 +209,10 @@ pub fn release_ray(
         if Some(interactable_query.get(*entity)).is_some() {
             let entity_index = entity.index();
             if let Some(entity) = InteractableEntities::from_index(&op_index, entity_index) {
+                info!("Entity: {:?}", entity);
                 match entity {
-                    InteractableEntities::Ent0 => {
-                        info!("Generic Call Release");
+                    InteractableEntities::Ground => {
+                        info!("Release: Ground");
                     },
                     _ => {
                     },
