@@ -46,7 +46,7 @@ impl OpIndex {
 #[derive(Component)]
 pub struct Ground;
 
-#[derive(Asset, Component, TypePath)]
+#[derive(Asset, Component, Debug, TypePath)]
 pub struct Interactable; 
 
 #[derive(Clone, Debug)]

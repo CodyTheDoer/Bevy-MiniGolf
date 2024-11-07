@@ -3,8 +3,10 @@ use bevy::{prelude::*,
     window::{PresentMode, WindowTheme},
 };
 
+// use bevy_editor_pls::prelude::*;
+
 use minigolf::{Fonts, OpIndex};
-use minigolf::level_handler::level_handler::{setup_gltf, setup_ground, setup_light};
+use minigolf::level_handler::level_handler::{gltf_handler_init, setup_ground, setup_light, query_and_despawn_scene};
 use minigolf::user_interface::camera_world::setup_3d_camera;
 use minigolf::user_interface::user_interface::{fire_ray, release_ray, draw_cursor, setup_ui};
 
@@ -30,15 +32,17 @@ fn main() {
                 ..default()
             }),
         ))
+        // .add_plugins(EditorPlugin::default())
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
-        .add_systems(Startup, setup_gltf)
+        .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Update, draw_cursor)
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
-        .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)));
+        .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
+        .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)));
         app.run();
 }

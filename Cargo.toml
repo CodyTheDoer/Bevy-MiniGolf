@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bevy = {version = "0.14.2", features = ["mp3"]}
 bevy_mod_raycast = "0.18.0"
+bevy_editor_pls = "0.9"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
