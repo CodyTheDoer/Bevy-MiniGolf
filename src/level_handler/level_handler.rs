@@ -51,21 +51,27 @@ pub fn gltf_handler_init(
     op_index.add_ui_entity();
 }
 
-pub fn query_and_update_scene (
+pub fn query_and_despawn_scene(
     mut commands: Commands,
-    mut scene_query: Query<(Entity, &Handle<Scene>, &mut Visibility)>,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
     asset_server: Res<AssetServer>,
 ) {
     // We load the specific scene handle to compare it directly
     let cube_terracotta: Handle<Scene> = asset_server.load("cube_terracotta.glb#Scene0");
-    for (entity, scene_handle, _) in scene_query.iter() {
+    for (entity, scene_handle) in scene_query.iter() {
         // Check if the scene handle matches the target handle
         if scene_handle.id() == cube_terracotta.id() {
             commands.entity(entity).despawn_recursive();
             info!("Despawning entity {:?}", entity);
         }
     }
+}
 
+pub fn query_and_update_scene(
+    mut scene_query: Query<(Entity, &Handle<Scene>, &mut Visibility)>,
+    asset_server: Res<AssetServer>,
+) {
+    // We load the specific scene handle to compare it directly
     let cube_blue: Handle<Scene> = asset_server.load("cube_blue.glb#Scene0");
     for (entity, scene_handle, mut visibility) in scene_query.iter_mut() {
         // Check if the scene handle matches the target handle
