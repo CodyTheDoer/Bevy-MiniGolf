@@ -2966,6 +2966,7 @@ dependencies = [
  "bevy",
  "bevy_editor_pls",
  "bevy_mod_raycast",
+ "bevy_render",
 ]
 
 [[package]]
