@@ -1,8 +1,8 @@
 use bevy::{prelude::*,
+    ecs::world::World,
     input::common_conditions::*,
     window::{PresentMode, WindowTheme},
 };
-
 // use bevy_editor_pls::prelude::*;
 
 use minigolf::{Fonts, OpIndex};
@@ -47,3 +47,4 @@ fn main() {
         .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)));
         app.run();
 }
+
