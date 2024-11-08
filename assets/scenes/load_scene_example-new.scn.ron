@@ -1,0 +1,50 @@
+(
+  resources: {
+    "minigolf::ResourceA": (
+      score: 1,
+    ),
+  },
+  entities: {
+    4294967296: (
+      components: {
+        "minigolf::ComponentB": (
+          value: "hello",
+        ),
+        "minigolf::ComponentA": (
+          x: 1.0,
+          y: 2.0,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            w: 1.0,
+          ),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_core::name::Name": (
+          hash: 2919686955422112090,
+          name: "joe",
+        ),
+      },
+    ),
+    4294967297: (
+      components: {
+        "minigolf::ComponentA": (
+          x: 3.0,
+          y: 4.0,
+        ),
+      },
+    ),
+  },
+)

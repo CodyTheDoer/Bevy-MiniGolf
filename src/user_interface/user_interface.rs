@@ -97,7 +97,7 @@ pub fn draw_cursor(
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
         Err(_) => {
-            warn!("No CameraWorld found or multiple CameraWorlds detected.");
+            // warn!("No CameraWorld found or multiple CameraWorlds detected.");
             return;
         },
     };
