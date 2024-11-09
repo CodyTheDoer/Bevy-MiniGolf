@@ -1,17 +1,17 @@
 use bevy::{prelude::*,
-    ecs::world::World,
+    // ecs::world::World,
     input::common_conditions::*,
     window::{PresentMode, WindowTheme},
-    tasks::IoTaskPool, 
-    utils::Duration,
+    // tasks::IoTaskPool, 
+    // utils::Duration,
 };
 
-use std::{fs::File, io::Write};
+// use std::{fs::File, io::Write};
 
 // use bevy_editor_pls::prelude::*;
 
-use minigolf::{Fonts, OpIndex};
-use minigolf::level_handler::level_handler::{gltf_handler_init, setup_ground, setup_light, query_and_despawn_scene, query_and_update_scene};
+use minigolf::{Fonts, Interactable, OpIndex};
+use minigolf::level_handler::level_handler::{gltf_handler_init, setup_ground, setup_light}; //query_and_despawn_scene, query_and_update_scene};
 use minigolf::user_interface::camera_world::setup_3d_camera;
 use minigolf::user_interface::user_interface::{fire_ray, release_ray, draw_cursor, setup_ui};
 
@@ -38,29 +38,22 @@ fn main() {
             }),
         ))
         // .add_plugins(EditorPlugin::default())
-        .register_type::<ComponentA>()
-        .register_type::<ComponentB>()
-        .register_type::<ResourceA>()
         .insert_state(AppState::Game)
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
-        .add_systems(Startup, gltf_handler_init)
+        .insert_resource(GLBStorageID::new())
+        // .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
-        // .add_systems(Startup, setup_3d_camera)
-        .add_systems(
-            Startup,
-            (save_scene_system, load_scene_system, infotext_system),
-        )
-        .add_systems(Update, log_system)
+        .add_systems(Startup, setup_3d_camera)
         .add_systems(Update, draw_cursor)
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
-        .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)))
-        .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
+        // .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)))
+        // .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
         .add_systems(Update, app_state_logic)
-        .add_systems(Update, app_state_cycle.run_if(input_pressed(KeyCode::ArrowUp)))
+        .add_systems(Update, app_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
         .add_systems(OnEnter(AppState::Game), app_state_game_logic_enter)
         .add_systems(OnExit(AppState::Game), app_state_game_logic_exit)
         .add_systems(OnEnter(AppState::Menu), app_state_menu_logic_enter)
@@ -113,24 +106,42 @@ fn app_state_logic(
     }
 }
 
-fn app_state_game_logic_enter() {
-    info!("AppState::Game::OnEnter");
+fn app_state_game_logic_enter(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("AppState::Game::OnEnter - Init Hole 1");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 1);
 }
 
 fn app_state_game_logic_exit() {
     info!("AppState::Game::OnExit");
 }
 
-fn app_state_menu_logic_enter() {
-    info!("AppState::Menu::OnEnter");
+fn app_state_menu_logic_enter(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("AppState::Menu::OnEnter - Init Hole 2");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 2);
 }
 
 fn app_state_menu_logic_exit() {
     info!("AppState::Menu::OnExit");
 }
 
-fn app_state_paused_logic_enter() {
-    info!("AppState::Paused::OnEnter");
+fn app_state_paused_logic_enter(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("AppState::Paused::OnEnter - Init Hole 3");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 3);
 }
 
 fn app_state_paused_logic_exit() {
@@ -142,154 +153,90 @@ fn app_state_paused_logic_exit() {
 
 
 
-
-
-
-
-// Registered components must implement the `Reflect` and `FromWorld` traits.
-// The `Reflect` trait enables serialization, deserialization, and dynamic property access.
-// `Reflect` enable a bunch of cool behaviors, so its worth checking out the dedicated `reflect.rs`
-// example. The `FromWorld` trait determines how your component is constructed when it loads.
-// For simple use cases you can just implement the `Default` trait (which automatically implements
-// `FromWorld`). The simplest registered component just needs these three derives:
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)] // this tells the reflect derive to also reflect component behaviors
-struct ComponentA {
-    pub x: f32,
-    pub y: f32,
+#[derive(Resource)]
+struct GLBStorageID {
+    glb: Vec<String>,
 }
 
-// Some components have fields that cannot (or should not) be written to scene files. These can be
-// ignored with the #[reflect(skip_serializing)] attribute. This is also generally where the `FromWorld`
-// trait comes into play. `FromWorld` gives you access to your App's current ECS `Resources`
-// when you construct your component.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-struct ComponentB {
-    pub value: String,
-    #[reflect(skip_serializing)]
-    pub _time_since_startup: Duration,
-}
-
-impl FromWorld for ComponentB {
-    fn from_world(world: &mut World) -> Self {
-        let time = world.resource::<Time>();
-        ComponentB {
-            _time_since_startup: time.elapsed(),
-            value: "Default Value".to_string(),
+impl GLBStorageID {
+    fn new() -> Self {
+        let mut glb: Vec<String> = Vec::new();
+        let map_1: String = String::from("cube_blue.glb");
+        let map_2: String = String::from("cube_terracotta.glb");
+        let map_3: String = String::from("cube_toxic.glb");
+        glb.push(map_1);
+        glb.push(map_2);
+        glb.push(map_3);
+        GLBStorageID {
+            glb,
         }
     }
 }
 
-// Resources can be serialized in scenes as well, with the same requirements `Component`s have.
-#[derive(Resource, Reflect, Default)]
-#[reflect(Resource)]
-struct ResourceA {
-    pub score: u32,
+#[derive(Clone, Resource)]
+struct GLBPurgeID {
+    glb: Vec<String>,
 }
 
-// The initial scene file will be loaded below and not change when the scene is saved
-const SCENE_FILE_PATH: &str = "scenes/load_scene_example.scn.ron";
-
-// The new, updated scene data will be saved here so that you can see the changes
-const NEW_SCENE_FILE_PATH: &str = "scenes/load_scene_example-new.scn.ron";
-
-fn load_scene_system(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // "Spawning" a scene bundle creates a new entity and spawns new instances
-    // of the given scene's entities as children of that entity.
-    commands.spawn(DynamicSceneBundle {
-        // Scenes are loaded just like any other asset.
-        scene: asset_server.load(SCENE_FILE_PATH),
-        ..default()
-    });
+impl GLBPurgeID {
+    fn new() -> Self {
+        let glb: Vec<String> = Vec::new();
+        GLBPurgeID {
+            glb,
+        }
+    }
 }
 
-// This system logs all ComponentA components in our world. Try making a change to a ComponentA in
-// load_scene_example.scn. If you enable the `file_watcher` cargo feature you should immediately see
-// the changes appear in the console whenever you make a change.
-fn log_system(
-    query: Query<(Entity, &ComponentA), Changed<ComponentA>>,
-    res: Option<Res<ResourceA>>,
+fn remove_match_from_vec(vec: &mut ResMut<GLBPurgeID>, pattern: &str) {
+    if let Some(pos) = vec.glb.iter().position(|x| x == pattern) {
+        vec.glb.remove(pos);
+    }
+}
+
+// When exit state 
+fn gltf_handler_despawn(
+    mut commands: Commands,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
 ) {
-    for (entity, component_a) in &query {
-        info!("  Entity({})", entity.index());
-        info!(
-            "    ComponentA: {{ x: {} y: {} }}\n",
-            component_a.x, component_a.y
-        );
-    }
-    if let Some(res) = res {
-        if res.is_added() {
-            info!("  New ResourceA: {{ score: {} }}\n", res.score);
+    let targets = purge.clone();
+    for asset_to_despawn in targets.glb.iter() {
+        // We load the specific scene handle to compare it directly
+        let despawn_target: Handle<Scene> = asset_server.load(asset_to_despawn);
+        for (entity, scene_handle) in scene_query.iter() {
+            // Check if the scene handle matches the target handle
+            if scene_handle.id() == despawn_target.id() {
+                commands.entity(entity).despawn_recursive();
+                info!("Despawned Entity: {:?}", entity);
+            }
         }
+        remove_match_from_vec(&mut purge, asset_to_despawn);
     }
 }
 
-fn save_scene_system(world: &mut World) {
-    // Scenes can be created from any ECS World.
-    // You can either create a new one for the scene or use the current World.
-    // For demonstration purposes, we'll create a new one.
-    let mut scene_world = World::new();
+// fn purge_all_maps(){} // gltf_handler_despawn
 
-    // The `TypeRegistry` resource contains information about all registered types (including components).
-    // This is used to construct scenes, so we'll want to ensure that our previous type registrations
-    // exist in this new scene world as well.
-    // To do this, we can simply clone the `AppTypeRegistry` resource.
-    let type_registry = world.resource::<AppTypeRegistry>().clone();
-    scene_world.insert_resource(type_registry);
+fn gltf_handler_init_hole_n(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+    hole: i32,
+) {
+    if let Some(glb_file) = glb_storage.glb.get((hole - 1) as usize) {
+        let info_dump = glb_file.clone();
 
-    let mut component_b = ComponentB::from_world(world);
-    component_b.value = "hello".to_string();
-    scene_world.spawn((
-        component_b,
-        ComponentA { x: 1.0, y: 2.0 },
-        Transform::IDENTITY,
-        Name::new("joe"),
-    ));
-    scene_world.spawn(ComponentA { x: 3.0, y: 4.0 });
-    scene_world.insert_resource(ResourceA { score: 1 });
-
-    // With our sample world ready to go, we can now create our scene using DynamicScene or DynamicSceneBuilder.
-    // For simplicity, we will create our scene using DynamicScene:
-    let scene = DynamicScene::from_world(&scene_world);
-
-    // Scenes can be serialized like this:
-    let type_registry = world.resource::<AppTypeRegistry>();
-    let type_registry = type_registry.read();
-    let serialized_scene = scene.serialize(&type_registry).unwrap();
-
-    // Showing the scene in the console
-    info!("{}", serialized_scene);
-
-    // Writing the scene to a new file. Using a task to avoid calling the filesystem APIs in a system
-    // as they are blocking
-    // This can't work in WASM as there is no filesystem access
-    #[cfg(not(target_arch = "wasm32"))]
-    IoTaskPool::get()
-        .spawn(async move {
-            // Write the scene RON data to file
-            File::create(format!("assets/{NEW_SCENE_FILE_PATH}"))
-                .and_then(|mut file| file.write(serialized_scene.as_bytes()))
-                .expect("Error while writing scene to file");
-        })
-        .detach();
-}
-
-// This is only necessary for the info message in the UI. See examples/ui/text.rs for a standalone
-// text example.
-fn infotext_system(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
-    commands.spawn(
-        TextBundle::from_section(
-            "Nothing to see in this window! Check the console output!",
-            TextStyle {
-                font_size: 50.0,
-                ..default()
-            },
-        )
-        .with_style(Style {
-            align_self: AlignSelf::FlexEnd,
+        commands.spawn(SceneBundle {
+            scene: asset_server
+                .load(GltfAssetLabel::Scene(0).from_asset(info_dump)),
+            transform: Transform::from_xyz(-2.0, 0.0, 5.0),
             ..default()
-        }),
-    );
+        })
+        .insert(Interactable); 
+        op_index.add_ui_entity();    
+    } else {
+        warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
+    };
+
 }
