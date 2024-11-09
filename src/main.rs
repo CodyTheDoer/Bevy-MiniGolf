@@ -38,7 +38,7 @@ fn main() {
             }),
         ))
         // .add_plugins(EditorPlugin::default())
-        .insert_state(AppState::Game)
+        .insert_state(LevelState::Hole1)
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
         .insert_resource(GLBPurgeID::new())
@@ -53,120 +53,132 @@ fn main() {
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
         // .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)))
         // .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
-        .add_systems(Update, app_state_logic)
-        .add_systems(Update, app_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
-        .add_systems(OnEnter(AppState::Game), app_state_game_logic_enter)
-        .add_systems(OnExit(AppState::Game), app_state_game_logic_exit)
-        .add_systems(OnEnter(AppState::Menu), app_state_menu_logic_enter)
-        .add_systems(OnExit(AppState::Menu), app_state_menu_logic_exit)
-        .add_systems(OnEnter(AppState::Paused), app_state_paused_logic_enter)
-        .add_systems(OnExit(AppState::Paused), app_state_paused_logic_exit)
-        .add_systems(OnEnter(AppState::ClearGLB), app_state_clear_glb_enter);
+        .add_systems(Update, level_state_logic)
+        .add_systems(Update, level_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
+        .add_systems(OnEnter(LevelState::Hole1), level_state_game_logic_enter)
+        .add_systems(OnExit(LevelState::Hole1), level_state_game_logic_exit)
+        .add_systems(OnEnter(LevelState::Hole2), level_state_menu_logic_enter)
+        .add_systems(OnExit(LevelState::Hole2), level_state_menu_logic_exit)
+        .add_systems(OnEnter(LevelState::Hole3), level_state_paused_logic_enter)
+        .add_systems(OnExit(LevelState::Hole3), level_state_paused_logic_exit);
         app.run();
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-enum AppState {
+enum LevelState {
     #[default]
-    Game,
-    Menu,
-    Paused,
-    ClearGLB,
+    Hole1,
+    Hole2,
+    Hole3,
 }
 
-fn app_state_cycle(
-    app_state: Res<State<AppState>>,
-    mut next_game_state: ResMut<NextState<AppState>>,
+fn level_state_cycle(
+    level_state: Res<State<LevelState>>,
+    mut next_game_state: ResMut<NextState<LevelState>>,
 ) {
-    match app_state.get() {
-        AppState::Game => {
-            next_game_state.set(AppState::Menu);
+    match level_state.get() {
+        LevelState::Hole1 => {
+            next_game_state.set(LevelState::Hole2);
         },
-        AppState::Menu => {
-            next_game_state.set(AppState::Paused);
+        LevelState::Hole2 => {
+            next_game_state.set(LevelState::Hole3);
         },
-        AppState::Paused => {
-            next_game_state.set(AppState::ClearGLB);
-        },
-        AppState::ClearGLB => {
-            next_game_state.set(AppState::Game);
+        LevelState::Hole3 => {
+            next_game_state.set(LevelState::Hole1);
         },
         _ => {},
     }
 }
 
-fn app_state_logic(
-    app_state: Res<State<AppState>>,
+fn level_state_logic(
+    level_state: Res<State<LevelState>>,
 ) {
-    match app_state.get() {
-        AppState::Game => {
-            // info!("AppState::Game");
+    match level_state.get() {
+        LevelState::Hole1 => {
+            // info!("LevelState::Hole1");
         },
-        AppState::Menu => {
-            // info!("AppState::Menu");
+        LevelState::Hole2 => {
+            // info!("LevelState::Hole2");
         },
-        AppState::Paused => {
-            // info!("AppState::Paused");
-        },
-        AppState::ClearGLB => {
-            // info!("AppState::Paused");
+        LevelState::Hole3 => {
+            // info!("LevelState::Hole3");
         },
         _ => {},
     }
 }
 
-fn app_state_game_logic_enter(
+fn level_state_game_logic_enter(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut op_index: ResMut<OpIndex>,
     glb_storage: Res<GLBStorageID>,
 ) {
-    info!("AppState::Game::OnEnter - Init Hole 1");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 1);
+    info!("LevelState::Hole1::OnEnter - Init Hole Boilerplate 1");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 0);
 }
 
-fn app_state_game_logic_exit() {
-    info!("AppState::Game::OnExit");
-}
-
-fn app_state_menu_logic_enter(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("AppState::Menu::OnEnter - Init Hole 2");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 2);
-}
-
-fn app_state_menu_logic_exit(
-) {
-    info!("AppState::Menu::OnExit");
-}
-
-fn app_state_paused_logic_enter(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("AppState::Paused::OnEnter - Init Hole 3");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 3);
-}
-
-fn app_state_paused_logic_exit(
-) {
-    info!("AppState::Paused::OnExit");
-}
-
-fn app_state_clear_glb_enter(
+fn level_state_game_logic_exit(
     mut commands: Commands,
     scene_query: Query<(Entity, &Handle<Scene>)>,
     asset_server: Res<AssetServer>,
     mut purge: ResMut<GLBPurgeID>,
     glb_storage: Res<GLBStorageID>,
 ) {
-    purge_add_all(&mut purge, glb_storage);
+    info!("LevelState::Hole1::OnExit");
+    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
+}
+
+fn level_state_menu_logic_enter(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("LevelState::Hole2::OnEnter - Init Hole 1(Temp: Blue)");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 1);
+}
+
+fn level_state_menu_logic_exit(
+    mut commands: Commands,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("LevelState::Hole2::OnExit");
+    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
+}
+
+fn level_state_paused_logic_enter(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("LevelState::Hole3::OnEnter - Init Hole Boilerplate 2");
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 4);
+}
+
+fn level_state_paused_logic_exit(
+    mut commands: Commands,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    info!("LevelState::Hole3::OnExit");
+    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
+}
+
+
+fn purge_glb_all(
+    mut commands: Commands,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    purge_glb_all_prep(&mut purge, glb_storage);
     gltf_handler_purge(commands, scene_query, asset_server, purge);
 }
 
@@ -178,12 +190,16 @@ struct GLBStorageID {
 impl GLBStorageID {
     fn new() -> Self {
         let mut glb: Vec<String> = Vec::new();
+        let map_0: String = String::from("glb/boilerplate_level.glb");
         let map_1: String = String::from("cube_blue.glb");
         let map_2: String = String::from("cube_terracotta.glb");
         let map_3: String = String::from("cube_toxic.glb");
+        let map_4: String = String::from("glb/boilerplate_level_2.glb");
+        glb.push(map_0);
         glb.push(map_1);
         glb.push(map_2);
         glb.push(map_3);
+        glb.push(map_4);
         GLBStorageID {
             glb,
         }
@@ -233,7 +249,7 @@ fn gltf_handler_purge(
     }
 }
 
-fn purge_add_all(
+fn purge_glb_all_prep(
     purge: &mut ResMut<GLBPurgeID>,
     glb_storage: Res<GLBStorageID>,
 ) {
@@ -250,7 +266,7 @@ fn gltf_handler_init_hole_n(
     glb_storage: Res<GLBStorageID>,
     hole: i32,
 ) {
-    if let Some(glb_file) = glb_storage.glb.get((hole - 1) as usize) {
+    if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
         let info_dump = glb_file.clone();
 
         commands.spawn(SceneBundle {
