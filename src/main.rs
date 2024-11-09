@@ -41,6 +41,7 @@ fn main() {
         .insert_state(AppState::Game)
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
+        .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
         // .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
@@ -59,7 +60,8 @@ fn main() {
         .add_systems(OnEnter(AppState::Menu), app_state_menu_logic_enter)
         .add_systems(OnExit(AppState::Menu), app_state_menu_logic_exit)
         .add_systems(OnEnter(AppState::Paused), app_state_paused_logic_enter)
-        .add_systems(OnExit(AppState::Paused), app_state_paused_logic_exit);
+        .add_systems(OnExit(AppState::Paused), app_state_paused_logic_exit)
+        .add_systems(OnEnter(AppState::ClearGLB), app_state_clear_glb_enter);
         app.run();
 }
 
@@ -69,6 +71,7 @@ enum AppState {
     Game,
     Menu,
     Paused,
+    ClearGLB,
 }
 
 fn app_state_cycle(
@@ -83,6 +86,9 @@ fn app_state_cycle(
             next_game_state.set(AppState::Paused);
         },
         AppState::Paused => {
+            next_game_state.set(AppState::ClearGLB);
+        },
+        AppState::ClearGLB => {
             next_game_state.set(AppState::Game);
         },
         _ => {},
@@ -100,6 +106,9 @@ fn app_state_logic(
             // info!("AppState::Menu");
         },
         AppState::Paused => {
+            // info!("AppState::Paused");
+        },
+        AppState::ClearGLB => {
             // info!("AppState::Paused");
         },
         _ => {},
@@ -130,7 +139,8 @@ fn app_state_menu_logic_enter(
     gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 2);
 }
 
-fn app_state_menu_logic_exit() {
+fn app_state_menu_logic_exit(
+) {
     info!("AppState::Menu::OnExit");
 }
 
@@ -144,16 +154,23 @@ fn app_state_paused_logic_enter(
     gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 3);
 }
 
-fn app_state_paused_logic_exit() {
+fn app_state_paused_logic_exit(
+) {
     info!("AppState::Paused::OnExit");
 }
 
+fn app_state_clear_glb_enter(
+    mut commands: Commands,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    purge_add_all_maps(&mut purge, glb_storage);
+    gltf_handler_purge(commands, scene_query, asset_server, purge);
+}
 
-
-
-
-
-#[derive(Resource)]
+#[derive(Clone, Resource)]
 struct GLBStorageID {
     glb: Vec<String>,
 }
@@ -194,7 +211,7 @@ fn remove_match_from_vec(vec: &mut ResMut<GLBPurgeID>, pattern: &str) {
 }
 
 // When exit state 
-fn gltf_handler_despawn(
+fn gltf_handler_purge(
     mut commands: Commands,
     scene_query: Query<(Entity, &Handle<Scene>)>,
     asset_server: Res<AssetServer>,
@@ -202,8 +219,9 @@ fn gltf_handler_despawn(
 ) {
     let targets = purge.clone();
     for asset_to_despawn in targets.glb.iter() {
+        let target_asset = format!("{}#Scene0",asset_to_despawn);
         // We load the specific scene handle to compare it directly
-        let despawn_target: Handle<Scene> = asset_server.load(asset_to_despawn);
+        let despawn_target: Handle<Scene> = asset_server.load(target_asset);// format!("{}#Scene0", glb_file)
         for (entity, scene_handle) in scene_query.iter() {
             // Check if the scene handle matches the target handle
             if scene_handle.id() == despawn_target.id() {
@@ -215,7 +233,15 @@ fn gltf_handler_despawn(
     }
 }
 
-// fn purge_all_maps(){} // gltf_handler_despawn
+fn purge_add_all_maps(
+    purge: &mut ResMut<GLBPurgeID>,
+    glb_storage: Res<GLBStorageID>,
+) {
+    let targets = glb_storage.clone();
+    for asset_to_despawn in targets.glb.iter() {
+        purge.glb.push(asset_to_despawn.to_string());
+    }
+}
 
 fn gltf_handler_init_hole_n(
     asset_server: Res<AssetServer>,
