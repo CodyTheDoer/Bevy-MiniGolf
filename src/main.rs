@@ -166,7 +166,7 @@ fn app_state_clear_glb_enter(
     mut purge: ResMut<GLBPurgeID>,
     glb_storage: Res<GLBStorageID>,
 ) {
-    purge_add_all_maps(&mut purge, glb_storage);
+    purge_add_all(&mut purge, glb_storage);
     gltf_handler_purge(commands, scene_query, asset_server, purge);
 }
 
@@ -233,7 +233,7 @@ fn gltf_handler_purge(
     }
 }
 
-fn purge_add_all_maps(
+fn purge_add_all(
     purge: &mut ResMut<GLBPurgeID>,
     glb_storage: Res<GLBStorageID>,
 ) {
