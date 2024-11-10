@@ -38,7 +38,7 @@ fn main() {
             }),
         ))
         // .add_plugins(EditorPlugin::default())
-        .insert_state(LevelState::Hole1)
+        .insert_state(LevelState::HoleTutorial)
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
         .insert_resource(GLBPurgeID::new())
@@ -120,6 +120,7 @@ enum MapSet {
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 enum LevelState {
     #[default]
+    HoleTutorial,
     Hole1,
     Hole2,
     Hole3,
@@ -138,7 +139,6 @@ enum LevelState {
     Hole16,
     Hole17,
     Hole18,
-    HoleTutorial,
 }
 
 fn level_state_cycle(
@@ -301,7 +301,7 @@ struct GameStateHandler {
 
 impl GameStateHandler {
     fn new() -> Self {
-        let current_level = 1;
+        let current_level = 0;
         GameStateHandler {
             current_level,
         }
