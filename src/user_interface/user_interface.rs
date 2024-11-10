@@ -9,7 +9,7 @@ use crate::{
     CameraWorld, 
     Fonts, 
     GameState,
-    GameStateHandler,
+    // GameStateHandler,
     Ground, 
     InfoCall, 
     Interactable, 
@@ -236,7 +236,6 @@ pub fn release_ray(
 pub fn game_state_update(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
-    mut gsh: ResMut<GameStateHandler>,
 ) {
     match game_state.get() {
         GameState::LoadingScreen => {
@@ -263,7 +262,6 @@ pub fn game_state_update(
             info!("GameState::LoadingScreen");
             next_game_state.set(GameState::LoadingScreen);
         },
-        _ => {},
     }
 }
 
@@ -277,6 +275,5 @@ pub fn game_state_logic(
         GameState::MenuOnline => {},
         GameState::InGame => {},
         GameState::PostGameReview => {},
-        _ => {},
     }
 }

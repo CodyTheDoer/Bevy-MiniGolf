@@ -173,7 +173,6 @@ pub fn level_state_update(
             info!("LevelState::HoleTutorial");
             next_game_state.set(LevelState::HoleTutorial);
         },
-        _ => {},
     }
 }
 
@@ -200,20 +199,19 @@ pub fn level_state_logic(
         LevelState::Hole16 => {},
         LevelState::Hole17 => {},
         LevelState::Hole18 => {},
-        _ => {},
     }
 }
 
 // When entering state 
 pub fn init_hole_n(
     asset_server: Res<AssetServer>,
-    mut commands: Commands,
+    commands: Commands,
     mut op_index: ResMut<OpIndex>,
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameStateHandler>,
 ) {
     info!("init_hole_n: Init Hole {}", gsh.current_level);
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, gsh.current_level);
+    gltf_handler_init_hole_n(asset_server, commands, op_index.into(), glb_storage, gsh.current_level);
 }
 
 
@@ -280,7 +278,7 @@ pub fn purge_glb_all_prep(
 }
 
 pub fn purge_glb_all(
-    mut commands: Commands,
+    commands: Commands,
     scene_query: Query<(Entity, &Handle<Scene>)>,
     asset_server: Res<AssetServer>,
     mut purge: ResMut<GLBPurgeID>,
@@ -350,7 +348,6 @@ pub fn map_set_state_update(
                 _ => {},
             }
         },
-        _ => {},
     }
 }
 
@@ -363,6 +360,5 @@ pub fn map_set_state_logic(
         MapSetState::FrontNine => {},
         MapSetState::BackNine => {},
         MapSetState::SelectAHole => {},
-        _ => {},
     }
 }

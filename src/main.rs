@@ -11,11 +11,9 @@ use minigolf::{
     GameStateHandler, 
     GLBPurgeID, 
     GLBStorageID, 
-    Interactable, 
     LevelState, 
     MapSetState,
     OpIndex,
-    UserInterface,
 };
 use minigolf::user_interface::camera_world::setup_3d_camera;
 use minigolf::user_interface::user_interface::{
