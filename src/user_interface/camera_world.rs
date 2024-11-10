@@ -6,7 +6,7 @@ pub fn setup_3d_camera(
     mut commands: Commands,
 ) {
     let camera = Camera3dBundle {
-        transform: Transform::from_xyz(45.0, 10.0, 55.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(75.0, 75.0, 75.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     };
 

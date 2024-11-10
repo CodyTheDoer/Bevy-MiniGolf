@@ -43,6 +43,7 @@ fn main() {
         .insert_resource(OpIndex::new())
         .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
+        .insert_resource(Level { current: 0 })
         // .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
@@ -55,36 +56,171 @@ fn main() {
         // .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
         .add_systems(Update, level_state_logic)
         .add_systems(Update, level_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
-        .add_systems(OnEnter(LevelState::Hole1), level_state_game_logic_enter)
-        .add_systems(OnExit(LevelState::Hole1), level_state_game_logic_exit)
-        .add_systems(OnEnter(LevelState::Hole2), level_state_menu_logic_enter)
-        .add_systems(OnExit(LevelState::Hole2), level_state_menu_logic_exit)
-        .add_systems(OnEnter(LevelState::Hole3), level_state_paused_logic_enter)
-        .add_systems(OnExit(LevelState::Hole3), level_state_paused_logic_exit);
+        .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole1), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole2), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole3), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole3), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole4), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole4), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole5), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole5), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole6), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole6), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole7), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole7), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole8), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole8), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole9), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole9), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole10), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole10), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole11), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole11), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole12), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole12), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole13), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole13), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole14), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole14), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole15), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole16), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole17), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
+        .add_systems(OnEnter(LevelState::Hole18), init_hole_n)
+        .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
         app.run();
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 enum LevelState {
     #[default]
+    HoleTutorial,
     Hole1,
     Hole2,
     Hole3,
+    Hole4,
+    Hole5,
+    Hole6,
+    Hole7,
+    Hole8,
+    Hole9,
+    Hole10,
+    Hole11,
+    Hole12,
+    Hole13,
+    Hole14,
+    Hole15,
+    Hole16,
+    Hole17,
+    Hole18,
 }
 
 fn level_state_cycle(
     level_state: Res<State<LevelState>>,
     mut next_game_state: ResMut<NextState<LevelState>>,
+    mut level: ResMut<Level>,
 ) {
     match level_state.get() {
+        LevelState::HoleTutorial => {
+            level.current += 1;
+            info!("LevelState::Hole1");
+            next_game_state.set(LevelState::Hole1);
+        },
         LevelState::Hole1 => {
+            level.current += 1;
+            info!("LevelState::Hole2");
             next_game_state.set(LevelState::Hole2);
         },
         LevelState::Hole2 => {
+            level.current += 1;
+            info!("LevelState::Hole3");
             next_game_state.set(LevelState::Hole3);
         },
         LevelState::Hole3 => {
-            next_game_state.set(LevelState::Hole1);
+            level.current += 1;
+            info!("LevelState::Hole4");
+            next_game_state.set(LevelState::Hole4);
+        },
+        LevelState::Hole4 => {
+            level.current += 1;
+            info!("LevelState::Hole5");
+            next_game_state.set(LevelState::Hole5);
+        },
+        LevelState::Hole5 => {
+            level.current += 1;
+            info!("LevelState::Hole6");
+            next_game_state.set(LevelState::Hole6);
+        },
+        LevelState::Hole6 => {
+            level.current += 1;
+            info!("LevelState::Hole7");
+            next_game_state.set(LevelState::Hole7);
+        },
+        LevelState::Hole7 => {
+            level.current += 1;
+            info!("LevelState::Hole8");
+            next_game_state.set(LevelState::Hole8);
+        },
+        LevelState::Hole8 => {
+            level.current += 1;
+            info!("LevelState::Hole9");
+            next_game_state.set(LevelState::Hole9);
+        },
+        LevelState::Hole9 => {
+            level.current += 1;
+            info!("LevelState::Hole10");
+            next_game_state.set(LevelState::Hole10);
+        },
+        LevelState::Hole10 => {
+            level.current += 1;
+            info!("LevelState::Hole11");
+            next_game_state.set(LevelState::Hole11);
+        },
+        LevelState::Hole11 => {
+            level.current += 1;
+            info!("LevelState::Hole12");
+            next_game_state.set(LevelState::Hole12);
+        },
+        LevelState::Hole12 => {
+            level.current += 1;
+            info!("LevelState::Hole13");
+            next_game_state.set(LevelState::Hole13);
+        },
+        LevelState::Hole13 => {
+            level.current += 1;
+            info!("LevelState::Hole14");
+            next_game_state.set(LevelState::Hole14);
+        },
+        LevelState::Hole14 => {
+            level.current += 1;
+            info!("LevelState::Hole15");
+            next_game_state.set(LevelState::Hole15);
+        },
+        LevelState::Hole15 => {
+            level.current += 1;
+            info!("LevelState::Hole16");
+            next_game_state.set(LevelState::Hole16);
+        },
+        LevelState::Hole16 => {
+            level.current += 1;
+            info!("LevelState::Hole17");
+            next_game_state.set(LevelState::Hole17);
+        },
+        LevelState::Hole17 => {
+            level.current += 1;
+            info!("LevelState::Hole18");
+            next_game_state.set(LevelState::Hole18);
+        },
+        LevelState::Hole18 => {
+            level.current = 0;
+            info!("LevelState::HoleTutorial");
+            next_game_state.set(LevelState::HoleTutorial);
         },
         _ => {},
     }
@@ -94,92 +230,64 @@ fn level_state_logic(
     level_state: Res<State<LevelState>>,
 ) {
     match level_state.get() {
+        LevelState::HoleTutorial => {
+        },
         LevelState::Hole1 => {
-            // info!("LevelState::Hole1");
         },
         LevelState::Hole2 => {
-            // info!("LevelState::Hole2");
         },
         LevelState::Hole3 => {
-            // info!("LevelState::Hole3");
+        },
+        LevelState::Hole4 => {
+        },
+        LevelState::Hole5 => {
+        },
+        LevelState::Hole6 => {
+        },
+        LevelState::Hole7 => {
+        },
+        LevelState::Hole8 => {
+        },
+        LevelState::Hole9 => {
+        },
+        LevelState::Hole10 => {
+        },
+        LevelState::Hole11 => {
+        },
+        LevelState::Hole12 => {
+        },
+        LevelState::Hole13 => {
+        },
+        LevelState::Hole14 => {
+        },
+        LevelState::Hole15 => {
+        },
+        LevelState::Hole16 => {
+        },
+        LevelState::Hole17 => {
+        },
+        LevelState::Hole18 => {
         },
         _ => {},
     }
 }
 
-fn level_state_game_logic_enter(
+// When entering state 
+
+#[derive(Resource)]
+struct Level {
+    current: i32,
+}
+
+fn init_hole_n(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut op_index: ResMut<OpIndex>,
     glb_storage: Res<GLBStorageID>,
+    level: Res<Level>,
 ) {
-    info!("LevelState::Hole1::OnEnter - Init Hole Boilerplate 1");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 0);
-}
-
-fn level_state_game_logic_exit(
-    mut commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("LevelState::Hole1::OnExit");
-    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
-}
-
-fn level_state_menu_logic_enter(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("LevelState::Hole2::OnEnter - Init Hole 1(Temp: Blue)");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 1);
-}
-
-fn level_state_menu_logic_exit(
-    mut commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("LevelState::Hole2::OnExit");
-    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
-}
-
-fn level_state_paused_logic_enter(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("LevelState::Hole3::OnEnter - Init Hole Boilerplate 2");
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, 4);
-}
-
-fn level_state_paused_logic_exit(
-    mut commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    info!("LevelState::Hole3::OnExit");
-    purge_glb_all(commands, scene_query, asset_server, purge, glb_storage);
-}
-
-
-fn purge_glb_all(
-    mut commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    purge_glb_all_prep(&mut purge, glb_storage);
-    gltf_handler_purge(commands, scene_query, asset_server, purge);
+    info!("init_hole_n: Init Hole {}", level.current);
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, level.current);
 }
 
 #[derive(Clone, Resource)]
@@ -190,21 +298,75 @@ struct GLBStorageID {
 impl GLBStorageID {
     fn new() -> Self {
         let mut glb: Vec<String> = Vec::new();
-        for i in 1..18 {
-            let map_i = format!("glb/boilerplate_level_{}.glb", i);
-            glb.push(map_i);
-        }
-        info!("glb.len: {:?}", glb.len());
-        // glb.push(map_0);
-        // glb.push(map_1);
-        // glb.push(map_2);
-        // glb.push(map_3);
-        // glb.push(map_4);
+        let map_t = "glb/boilerplate_level_tutorial.glb".to_string();
+        glb.push(map_t);
+        let map_1: String = String::from("glb/boilerplate_level_1.glb");
+        let map_2: String = String::from( "glb/boilerplate_level_2.glb");
+        let map_3: String = String::from( "glb/boilerplate_level_3.glb");
+        let map_4: String = String::from( "glb/boilerplate_level_4.glb");
+        let map_5: String = String::from("glb/boilerplate_level_5.glb");
+        let map_6: String = String::from("glb/boilerplate_level_6.glb");
+        let map_7: String = String::from("glb/boilerplate_level_7.glb");
+        let map_8: String = String::from("glb/boilerplate_level_8.glb");
+        let map_9: String = String::from("glb/boilerplate_level_9.glb");
+        let map_10: String = String::from("glb/boilerplate_level_10.glb");
+        let map_11: String = String::from("glb/boilerplate_level_11.glb");
+        let map_12: String = String::from("glb/boilerplate_level_12.glb");
+        let map_13: String = String::from("glb/boilerplate_level_13.glb");
+        let map_14: String = String::from("glb/boilerplate_level_14.glb");
+        let map_15: String = String::from("glb/boilerplate_level_15.glb");
+        let map_16: String = String::from("glb/boilerplate_level_16.glb");
+        let map_17: String = String::from("glb/boilerplate_level_17.glb");
+        let map_18: String = String::from("glb/boilerplate_level_18.glb");
+        glb.push(map_1);
+        glb.push(map_2);
+        glb.push(map_3);
+        glb.push(map_4);
+        glb.push(map_5);
+        glb.push(map_6);
+        glb.push(map_7);
+        glb.push(map_8);
+        glb.push(map_9);
+        glb.push(map_10);
+        glb.push(map_11);
+        glb.push(map_12);
+        glb.push(map_13);
+        glb.push(map_14);
+        glb.push(map_15);
+        glb.push(map_16);
+        glb.push(map_17);
+        glb.push(map_18);
+        info!("{:?}", &glb);
         GLBStorageID {
             glb,
         }
     }
 }
+
+fn gltf_handler_init_hole_n(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut op_index: ResMut<OpIndex>,
+    glb_storage: Res<GLBStorageID>,
+    hole: i32,
+) {
+    if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
+        let info_dump = glb_file.clone();
+
+        commands.spawn(SceneBundle {
+            scene: asset_server
+                .load(GltfAssetLabel::Scene(0).from_asset(info_dump)),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..default()
+        })
+        .insert(Interactable); 
+        op_index.add_ui_entity();    
+    } else {
+        warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
+    };
+}
+
+// When exiting state 
 
 #[derive(Clone, Resource)]
 struct GLBPurgeID {
@@ -225,8 +387,6 @@ fn remove_match_from_vec(vec: &mut ResMut<GLBPurgeID>, pattern: &str) {
         vec.glb.remove(pos);
     }
 }
-
-// When exit state 
 fn gltf_handler_purge(
     mut commands: Commands,
     scene_query: Query<(Entity, &Handle<Scene>)>,
@@ -259,26 +419,13 @@ fn purge_glb_all_prep(
     }
 }
 
-fn gltf_handler_init_hole_n(
-    asset_server: Res<AssetServer>,
+fn purge_glb_all(
     mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
+    scene_query: Query<(Entity, &Handle<Scene>)>,
+    asset_server: Res<AssetServer>,
+    mut purge: ResMut<GLBPurgeID>,
     glb_storage: Res<GLBStorageID>,
-    hole: i32,
 ) {
-    if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
-        let info_dump = glb_file.clone();
-
-        commands.spawn(SceneBundle {
-            scene: asset_server
-                .load(GltfAssetLabel::Scene(0).from_asset(info_dump)),
-            transform: Transform::from_xyz(-2.0, 0.0, 5.0),
-            ..default()
-        })
-        .insert(Interactable); 
-        op_index.add_ui_entity();    
-    } else {
-        warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
-    };
-
+    purge_glb_all_prep(&mut purge, glb_storage);
+    gltf_handler_purge(commands, scene_query, asset_server, purge);
 }
