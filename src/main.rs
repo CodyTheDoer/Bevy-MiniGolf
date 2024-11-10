@@ -43,7 +43,7 @@ fn main() {
         .insert_resource(OpIndex::new())
         .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
-        .insert_resource(Level { current: 0 })
+        .insert_resource(GameStateHandler::new())
         // .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
@@ -54,7 +54,7 @@ fn main() {
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
         // .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)))
         // .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
-        .add_systems(Update, level_state_logic)
+        // .add_systems(Update, level_state_logic)
         .add_systems(Update, level_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
         .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
@@ -98,9 +98,28 @@ fn main() {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+enum GameState {
+    #[default]
+    LoadingScreen,
+    MenuMain,
+    MenuSettings,
+    MenuOnline,
+    InGame,
+    PostGameReview,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+enum MapSet {
+    #[default]
+    WholeCorse,
+    FrontNine,
+    BackNine,
+    SelectAHole,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 enum LevelState {
     #[default]
-    HoleTutorial,
     Hole1,
     Hole2,
     Hole3,
@@ -119,106 +138,107 @@ enum LevelState {
     Hole16,
     Hole17,
     Hole18,
+    HoleTutorial,
 }
 
 fn level_state_cycle(
     level_state: Res<State<LevelState>>,
     mut next_game_state: ResMut<NextState<LevelState>>,
-    mut level: ResMut<Level>,
+    mut gsh: ResMut<GameStateHandler>,
 ) {
     match level_state.get() {
         LevelState::HoleTutorial => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole1");
             next_game_state.set(LevelState::Hole1);
         },
         LevelState::Hole1 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole2");
             next_game_state.set(LevelState::Hole2);
         },
         LevelState::Hole2 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole3");
             next_game_state.set(LevelState::Hole3);
         },
         LevelState::Hole3 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole4");
             next_game_state.set(LevelState::Hole4);
         },
         LevelState::Hole4 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole5");
             next_game_state.set(LevelState::Hole5);
         },
         LevelState::Hole5 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole6");
             next_game_state.set(LevelState::Hole6);
         },
         LevelState::Hole6 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole7");
             next_game_state.set(LevelState::Hole7);
         },
         LevelState::Hole7 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole8");
             next_game_state.set(LevelState::Hole8);
         },
         LevelState::Hole8 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole9");
             next_game_state.set(LevelState::Hole9);
         },
         LevelState::Hole9 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole10");
             next_game_state.set(LevelState::Hole10);
         },
         LevelState::Hole10 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole11");
             next_game_state.set(LevelState::Hole11);
         },
         LevelState::Hole11 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole12");
             next_game_state.set(LevelState::Hole12);
         },
         LevelState::Hole12 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole13");
             next_game_state.set(LevelState::Hole13);
         },
         LevelState::Hole13 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole14");
             next_game_state.set(LevelState::Hole14);
         },
         LevelState::Hole14 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole15");
             next_game_state.set(LevelState::Hole15);
         },
         LevelState::Hole15 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole16");
             next_game_state.set(LevelState::Hole16);
         },
         LevelState::Hole16 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole17");
             next_game_state.set(LevelState::Hole17);
         },
         LevelState::Hole17 => {
-            level.current += 1;
+            gsh.current_level += 1;
             info!("LevelState::Hole18");
             next_game_state.set(LevelState::Hole18);
         },
         LevelState::Hole18 => {
-            level.current = 0;
+            gsh.current_level = 0;
             info!("LevelState::HoleTutorial");
             next_game_state.set(LevelState::HoleTutorial);
         },
@@ -275,8 +295,17 @@ fn level_state_logic(
 // When entering state 
 
 #[derive(Resource)]
-struct Level {
-    current: i32,
+struct GameStateHandler {
+    current_level: i32,
+}
+
+impl GameStateHandler {
+    fn new() -> Self {
+        let current_level = 1;
+        GameStateHandler {
+            current_level,
+        }
+    }
 }
 
 fn init_hole_n(
@@ -284,10 +313,10 @@ fn init_hole_n(
     mut commands: Commands,
     mut op_index: ResMut<OpIndex>,
     glb_storage: Res<GLBStorageID>,
-    level: Res<Level>,
+    gsh: Res<GameStateHandler>,
 ) {
-    info!("init_hole_n: Init Hole {}", level.current);
-    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, level.current);
+    info!("init_hole_n: Init Hole {}", gsh.current_level);
+    gltf_handler_init_hole_n(asset_server, commands, op_index, glb_storage, gsh.current_level);
 }
 
 #[derive(Clone, Resource)]
