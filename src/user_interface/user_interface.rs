@@ -9,7 +9,6 @@ use crate::{
     CameraWorld, 
     Fonts, 
     GameState,
-    // GameStateHandler,
     Ground, 
     InfoCall, 
     Interactable, 
@@ -255,6 +254,10 @@ pub fn game_state_update(
             next_game_state.set(GameState::InGame);
         },
         GameState::InGame => {
+            info!("GameState::InGamePaused");
+            next_game_state.set(GameState::InGamePaused);
+        },
+        GameState::InGamePaused => {
             info!("GameState::PostGameReview");
             next_game_state.set(GameState::PostGameReview);
         },
@@ -274,6 +277,7 @@ pub fn game_state_logic(
         GameState::MenuSettings => {},
         GameState::MenuOnline => {},
         GameState::InGame => {},
+        GameState::InGamePaused => {},
         GameState::PostGameReview => {},
     }
 }

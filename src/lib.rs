@@ -201,6 +201,7 @@ pub enum GameState {
     MenuSettings,
     MenuOnline,
     InGame,
+    InGamePaused,
     PostGameReview,
 }
 
