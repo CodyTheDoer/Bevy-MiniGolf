@@ -1,17 +1,12 @@
 use bevy::{prelude::*,
-    // ecs::world::World,
     input::common_conditions::*,
     window::{PresentMode, WindowTheme},
-    // tasks::IoTaskPool, 
-    // utils::Duration,
 };
-
-// use std::{fs::File, io::Write};
 
 // use bevy_editor_pls::prelude::*;
 
 use minigolf::{Fonts, Interactable, OpIndex};
-use minigolf::level_handler::level_handler::{gltf_handler_init, setup_ground, setup_light}; //query_and_despawn_scene, query_and_update_scene};
+use minigolf::level_handler::level_handler::{gltf_handler_init, setup_ground, setup_light};
 use minigolf::user_interface::camera_world::setup_3d_camera;
 use minigolf::user_interface::user_interface::{fire_ray, release_ray, draw_cursor, setup_ui};
 
@@ -39,12 +34,13 @@ fn main() {
         ))
         // .add_plugins(EditorPlugin::default())
         .insert_state(LevelState::HoleTutorial)
+        .insert_state(MapSetState::Tutorial)
+        .insert_state(GameState::LoadingScreen)
         .insert_resource(Fonts::new())
         .insert_resource(OpIndex::new())
         .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
         .insert_resource(GameStateHandler::new())
-        // .add_systems(Startup, gltf_handler_init)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
@@ -52,10 +48,10 @@ fn main() {
         .add_systems(Update, draw_cursor)
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
-        // .add_systems(Update, query_and_despawn_scene.run_if(input_pressed(MouseButton::Right)))
-        // .add_systems(Update, query_and_update_scene.run_if(input_pressed(MouseButton::Right)))
-        // .add_systems(Update, level_state_logic)
-        .add_systems(Update, level_state_cycle.run_if(input_just_released(KeyCode::ArrowUp)))
+        .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
+        .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
+        .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
+        // .add_systems(OnEnter(MapSetState::Tutorial), init_hole_n)
         .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
@@ -97,6 +93,24 @@ fn main() {
         app.run();
 }
 
+#[derive(Resource)]
+struct GameStateHandler {
+    current_level: i32,
+    maps_index: i32,
+}
+
+impl GameStateHandler {
+    fn new() -> Self {
+        let current_level = 0;
+        let maps_index = 0;
+        GameStateHandler {
+            current_level,
+            maps_index,
+        }
+    }
+}
+
+
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 enum GameState {
     #[default]
@@ -108,13 +122,144 @@ enum GameState {
     PostGameReview,
 }
 
+fn game_state_update(
+    game_state: Res<State<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut gsh: ResMut<GameStateHandler>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {
+            info!("GameState::MenuMain");
+            next_game_state.set(GameState::MenuMain);
+        },
+        GameState::MenuMain => {
+            info!("GameState::MenuSettings");
+            next_game_state.set(GameState::MenuSettings);
+        },
+        GameState::MenuSettings => {
+            info!("GameState::MenuOnline");
+            next_game_state.set(GameState::MenuOnline);
+        },
+        GameState::MenuOnline => {
+            info!("GameState::InGame");
+            next_game_state.set(GameState::InGame);
+        },
+        GameState::InGame => {
+            info!("GameState::PostGameReview");
+            next_game_state.set(GameState::PostGameReview);
+        },
+        GameState::PostGameReview => {
+            info!("GameState::LoadingScreen");
+            next_game_state.set(GameState::LoadingScreen);
+        },
+        _ => {},
+    }
+}
+
+fn game_state_logic(
+    game_state: Res<State<GameState>>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {},
+        GameState::MenuMain => {},
+        GameState::MenuSettings => {},
+        GameState::MenuOnline => {},
+        GameState::InGame => {},
+        GameState::PostGameReview => {},
+        _ => {},
+    }
+}
+
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-enum MapSet {
+enum MapSetState {
     #[default]
+    Tutorial,
     WholeCorse,
     FrontNine,
     BackNine,
     SelectAHole,
+}
+
+//will be UserInterface::select_a_hole_widget()
+fn select_a_hole_widget() -> i32 {
+    let target = 0;
+    target
+}
+
+fn map_set_state_update(
+    map_set_state: Res<State<MapSetState>>,
+    mut next_map_set_state: ResMut<NextState<MapSetState>>,
+    mut gsh: ResMut<GameStateHandler>,
+) {
+    match map_set_state.get() {
+        MapSetState::Tutorial => {
+            info!("MapSetState::Tutorial");
+            gsh.current_level = 0;
+            gsh.maps_index = 1;
+            next_map_set_state.set(MapSetState::WholeCorse);
+        },
+        MapSetState::WholeCorse => {
+            info!("MapSetState::WholeCorse");
+            gsh.current_level = 0;
+            gsh.maps_index = 18;
+            next_map_set_state.set(MapSetState::FrontNine);
+        },
+        MapSetState::FrontNine => {
+            info!("MapSetState::FrontNine");
+            gsh.current_level = 0;
+            gsh.maps_index = 9;
+            next_map_set_state.set(MapSetState::BackNine);
+        },
+        MapSetState::BackNine => {
+            info!("MapSetState::BackNine");
+            gsh.current_level = 0;
+            gsh.maps_index = 9;
+            next_map_set_state.set(MapSetState::SelectAHole);
+        },
+        MapSetState::SelectAHole => {
+            info!("MapSetState::SelectAHole");
+            gsh.current_level = 0;
+            gsh.maps_index = 1;
+            let hole = select_a_hole_widget();
+            match hole {
+                0 => {},
+                1 => {},
+                2 => {},
+                3 => {},
+                4 => {},
+                5 => {},
+                6 => {},
+                7 => {},
+                8 => {},
+                9 => {},
+                10 => {},
+                11 => {},
+                12 => {},
+                13 => {},
+                14 => {},
+                15 => {},
+                16 => {},
+                17 => {},
+                18 => {},
+                _ => {},
+            }
+            next_map_set_state.set(MapSetState::Tutorial);
+        },
+        _ => {},
+    }
+}
+
+fn map_set_state_logic(
+    map_set_state: Res<State<MapSetState>>,
+) {
+    match map_set_state.get() {
+        MapSetState::Tutorial => {},
+        MapSetState::WholeCorse => {},
+        MapSetState::FrontNine => {},
+        MapSetState::BackNine => {},
+        MapSetState::SelectAHole => {},
+        _ => {},
+    }
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -141,7 +286,7 @@ enum LevelState {
     Hole18,
 }
 
-fn level_state_cycle(
+fn level_state_update(
     level_state: Res<State<LevelState>>,
     mut next_game_state: ResMut<NextState<LevelState>>,
     mut gsh: ResMut<GameStateHandler>,
@@ -250,63 +395,30 @@ fn level_state_logic(
     level_state: Res<State<LevelState>>,
 ) {
     match level_state.get() {
-        LevelState::HoleTutorial => {
-        },
-        LevelState::Hole1 => {
-        },
-        LevelState::Hole2 => {
-        },
-        LevelState::Hole3 => {
-        },
-        LevelState::Hole4 => {
-        },
-        LevelState::Hole5 => {
-        },
-        LevelState::Hole6 => {
-        },
-        LevelState::Hole7 => {
-        },
-        LevelState::Hole8 => {
-        },
-        LevelState::Hole9 => {
-        },
-        LevelState::Hole10 => {
-        },
-        LevelState::Hole11 => {
-        },
-        LevelState::Hole12 => {
-        },
-        LevelState::Hole13 => {
-        },
-        LevelState::Hole14 => {
-        },
-        LevelState::Hole15 => {
-        },
-        LevelState::Hole16 => {
-        },
-        LevelState::Hole17 => {
-        },
-        LevelState::Hole18 => {
-        },
+        LevelState::HoleTutorial => {},
+        LevelState::Hole1 => {},
+        LevelState::Hole2 => {},
+        LevelState::Hole3 => {},
+        LevelState::Hole4 => {},
+        LevelState::Hole5 => {},
+        LevelState::Hole6 => {},
+        LevelState::Hole7 => {},
+        LevelState::Hole8 => {},
+        LevelState::Hole9 => {},
+        LevelState::Hole10 => {},
+        LevelState::Hole11 => {},
+        LevelState::Hole12 => {},
+        LevelState::Hole13 => {},
+        LevelState::Hole14 => {},
+        LevelState::Hole15 => {},
+        LevelState::Hole16 => {},
+        LevelState::Hole17 => {},
+        LevelState::Hole18 => {},
         _ => {},
     }
 }
 
 // When entering state 
-
-#[derive(Resource)]
-struct GameStateHandler {
-    current_level: i32,
-}
-
-impl GameStateHandler {
-    fn new() -> Self {
-        let current_level = 0;
-        GameStateHandler {
-            current_level,
-        }
-    }
-}
 
 fn init_hole_n(
     asset_server: Res<AssetServer>,
@@ -330,9 +442,9 @@ impl GLBStorageID {
         let map_t = "glb/boilerplate_level_tutorial.glb".to_string();
         glb.push(map_t);
         let map_1: String = String::from("glb/boilerplate_level_1.glb");
-        let map_2: String = String::from( "glb/boilerplate_level_2.glb");
-        let map_3: String = String::from( "glb/boilerplate_level_3.glb");
-        let map_4: String = String::from( "glb/boilerplate_level_4.glb");
+        let map_2: String = String::from("glb/boilerplate_level_2.glb");
+        let map_3: String = String::from("glb/boilerplate_level_3.glb");
+        let map_4: String = String::from("glb/boilerplate_level_4.glb");
         let map_5: String = String::from("glb/boilerplate_level_5.glb");
         let map_6: String = String::from("glb/boilerplate_level_6.glb");
         let map_7: String = String::from("glb/boilerplate_level_7.glb");
