@@ -190,16 +190,16 @@ struct GLBStorageID {
 impl GLBStorageID {
     fn new() -> Self {
         let mut glb: Vec<String> = Vec::new();
-        let map_0: String = String::from("glb/boilerplate_level.glb");
-        let map_1: String = String::from("cube_blue.glb");
-        let map_2: String = String::from("cube_terracotta.glb");
-        let map_3: String = String::from("cube_toxic.glb");
-        let map_4: String = String::from("glb/boilerplate_level_2.glb");
-        glb.push(map_0);
-        glb.push(map_1);
-        glb.push(map_2);
-        glb.push(map_3);
-        glb.push(map_4);
+        for i in 1..18 {
+            let map_i = format!("glb/boilerplate_level_{}.glb", i);
+            glb.push(map_i);
+        }
+        info!("glb.len: {:?}", glb.len());
+        // glb.push(map_0);
+        // glb.push(map_1);
+        // glb.push(map_2);
+        // glb.push(map_3);
+        // glb.push(map_4);
         GLBStorageID {
             glb,
         }
