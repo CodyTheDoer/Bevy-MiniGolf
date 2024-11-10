@@ -4,7 +4,19 @@ use bevy_mod_raycast::prelude::*;
 
 use std::collections::HashMap;
 
-use crate::{CameraUi, CameraWorld, Fonts, Ground, InfoCall, Interactable, InteractableEntities, OpIndex};
+use crate::{
+    CameraUi, 
+    CameraWorld, 
+    Fonts, 
+    GameState,
+    GameStateHandler,
+    Ground, 
+    InfoCall, 
+    Interactable, 
+    InteractableEntities, 
+    MapSetState,
+    OpIndex,
+};
 
 impl InfoCall {
     pub fn from_index(
@@ -219,5 +231,135 @@ pub fn release_ray(
                 }
             } 
         }
+    }
+}
+
+pub fn game_state_update(
+    game_state: Res<State<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut gsh: ResMut<GameStateHandler>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {
+            info!("GameState::MenuMain");
+            next_game_state.set(GameState::MenuMain);
+        },
+        GameState::MenuMain => {
+            info!("GameState::MenuSettings");
+            next_game_state.set(GameState::MenuSettings);
+        },
+        GameState::MenuSettings => {
+            info!("GameState::MenuOnline");
+            next_game_state.set(GameState::MenuOnline);
+        },
+        GameState::MenuOnline => {
+            info!("GameState::InGame");
+            next_game_state.set(GameState::InGame);
+        },
+        GameState::InGame => {
+            info!("GameState::PostGameReview");
+            next_game_state.set(GameState::PostGameReview);
+        },
+        GameState::PostGameReview => {
+            info!("GameState::LoadingScreen");
+            next_game_state.set(GameState::LoadingScreen);
+        },
+        _ => {},
+    }
+}
+
+pub fn game_state_logic(
+    game_state: Res<State<GameState>>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {},
+        GameState::MenuMain => {},
+        GameState::MenuSettings => {},
+        GameState::MenuOnline => {},
+        GameState::InGame => {},
+        GameState::PostGameReview => {},
+        _ => {},
+    }
+}
+
+//will be UserInterface::select_a_hole_widget()
+pub fn select_a_hole_widget() -> i32 {
+    let target = 0;
+    target
+}
+
+fn map_set_state_update(
+    map_set_state: Res<State<MapSetState>>,
+    mut next_map_set_state: ResMut<NextState<MapSetState>>,
+    mut gsh: ResMut<GameStateHandler>,
+) {
+    match map_set_state.get() {
+        MapSetState::Tutorial => {
+            info!("MapSetState::Tutorial");
+            gsh.current_level = 0;
+            gsh.maps_index = 1;
+            next_map_set_state.set(MapSetState::WholeCorse);
+        },
+        MapSetState::WholeCorse => {
+            info!("MapSetState::WholeCorse");
+            gsh.current_level = 0;
+            gsh.maps_index = 18;
+            next_map_set_state.set(MapSetState::FrontNine);
+        },
+        MapSetState::FrontNine => {
+            info!("MapSetState::FrontNine");
+            gsh.current_level = 0;
+            gsh.maps_index = 9;
+            next_map_set_state.set(MapSetState::BackNine);
+        },
+        MapSetState::BackNine => {
+            info!("MapSetState::BackNine");
+            gsh.current_level = 0;
+            gsh.maps_index = 9;
+            next_map_set_state.set(MapSetState::SelectAHole);
+        },
+        MapSetState::SelectAHole => {
+            info!("MapSetState::SelectAHole");
+            gsh.current_level = 0;
+            gsh.maps_index = 1;
+            let hole = select_a_hole_widget();
+            match hole {
+                0 => {},
+                1 => {},
+                2 => {},
+                3 => {},
+                4 => {},
+                5 => {},
+                6 => {},
+                7 => {},
+                8 => {},
+                9 => {},
+                10 => {},
+                11 => {},
+                12 => {},
+                13 => {},
+                14 => {},
+                15 => {},
+                16 => {},
+                17 => {},
+                18 => {},
+                _ => {},
+            }
+            next_map_set_state.set(MapSetState::Tutorial);
+        },
+        _ => {},
+    }
+}
+
+fn map_set_state_logic(
+    map_set_state: Res<State<MapSetState>>,
+) {
+    match map_set_state.get() {
+        MapSetState::Tutorial => {},
+        MapSetState::WholeCorse => {},
+        MapSetState::FrontNine => {},
+        MapSetState::BackNine => {},
+        MapSetState::SelectAHole => {},
+        _ => {},
     }
 }
