@@ -151,7 +151,6 @@ impl GLBPurgeID {
     }
 }
 
-
 // --- User Interface --- CameraUI --- //
 
 #[derive(Asset, Component, TypePath)]
@@ -172,7 +171,6 @@ impl UserInterface {
         target
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub enum InfoCall {

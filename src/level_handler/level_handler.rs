@@ -326,7 +326,9 @@ pub fn map_set_state_update(
             gsh.maps_index = 1;
             let hole = UserInterface::select_a_hole_widget();
             match hole {
-                0 => {},
+                0 => {
+                    next_map_set_state.set(MapSetState::Tutorial);
+                },
                 1 => {},
                 2 => {},
                 3 => {},
@@ -347,7 +349,6 @@ pub fn map_set_state_update(
                 18 => {},
                 _ => {},
             }
-            next_map_set_state.set(MapSetState::Tutorial);
         },
         _ => {},
     }

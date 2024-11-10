@@ -14,7 +14,6 @@ use crate::{
     InfoCall, 
     Interactable, 
     InteractableEntities, 
-    MapSetState,
     OpIndex,
 };
 
@@ -278,88 +277,6 @@ pub fn game_state_logic(
         GameState::MenuOnline => {},
         GameState::InGame => {},
         GameState::PostGameReview => {},
-        _ => {},
-    }
-}
-
-//will be UserInterface::select_a_hole_widget()
-pub fn select_a_hole_widget() -> i32 {
-    let target = 0;
-    target
-}
-
-fn map_set_state_update(
-    map_set_state: Res<State<MapSetState>>,
-    mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut gsh: ResMut<GameStateHandler>,
-) {
-    match map_set_state.get() {
-        MapSetState::Tutorial => {
-            info!("MapSetState::Tutorial");
-            gsh.current_level = 0;
-            gsh.maps_index = 1;
-            next_map_set_state.set(MapSetState::WholeCorse);
-        },
-        MapSetState::WholeCorse => {
-            info!("MapSetState::WholeCorse");
-            gsh.current_level = 0;
-            gsh.maps_index = 18;
-            next_map_set_state.set(MapSetState::FrontNine);
-        },
-        MapSetState::FrontNine => {
-            info!("MapSetState::FrontNine");
-            gsh.current_level = 0;
-            gsh.maps_index = 9;
-            next_map_set_state.set(MapSetState::BackNine);
-        },
-        MapSetState::BackNine => {
-            info!("MapSetState::BackNine");
-            gsh.current_level = 0;
-            gsh.maps_index = 9;
-            next_map_set_state.set(MapSetState::SelectAHole);
-        },
-        MapSetState::SelectAHole => {
-            info!("MapSetState::SelectAHole");
-            gsh.current_level = 0;
-            gsh.maps_index = 1;
-            let hole = select_a_hole_widget();
-            match hole {
-                0 => {},
-                1 => {},
-                2 => {},
-                3 => {},
-                4 => {},
-                5 => {},
-                6 => {},
-                7 => {},
-                8 => {},
-                9 => {},
-                10 => {},
-                11 => {},
-                12 => {},
-                13 => {},
-                14 => {},
-                15 => {},
-                16 => {},
-                17 => {},
-                18 => {},
-                _ => {},
-            }
-            next_map_set_state.set(MapSetState::Tutorial);
-        },
-        _ => {},
-    }
-}
-
-fn map_set_state_logic(
-    map_set_state: Res<State<MapSetState>>,
-) {
-    match map_set_state.get() {
-        MapSetState::Tutorial => {},
-        MapSetState::WholeCorse => {},
-        MapSetState::FrontNine => {},
-        MapSetState::BackNine => {},
-        MapSetState::SelectAHole => {},
         _ => {},
     }
 }
