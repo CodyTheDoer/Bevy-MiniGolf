@@ -151,7 +151,8 @@ fn main() {
         
         // --- Active Dev Targets --- //
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
-        .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)));
+        .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)))
+        .add_systems(Update, collision_events_listener);
 
         app.run();
 }
@@ -161,67 +162,25 @@ fn main() {
 
 
 
-
-// pub fn despawn_entity (
-//     mut commands: Commands,
-//     entity: Entity,
-// ) {
-//     commands.entity(entity).despawn_recursive();
-
-//     // // We load the specific scene handle to compare it directly
-//     // let cube_terracotta: Handle<Scene> = asset_server.load("cube_terracotta.glb#Scene0");
-//     // for (entity, scene_handle, _) in scene_query.iter() {
-//     //     // Check if the scene handle matches the target handle
-//     //     if scene_handle.id() == cube_terracotta.id() {
-//     //         commands.entity(entity).despawn_recursive();
-//     //         info!("Despawning entity {:?}", entity);
-//     //     }
-//     // }
-
-
-// pub fn bonk(
-//     mut commands: Commands,
-//     scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
-//     mut meshes: ResMut<Assets<Mesh>>,
-// ) {
-//     // iterate over all meshes in the scene and match them by their name.
-//     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
-//         if name.as_str() == "ball" {
-//             commands
-//                 .entity(entity)
-//                 .insert(ExternalImpulse {
-//                     impulse: Vec3::new(0.0, 0.0, 0.0),
-//                     torque_impulse: Vec3::new(0.0, 0.0, 0.0),
-//                     }
-//                 )
-//                 .insert(ExternalImpulse {
-//                     impulse: Vec3::new(0.0, 0.0, 100.0),
-//                     torque_impulse: Vec3::new(0.0, 0.0, 0.0),
-//                     }
-//                 );
-//         }
-//     }
-// }
-
-// fn bonk(
-//     mut commands: Commands,
-//     query: Query<(Entity, &Name, &RigidBody), Added<Name>>,
-// ) {
-//     for (entity, name, _rigid_body) in query.iter() {
-//         if name.as_str() == "ball" {
-//             // Re-insert ExternalImpulse to apply the impulse every frame
-//             commands.entity(entity).insert(ExternalImpulse {
-//                 impulse: Vec3::new(0.0, 0.0, 100.0),
-//                 torque_impulse: Vec3::ZERO,
-//             });
-//         }
-//     }
-// }
+fn collision_events_listener(
+    mut collision_events: EventReader<CollisionEvent>,
+) {
+    for collision_event in collision_events.read() {
+        match collision_event {
+            CollisionEvent::Started(entity1, entity2, _flags) => {
+                info!("Collision started between {:?} and {:?}", entity1, entity2);
+            }
+            CollisionEvent::Stopped(entity1, entity2, _flags) => {
+                info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+            }
+        }
+    }
+}
 
 fn bonk(mut impulses: Query<&mut ExternalImpulse>) {
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
-        impulse.impulse = Vec3::new(0.0, 0.0, 100.0);
+        impulse.impulse = Vec3::new(0.0, 0.0, 20.0);
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
     }
 }
@@ -242,7 +201,7 @@ pub fn add_physics_query_and_update_scene(
                 .insert(RigidBody::Dynamic)
                 .insert(ExternalImpulse::default())
                 .insert(GravityScale(4.0))
-                .insert(Transform::from_xyz(0.0, 5.0, -10.0));
+                .insert(Transform::from_xyz(0.0, 5.0, -20.0));
         }
         if name.as_str() == "cup" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -264,6 +223,7 @@ pub fn add_physics_query_and_update_scene(
             commands
                 .entity(entity)
                 .insert(collider)
+                .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Sensor);
         }
         if name.as_str() == "start" {
