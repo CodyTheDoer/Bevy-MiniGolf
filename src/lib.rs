@@ -99,8 +99,6 @@ impl GLBStorageID {
     }
 }
 
-let 
-
 #[derive(Clone, Debug)]
 pub enum InteractableEntities {
     Ground,
