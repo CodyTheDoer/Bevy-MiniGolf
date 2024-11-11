@@ -55,7 +55,7 @@ fn main() {
         app.add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "Calculator Simulator".into(),
+                    title: "Minigolf".into(),
                     name: Some("bevy.app".into()),
                     resolution: (1280., 720.).into(),
                     resizable: true,
@@ -103,7 +103,6 @@ fn main() {
         .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
         .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
         .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
-        .add_systems(Update, query_scene_children.run_if(input_just_released(KeyCode::KeyQ)))
         .add_systems(Update, draw_cursor)
         .add_systems(Update, level_state_logic)
 
@@ -160,6 +159,51 @@ fn main() {
 
 
 
+// fn get_power(){    
+//     commands.spawn((
+//     Camera2dBundle {
+//         transform: Transform::from_xyz(0.0, 0.0, 0.0),
+//         camera: Camera {
+//             order: -2, // Render before the 3D scene
+//             ..default()
+//             },
+//         ..default()
+//     },
+//     CameraUiPower,
+// ));
+
+// // Create a screen-sized UI node as a container
+// commands.spawn(NodeBundle {
+//     style: Style {
+//         display: Display::Flex,
+//         align_items: AlignItems::Center,    // Center vertically within the container
+//         justify_content: JustifyContent::Center, // Center horizontally within the container
+//         position_type: PositionType::Absolute,
+//         // Set this node to occupy the entire screen
+//         width: Val::Percent(100.0),
+//         height: Val::Percent(100.0), 
+//         ..default()
+//     },
+//     ..default()
+// })
+// .with_children(|parent| {
+//     parent.spawn(TextBundle {
+//         text: Text {
+//             sections: vec![TextSection::new(
+//                 "Mini Golf",
+//                 fonts.fonts[0].clone(),
+//             )],
+//             ..default()
+//         },
+//         style: Style {
+//             position_type: PositionType::Absolute,
+//             top: Val::Percent(2.0), 
+//             ..default()
+//         },
+//         ..default()
+//     });
+// });
+// }
 
 
 fn collision_events_listener(
@@ -257,31 +301,6 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider)
                 .insert(RigidBody::Fixed)
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
-        }
-    }
-}
-
-use bevy::prelude::Visibility::Visible;
-
-fn query_scene_children(
-    mut query: Query<(Entity, &Children, &Transform, &Visibility)>,
-    name_query: Query<&Name>,
-) {
-    for (entity, children, transform, mut visible) in query.iter() {
-        for &child in children.iter() {
-            if let Ok(name) = name_query.get(child) {
-                visible = &Visible;
-                match name {
-                    green => {},
-                    cup => {},
-                    start => {
-                        info!("Child entity {:?}", child);
-                        info!("Name: {:?}", name.as_str());
-                        info!("Visible: {:?}", visible);
-                        info!("Transform: {:?}", transform);
-                    },
-                }
-            }
         }
     }
 }
