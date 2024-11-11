@@ -49,9 +49,9 @@ pub fn setup_ground(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Circle::new(2000.)).into(),
-            material: materials.add(Color::srgb(0.1, 0.0, 0.1)),
+            material: materials.add(Color::srgba(0.1, 0.0, 0.1, 1.0)),
             transform: Transform {
-                translation: Vec3::new(0.0, -0.65, 0.0),
+                translation: Vec3::new(0.0, -5.0, 0.0),
                 rotation: Quat::from_rotation_x(-2.0 * (std::f32::consts::PI / 4.0)), //4 = 45 degrees
                 ..default()
             },
@@ -59,11 +59,6 @@ pub fn setup_ground(
         },
         Ground,
     ));
-
-    op_index.add_ui_entity();
-
-    commands.spawn(Collider::cylinder(0.1, 2000.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, -0.65, 0.0)));
 
     op_index.add_ui_entity();
 }
@@ -242,32 +237,64 @@ pub fn gltf_handler_init_hole_n(
         let ball_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset("glb/basic_ball.glb"),
         );
+        let cup_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset("glb/basic_cup.glb"),
+        );
+        let start_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset("glb/basic_start.glb"),
+        );
+        let map_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset("glb/basic_level_1.glb"),
+        );
         let scene_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(glb_file.map),
         );
 
         if hole == 0 {
             let root_entity_ball = commands
-            .spawn(SceneBundle {
-                scene: ball_handle.clone(),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                ..default()
-            })
-            .insert(Interactable)
-            .insert(Name::new("AssetBall")) // Add a name to help with debugging
-            .id(); 
-        op_index.add_ui_entity();    
+                .spawn(SceneBundle {
+                    scene: ball_handle.clone(),
+                    transform: Transform::from_xyz(0.0, 10.0, 60.0),
+                    ..default()
+                })
+                .insert(Interactable)
+                .id();   
+            let root_entity_cup = commands
+                .spawn(SceneBundle {
+                    scene: cup_handle.clone(),
+                    transform: Transform::from_xyz(0.0, -2.30, -60.0),
+                    ..default()
+                })
+                .insert(Interactable)
+                .id();   
+            let root_entity_start = commands
+                .spawn(SceneBundle {
+                    scene: start_handle.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 60.0),
+                    ..default()
+                })
+                .insert(Interactable)
+                .id();  
+            let root_entity_map = commands
+                .spawn(SceneBundle {
+                    scene: map_handle.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    ..default()
+                })
+                .insert(Interactable)
+                .id();   
+        } else {
+            let root_entity = commands
+                .spawn(SceneBundle {
+                    scene: scene_handle.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    ..default()
+                })
+                .insert(Interactable)
+                .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
+                .id(); 
+            op_index.add_ui_entity();    
         }
-        let root_entity = commands
-            .spawn(SceneBundle {
-                scene: scene_handle.clone(),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                ..default()
-            })
-            .insert(Interactable)
-            .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
-            .id(); 
-        op_index.add_ui_entity();    
     } else {
         warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
     };

@@ -72,7 +72,7 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(EditorPlugin::default())
 
         // --- State Initialization --- //
@@ -155,7 +155,7 @@ fn main() {
 
 
 
-
+// hole 0: cup 0 -2.30 60
 
 pub fn add_physics_query_and_update_scene(
     mut commands: Commands,
@@ -164,8 +164,7 @@ pub fn add_physics_query_and_update_scene(
 ) {
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
-        // "LetterA" would be the name of the Letter object in Blender.
-        if name.to_string() == "ball" {
+        if name.as_str() == "ball" {
             let mesh = meshes.get(mesh_handle).unwrap();
             // Create the collider from the mesh.
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
@@ -173,8 +172,27 @@ pub fn add_physics_query_and_update_scene(
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Dynamic)
-                .insert(Transform::from_xyz(0.0, 5.0, 0.0));
+                .insert(RigidBody::Dynamic);
+        }
+        if name.as_str() == "green" {
+            let mesh = meshes.get(mesh_handle).unwrap();
+            // Create the collider from the mesh.
+            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // Attach collider to the entity of this same object.
+            commands
+                .entity(entity)
+                .insert(collider)
+                .insert(RigidBody::Fixed);
+        }
+        if name.as_str() == "start" {
+            let mesh = meshes.get(mesh_handle).unwrap();
+            // Create the collider from the mesh.
+            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // Attach collider to the entity of this same object.
+            commands
+                .entity(entity)
+                .insert(collider)
+                .insert(RigidBody::Fixed);
         }
     }
 }
