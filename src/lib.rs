@@ -132,7 +132,6 @@ pub enum LevelState {
     Hole16,
     Hole17,
     Hole18,
-    Physics,
 }
 
 #[derive(Clone, Resource)]

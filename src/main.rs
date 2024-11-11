@@ -76,7 +76,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(EditorPlugin::default())
+        // .add_plugins(EditorPlugin::default())
 
         // --- State Initialization --- //
         .insert_state(GameState::LoadingScreen)
@@ -148,7 +148,6 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
-        .add_systems(OnExit(LevelState::Physics), purge_glb_all)
         
         // --- Active Dev Targets --- //
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)));
@@ -173,25 +172,22 @@ pub fn add_physics_query_and_update_scene(
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            // Create the collider from the mesh.
-            // let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
             let collider = Collider::ball(1.0);
-            // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
-                .insert(Transform::from_xyz(0.0, 45.0, 45.0));
+                .insert(Transform::from_xyz(0.0, 5.0, -10.0));
         }
         if name.as_str() == "cup" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // let collider = Collider::cuboid(0.8, 0.5, 0.8);
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
-                // .insert(RigidBody::Fixed)
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
         if name.as_str() == "start" {
@@ -203,7 +199,6 @@ pub fn add_physics_query_and_update_scene(
                 // .insert(Transform::from_xyz(0.0, 0.0, 60.0))
                 .entity(entity)
                 .insert(collider)
-                // .insert(RigidBody::Fixed)
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
         if name.as_str() == "green" {
@@ -214,7 +209,6 @@ pub fn add_physics_query_and_update_scene(
             commands
                 .entity(entity)
                 .insert(collider)
-                // .insert(RigidBody::Fixed)
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
         if name.as_str() == "cannon" {

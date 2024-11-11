@@ -51,7 +51,7 @@ pub fn setup_ground(
             mesh: meshes.add(Circle::new(2000.)).into(),
             material: materials.add(Color::srgba(0.1, 0.0, 0.1, 1.0)),
             transform: Transform {
-                translation: Vec3::new(0.0, -10.0, 0.0),
+                translation: Vec3::new(0.0, -15.0, 0.0),
                 rotation: Quat::from_rotation_x(-2.0 * (std::f32::consts::PI / 4.0)), //4 = 45 degrees
                 ..default()
             },
@@ -172,11 +172,6 @@ pub fn level_state_update(
             next_game_state.set(LevelState::Hole18);
         },
         LevelState::Hole18 => {
-            gsh.current_level += 1;
-            info!("LevelState::HoleTutorial");
-            next_game_state.set(LevelState::Physics);
-        },
-        LevelState::Physics => {
             gsh.current_level = 0;
             info!("LevelState::HoleTutorial");
             next_game_state.set(LevelState::HoleTutorial);
@@ -208,9 +203,6 @@ pub fn level_state_logic(
         LevelState::Hole16 => {},
         LevelState::Hole17 => {},
         LevelState::Hole18 => {},
-        LevelState::Physics => {
-            print_ball_altitude(positions);
-        },
     }
 }
 
@@ -237,12 +229,6 @@ pub fn gltf_handler_init_hole_n(
         let ball_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset("glb/basic_ball.glb"),
         );
-        let cup_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/basic_cup.glb"),
-        );
-        let start_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/basic_start.glb"),
-        );
         let map_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset("glb/basic_level_1.glb"),
         );
@@ -251,7 +237,7 @@ pub fn gltf_handler_init_hole_n(
         );
 
         if hole == 0 {
-            let root_entity_ball = commands
+            let root_entity_ball = commands // Eventually will be attached to player.
                 .spawn(SceneBundle {
                     scene: ball_handle.clone(),
                     // transform: Transform::from_xyz(0.0, 10.0, 60.0),
@@ -266,23 +252,8 @@ pub fn gltf_handler_init_hole_n(
                     ..default()
                 })
                 .insert(Interactable)
-                .id();   
-            // let root_entity_cup = commands
-            //     .spawn(SceneBundle {
-            //         scene: cup_handle.clone(),
-            //         // transform: Transform::from_xyz(0.0, -2.30, -60.0),
-            //         ..default()
-            //     })
-            //     .insert(Interactable)
-            //     .id();   
-            // let root_entity_start = commands
-            //     .spawn(SceneBundle {
-            //         scene: start_handle.clone(),
-            //         // transform: Transform::from_xyz(0.0, 0.0, 60.0),
-            //         ..default()
-            //     })
-            //     .insert(Interactable)
-            //     .id();  
+                .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
+                .id();
         } else {
             let root_entity = commands
                 .spawn(SceneBundle {
