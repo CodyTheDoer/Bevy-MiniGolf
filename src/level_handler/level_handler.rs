@@ -51,7 +51,7 @@ pub fn setup_ground(
             mesh: meshes.add(Circle::new(2000.)).into(),
             material: materials.add(Color::srgba(0.1, 0.0, 0.1, 1.0)),
             transform: Transform {
-                translation: Vec3::new(0.0, -5.0, 0.0),
+                translation: Vec3::new(0.0, -10.0, 0.0),
                 rotation: Quat::from_rotation_x(-2.0 * (std::f32::consts::PI / 4.0)), //4 = 45 degrees
                 ..default()
             },
@@ -254,35 +254,35 @@ pub fn gltf_handler_init_hole_n(
             let root_entity_ball = commands
                 .spawn(SceneBundle {
                     scene: ball_handle.clone(),
-                    transform: Transform::from_xyz(0.0, 10.0, 60.0),
+                    // transform: Transform::from_xyz(0.0, 10.0, 60.0),
                     ..default()
                 })
                 .insert(Interactable)
                 .id();   
-            let root_entity_cup = commands
-                .spawn(SceneBundle {
-                    scene: cup_handle.clone(),
-                    transform: Transform::from_xyz(0.0, -2.30, -60.0),
-                    ..default()
-                })
-                .insert(Interactable)
-                .id();   
-            let root_entity_start = commands
-                .spawn(SceneBundle {
-                    scene: start_handle.clone(),
-                    transform: Transform::from_xyz(0.0, 0.0, 60.0),
-                    ..default()
-                })
-                .insert(Interactable)
-                .id();  
             let root_entity_map = commands
                 .spawn(SceneBundle {
                     scene: map_handle.clone(),
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    // transform: Transform::from_xyz(0.0, 0.0, 0.0),
                     ..default()
                 })
                 .insert(Interactable)
                 .id();   
+            // let root_entity_cup = commands
+            //     .spawn(SceneBundle {
+            //         scene: cup_handle.clone(),
+            //         // transform: Transform::from_xyz(0.0, -2.30, -60.0),
+            //         ..default()
+            //     })
+            //     .insert(Interactable)
+            //     .id();   
+            // let root_entity_start = commands
+            //     .spawn(SceneBundle {
+            //         scene: start_handle.clone(),
+            //         // transform: Transform::from_xyz(0.0, 0.0, 60.0),
+            //         ..default()
+            //     })
+            //     .insert(Interactable)
+            //     .id();  
         } else {
             let root_entity = commands
                 .spawn(SceneBundle {

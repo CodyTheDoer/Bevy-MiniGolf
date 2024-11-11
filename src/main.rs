@@ -26,8 +26,11 @@ use minigolf::{
 };
 
 // --- User Interface Import --- //
-use minigolf::user_interface::camera_world::
-    setup_3d_camera;
+use minigolf::user_interface::camera_world::{
+    setup_3d_camera,
+    pan_orbit_camera, 
+};
+use minigolf::user_interface::camera_world::PanOrbitState;
 use minigolf::user_interface::user_interface::{
     game_state_update, 
     fire_ray, 
@@ -72,7 +75,7 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(EditorPlugin::default())
 
         // --- State Initialization --- //
@@ -94,11 +97,13 @@ fn main() {
         .add_systems(Startup, setup_3d_camera)
 
         // --- Update Systems Initialization --- //
+        .add_systems(Update, pan_orbit_camera.run_if(any_with_component::<PanOrbitState>))
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
         .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
         .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
+        .add_systems(Update, query_scene_children.run_if(input_just_released(KeyCode::KeyQ)))
         .add_systems(Update, draw_cursor)
         .add_systems(Update, level_state_logic)
 
@@ -155,7 +160,9 @@ fn main() {
 
 
 
-// hole 0: cup 0 -2.30 60
+
+
+
 
 pub fn add_physics_query_and_update_scene(
     mut commands: Commands,
@@ -165,51 +172,85 @@ pub fn add_physics_query_and_update_scene(
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" {
-            let mesh = meshes.get(mesh_handle).unwrap();
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
-            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            let collider = Collider::ball(1.0);
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Dynamic);
+                .insert(RigidBody::Dynamic)
+                .insert(Transform::from_xyz(0.0, 45.0, 45.0));
         }
-        if name.as_str() == "green" {
-            let mesh = meshes.get(mesh_handle).unwrap();
+        if name.as_str() == "cup" {
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Fixed);
+                // .insert(RigidBody::Fixed)
+                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
         if name.as_str() == "start" {
-            let mesh = meshes.get(mesh_handle).unwrap();
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+            // Create the collider from the mesh.
+            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // Attach collider to the entity of this same object.
+            commands
+                // .insert(Transform::from_xyz(0.0, 0.0, 60.0))
+                .entity(entity)
+                .insert(collider)
+                // .insert(RigidBody::Fixed)
+                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+        }
+        if name.as_str() == "green" {
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Fixed);
+                // .insert(RigidBody::Fixed)
+                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+        }
+        if name.as_str() == "cannon" {
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+            // Create the collider from the mesh.
+            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // Attach collider to the entity of this same object.
+            commands
+                .entity(entity)
+                .insert(collider)
+                .insert(RigidBody::Fixed)
+                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
     }
 }
 
+use bevy::prelude::Visibility::Visible;
+
 fn query_scene_children(
-    query: Query<(Entity, &Children)>,
+    mut query: Query<(Entity, &Children, &Transform, &Visibility)>,
     name_query: Query<&Name>,
 ) {
-    for (entity, children) in query.iter() {
+    for (entity, children, transform, mut visible) in query.iter() {
         for &child in children.iter() {
             if let Ok(name) = name_query.get(child) {
+                visible = &Visible;
                 match name {
                     green => {},
                     cup => {},
-                    start => {},
+                    start => {
+                        info!("Child entity {:?}", child);
+                        info!("Name: {:?}", name.as_str());
+                        info!("Visible: {:?}", visible);
+                        info!("Transform: {:?}", transform);
+                    },
                 }
-                info!("Child entity {:?} has name: {}", child, name.as_str());
             }
         }
     }
