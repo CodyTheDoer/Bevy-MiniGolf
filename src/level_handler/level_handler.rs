@@ -1,7 +1,9 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::{Collider, RigidBody};
 
 use std::collections::HashMap;
 
+use crate::print_ball_altitude;
 use crate::{
     GameStateHandler,
     GLBStorageID,
@@ -57,6 +59,12 @@ pub fn setup_ground(
         },
         Ground,
     ));
+
+    op_index.add_ui_entity();
+
+    commands.spawn(Collider::cylinder(0.1, 2000.0))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, -0.65, 0.0)));
+
     op_index.add_ui_entity();
 }
 
@@ -169,6 +177,11 @@ pub fn level_state_update(
             next_game_state.set(LevelState::Hole18);
         },
         LevelState::Hole18 => {
+            gsh.current_level += 1;
+            info!("LevelState::HoleTutorial");
+            next_game_state.set(LevelState::Physics);
+        },
+        LevelState::Physics => {
             gsh.current_level = 0;
             info!("LevelState::HoleTutorial");
             next_game_state.set(LevelState::HoleTutorial);
@@ -178,6 +191,7 @@ pub fn level_state_update(
 
 pub fn level_state_logic(
     level_state: Res<State<LevelState>>,
+    mut positions: Query<&mut Transform, With<RigidBody>>,
 ) {
     match level_state.get() {
         LevelState::HoleTutorial => {},
@@ -199,6 +213,9 @@ pub fn level_state_logic(
         LevelState::Hole16 => {},
         LevelState::Hole17 => {},
         LevelState::Hole18 => {},
+        LevelState::Physics => {
+            print_ball_altitude(positions);
+        },
     }
 }
 
@@ -210,28 +227,46 @@ pub fn init_hole_n(
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameStateHandler>,
 ) {
-    info!("init_hole_n: Init Hole {}", gsh.current_level);
+    info!("Init Hole: Hole {}", gsh.current_level);
     gltf_handler_init_hole_n(asset_server, commands, op_index.into(), glb_storage, gsh.current_level);
 }
-
 
 pub fn gltf_handler_init_hole_n(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut op_index: ResMut<OpIndex>,
-    glb_storage: Res<GLBStorageID>,
+    glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     hole: i32,
 ) {
     if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
-        let info_dump = glb_file.clone();
+        let ball_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset("glb/basic_ball.glb"),
+        );
+        let scene_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset(glb_file.map),
+        );
 
-        commands.spawn(SceneBundle {
-            scene: asset_server
-                .load(GltfAssetLabel::Scene(0).from_asset(info_dump)),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            ..default()
-        })
-        .insert(Interactable); 
+        if hole == 0 {
+            let root_entity_ball = commands
+            .spawn(SceneBundle {
+                scene: ball_handle.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            })
+            .insert(Interactable)
+            .insert(Name::new("AssetBall")) // Add a name to help with debugging
+            .id(); 
+        op_index.add_ui_entity();    
+        }
+        let root_entity = commands
+            .spawn(SceneBundle {
+                scene: scene_handle.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            })
+            .insert(Interactable)
+            .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
+            .id(); 
         op_index.add_ui_entity();    
     } else {
         warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
@@ -272,8 +307,9 @@ pub fn purge_glb_all_prep(
     glb_storage: Res<GLBStorageID>,
 ) {
     let targets = glb_storage.clone();
+    // info!("{:?}", targets);
     for asset_to_despawn in targets.glb.iter() {
-        purge.glb.push(asset_to_despawn.to_string());
+        purge.glb.push(asset_to_despawn.map.to_string());
     }
 }
 

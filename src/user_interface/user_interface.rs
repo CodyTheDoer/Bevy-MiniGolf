@@ -217,9 +217,10 @@ pub fn release_ray(
     // Loop through the raycast hits and detect if we hit an interactable entity
     for (entity, _intersection) in hits {
         if Some(interactable_query.get(*entity)).is_some() {
+            info!("Entity: {:?}", entity);
             let entity_index = entity.index();
             if let Some(entity) = InteractableEntities::from_index(&op_index, entity_index) {
-                info!("Entity: {:?}", entity);
+                // info!("Entity: {:?}", entity);
                 match entity {
                     InteractableEntities::Ground => {
                         info!("Release: Ground");

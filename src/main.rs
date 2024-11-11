@@ -1,21 +1,33 @@
+// --- Internal Bevy Plugins --- //
 use bevy::{prelude::*,
     input::common_conditions::*,
     window::{PresentMode, WindowTheme},
 };
 
-// use bevy_editor_pls::prelude::*;
+// --- External Plugins --- //
+use bevy_rapier3d::prelude::*;
+use bevy_editor_pls::prelude::*;
 
+// --- States --- //
+use minigolf::{ 
+    GameState, 
+    LevelState, 
+    MapSetState,
+};
+
+// --- Resources --- //
 use minigolf::{
     Fonts, 
-    GameState, 
+    Interactable,
     GameStateHandler, 
     GLBPurgeID, 
     GLBStorageID, 
-    LevelState, 
-    MapSetState,
     OpIndex,
 };
-use minigolf::user_interface::camera_world::setup_3d_camera;
+
+// --- User Interface Import --- //
+use minigolf::user_interface::camera_world::
+    setup_3d_camera;
 use minigolf::user_interface::user_interface::{
     game_state_update, 
     fire_ray, 
@@ -23,8 +35,11 @@ use minigolf::user_interface::user_interface::{
     draw_cursor, 
     setup_ui
 };
+
+// --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
     init_hole_n, 
+    level_state_logic, 
     level_state_update, 
     map_set_state_update, 
     setup_ground, 
@@ -54,26 +69,40 @@ fn main() {
                 ..default()
             }),
         ))
-        // .add_plugins(EditorPlugin::default())
+
+        // --- Additional Plugins --- //
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(EditorPlugin::default())
+
+        // --- State Initialization --- //
+        .insert_state(GameState::LoadingScreen)
         .insert_state(LevelState::HoleTutorial)
         .insert_state(MapSetState::Tutorial)
-        .insert_state(GameState::LoadingScreen)
+
+        // --- Resource Initialization --- //
         .insert_resource(Fonts::new())
-        .insert_resource(OpIndex::new())
+        .insert_resource(GameStateHandler::new())
         .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
-        .insert_resource(GameStateHandler::new())
+        .insert_resource(OpIndex::new())
+
+        // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
         .add_systems(Startup, setup_3d_camera)
-        .add_systems(Update, draw_cursor)
-        .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
+
+        // --- Update Systems Initialization --- //
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
+        .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
-        .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
         .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
-        // .add_systems(OnEnter(MapSetState::Tutorial), init_hole_n)
+        .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
+        .add_systems(Update, draw_cursor)
+        .add_systems(Update, level_state_logic)
+
+        // --- OnEnter State Reaction Initialization --- //
         .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
@@ -93,6 +122,8 @@ fn main() {
         .add_systems(OnEnter(LevelState::Hole16), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole17), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole18), init_hole_n)
+
+        // --- OnExit State Reaction Initialization --- //
         .add_systems(OnExit(LevelState::HoleTutorial), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole1), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole2), purge_glb_all)
@@ -111,6 +142,57 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
+        .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
+        .add_systems(OnExit(LevelState::Physics), purge_glb_all)
+        
+        // --- Active Dev Targets --- //
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)));
+
         app.run();
+}
+
+
+
+
+
+
+
+pub fn add_physics_query_and_update_scene(
+    mut commands: Commands,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    // iterate over all meshes in the scene and match them by their name.
+    for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
+        // "LetterA" would be the name of the Letter object in Blender.
+        if name.to_string() == "ball" {
+            let mesh = meshes.get(mesh_handle).unwrap();
+            // Create the collider from the mesh.
+            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // Attach collider to the entity of this same object.
+            commands
+                .entity(entity)
+                .insert(collider)
+                .insert(RigidBody::Dynamic)
+                .insert(Transform::from_xyz(0.0, 5.0, 0.0));
+        }
+    }
+}
+
+fn query_scene_children(
+    query: Query<(Entity, &Children)>,
+    name_query: Query<&Name>,
+) {
+    for (entity, children) in query.iter() {
+        for &child in children.iter() {
+            if let Ok(name) = name_query.get(child) {
+                match name {
+                    green => {},
+                    cup => {},
+                    start => {},
+                }
+                info!("Child entity {:?} has name: {}", child, name.as_str());
+            }
+        }
+    }
 }
