@@ -149,7 +149,12 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
         
         // --- Active Dev Targets --- //
+        .insert_state(ArrowState::Idle)
+        .insert_resource(Bonk::new())
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
+        // .add_systems(Update, toggle_arrow_state.after(add_physics_query_and_update_scene))
+        // .add_systems(Update, bonk_gizmo.run_if(input_just_released(KeyCode::KeyB)))
+        .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
         .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)))
         .add_systems(Update, collision_events_listener);
 
@@ -159,52 +164,102 @@ fn main() {
 
 
 
-// fn get_power(){    
-//     commands.spawn((
-//     Camera2dBundle {
-//         transform: Transform::from_xyz(0.0, 0.0, 0.0),
-//         camera: Camera {
-//             order: -2, // Render before the 3D scene
-//             ..default()
-//             },
-//         ..default()
-//     },
-//     CameraUiPower,
-// ));
 
-// // Create a screen-sized UI node as a container
-// commands.spawn(NodeBundle {
-//     style: Style {
-//         display: Display::Flex,
-//         align_items: AlignItems::Center,    // Center vertically within the container
-//         justify_content: JustifyContent::Center, // Center horizontally within the container
-//         position_type: PositionType::Absolute,
-//         // Set this node to occupy the entire screen
-//         width: Val::Percent(100.0),
-//         height: Val::Percent(100.0), 
-//         ..default()
-//     },
-//     ..default()
-// })
-// .with_children(|parent| {
-//     parent.spawn(TextBundle {
-//         text: Text {
-//             sections: vec![TextSection::new(
-//                 "Mini Golf",
-//                 fonts.fonts[0].clone(),
-//             )],
-//             ..default()
-//         },
-//         style: Style {
-//             position_type: PositionType::Absolute,
-//             top: Val::Percent(2.0), 
-//             ..default()
-//         },
-//         ..default()
-//     });
-// });
-// }
 
+use bevy_mod_raycast::prelude::*;
+use minigolf::CameraWorld;
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+enum ArrowState {
+    #[default]
+    Idle,
+    DrawingArrow,
+}
+
+fn toggle_arrow_state(
+    mut state: ResMut<State<ArrowState>>,
+    mut next_state: ResMut<NextState<ArrowState>>,
+) {
+    match state.get() {
+        ArrowState::DrawingArrow => {
+            info!("Entering ArrowState::Idle");
+            next_state.set(ArrowState::Idle);
+        },
+        ArrowState::Idle => {
+            info!("Entering ArrowState::DrawingArrow");
+            next_state.set(ArrowState::DrawingArrow);
+        },
+    }
+}
+
+#[derive(Clone, Debug, Resource)] // could tie into player struct once assembled
+struct Bonk {
+    direction: Vec3,
+}
+
+impl Bonk {
+    fn new() -> Self {
+        let direction: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        Bonk {
+            direction,
+        }
+    }
+
+    fn update_direction(&mut self, direction: &Vec3) {
+        self.direction = *direction;
+    }
+}
+
+fn bonk_gizmo (
+    mut gizmos: Gizmos,
+    mut raycast: Raycast,
+    mut bonk: ResMut<Bonk>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>,
+    scene_meshes: Query<(&Name, &Transform)>,
+    windows: Query<&Window>,
+) {
+    let (camera, camera_transform) = match camera_query.get_single() {
+        Ok(result) => result,
+        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
+    };
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+
+    // Calculate a ray pointing from the camera into the world based on the cursor's position.
+    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        return;
+    };
+
+    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
+
+    if let Some((_, intersection)) = hits.first() {
+        // Get the intersection point.
+        let point = intersection.position();
+        for (name, transform) in scene_meshes.iter() {
+            if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+                info!("Name: {:?}", &name);
+                info!("Transform: {:?}", &transform);
+                // Golf ball's position.
+                let ball_position = transform.translation;
+
+                // Calculate the direction from the ball to the intersection point.
+                let mut direction = (point - ball_position).normalize() * 10.0; // Scale to desired length.
+                direction.y = 0.0;
+                bonk.update_direction(&direction);
+                // Draw an arrow from the ball in the direction toward the cursor.
+                gizmos.arrow(
+                    ball_position,            // Start position of the arrow (at the ball)
+                    ball_position - direction, // End position, 10 units toward the cursor
+                    Color::srgb(0.0, 1.0, 0.0),             // Color of the arrow
+                );
+
+                info!("Arrow drawn from ball at {:?} towards {:?}", ball_position, point);
+            }
+        }
+    }
+}
 
 fn collision_events_listener(
     mut collision_events: EventReader<CollisionEvent>,
@@ -221,18 +276,24 @@ fn collision_events_listener(
     }
 }
 
-fn bonk(mut impulses: Query<&mut ExternalImpulse>) {
+fn bonk(
+    mut impulses: Query<&mut ExternalImpulse>,
+    bonk: Res<Bonk>,
+) {
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
-        impulse.impulse = Vec3::new(0.0, 0.0, 20.0);
+        // impulse.impulse = Vec3::new(0.0, 0.0, 20.0);
+        impulse.impulse = -bonk.direction * 5.0;
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
     }
 }
 
 pub fn add_physics_query_and_update_scene(
+    mut state: ResMut<State<ArrowState>>,
+    mut next_state: ResMut<NextState<ArrowState>>,
     mut commands: Commands,
-    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
 ) {
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
@@ -303,4 +364,5 @@ pub fn add_physics_query_and_update_scene(
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
     }
+     toggle_arrow_state(state, next_state);
 }

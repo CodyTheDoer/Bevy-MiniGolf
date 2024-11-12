@@ -100,18 +100,14 @@ pub fn setup_ui(
 pub fn draw_cursor(
     mut raycast: Raycast,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    ground_query: Query<&GlobalTransform, With<Ground>>,
     windows: Query<&Window>,
     mut gizmos: Gizmos,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
-        Err(_) => {
-            // warn!("No CameraWorld found or multiple CameraWorlds detected.");
-            return;
-        },
+        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
     };
-
+    
     let Some(cursor_position) = windows.single().cursor_position() else {
         return;
     };
@@ -130,18 +126,6 @@ pub fn draw_cursor(
         // Draw a circle at the intersection point using Gizmos (just above the surface).
         let up = Dir3::Y; 
         gizmos.circle(point + up * 0.05, up, 0.2, Color::WHITE);
-    } else {
-        let ground = ground_query.single();
-        let Some(distance) =
-            ray.intersect_plane(ground.translation(), InfinitePlane3d::new(ground.up()))
-        else {
-            return;
-        };
-
-        let point = ray.get_point(distance);
-
-        // Draw a circle just above the ground plane at that position.
-        gizmos.circle(point + ground.up() * 0.01, ground.up(), 0.2, Color::WHITE);
     }
 }
 
