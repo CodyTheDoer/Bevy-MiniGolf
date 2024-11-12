@@ -289,8 +289,8 @@ fn bonk(
 }
 
 pub fn add_physics_query_and_update_scene(
-    mut state: ResMut<State<ArrowState>>,
-    mut next_state: ResMut<NextState<ArrowState>>,
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
@@ -364,5 +364,10 @@ pub fn add_physics_query_and_update_scene(
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
     }
-     toggle_arrow_state(state, next_state);
+    match arrow_state.get() {
+        ArrowState::Idle => {
+            toggle_arrow_state(arrow_state, next_arrow_state);
+        },
+        _ => {},
+    }
 }
