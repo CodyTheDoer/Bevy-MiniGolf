@@ -369,10 +369,6 @@ fn mid_bonk( // Determines bonks power by measuring the difference between origi
 
 
 
-
-
-
-
 fn check_sleeping_entities(
     sleeping_query: Query<(Entity, &Sleeping)>
 ) {
@@ -380,8 +376,6 @@ fn check_sleeping_entities(
             println!("Entity {:?} is sleeping", entity);
     }
 }
-
-
 
 fn end_bonk( // Fires bonk 
     mut arrow_state: ResMut<State<ArrowState>>,
