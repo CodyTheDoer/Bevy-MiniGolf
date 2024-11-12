@@ -155,10 +155,12 @@ fn main() {
         // .add_systems(Update, toggle_arrow_state.after(add_physics_query_and_update_scene))
         // .add_systems(Update, bonk_gizmo.run_if(input_just_released(KeyCode::KeyB)))
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
-        .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)))
+        // .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)))
         .add_systems(Update, collision_events_listener)
+        .add_systems(Update, check_sleeping_entities)
         .add_systems(Update, start_bonk.run_if(input_just_pressed(MouseButton::Middle)))
-        .add_systems(Update, end_bonk.run_if(input_pressed(MouseButton::Middle)));
+        .add_systems(Update, mid_bonk.run_if(input_pressed(MouseButton::Middle)))
+        .add_systems(Update, end_bonk.run_if(input_just_released(MouseButton::Middle)));
 
         app.run();
 }
@@ -179,16 +181,19 @@ enum ArrowState {
 }
 
 fn toggle_arrow_state(
+    mut gsh: ResMut<GameStateHandler>,
     mut state: ResMut<State<ArrowState>>,
     mut next_state: ResMut<NextState<ArrowState>>,
 ) {
     match state.get() {
         ArrowState::DrawingArrow => {
             info!("Entering ArrowState::Idle");
+            gsh.set_arrow_state_false();
             next_state.set(ArrowState::Idle);
         },
         ArrowState::Idle => {
             info!("Entering ArrowState::DrawingArrow");
+            gsh.set_arrow_state_true();
             next_state.set(ArrowState::DrawingArrow);
         },
     }
@@ -285,9 +290,15 @@ impl Bonk {
 
 
 
-fn start_bonk(
-    mut bonk: ResMut<Bonk>,
+
+
+
+fn start_bonk( // set's bonk start xy
     windows: Query<&Window>,
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut bonk: ResMut<Bonk>,
+    mut gsh: ResMut<GameStateHandler>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
 ) {
     info!("Start bonk");
     let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
@@ -296,17 +307,23 @@ fn start_bonk(
     };
     cursor_xy.set(position.x, position.y);
     bonk.update_cursor_origin_position(cursor_xy);
-    info!("bonk updated: pressed: {:?}", bonk.cursor_origin_position);
+    // info!("bonk updated: pressed: {:?}", bonk.cursor_origin_position);
+    match arrow_state.get() {
+        ArrowState::Idle => {
+            toggle_arrow_state(gsh, arrow_state, next_arrow_state);
+        },
+        _ => {},
+    }
 }
 
 
 use bevy::window::WindowResolution;
 
-fn end_bonk(
+fn mid_bonk( // Determines bonks power by measuring the difference between origin and current mouse xy
     mut bonk: ResMut<Bonk>,
     windows: Query<&Window>,
 ) {
-    info!("End bonk");
+    // info!("End bonk");
     let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
     let Some(position) = windows.single().cursor_position() else {
         return;
@@ -315,18 +332,20 @@ fn end_bonk(
     let window_height: f32 = windows.single().height();
     cursor_xy.set(position.x, position.y);
     bonk.update_cursor_bonk_position(cursor_xy);
-    info!("bonk updated: pressed: {:?}", bonk.cursor_bonk_position);
+    // info!("bonk updated: pressed: {:?}", bonk.cursor_bonk_position);
 
     // find length of pixels from origin to release
     let difference_x = bonk.cursor_origin_position.x - bonk.cursor_bonk_position.x;
     let difference_y = bonk.cursor_origin_position.y - bonk.cursor_bonk_position.y;
 
-    // find percentage moved across screen to determine power of bonk in x & y
-    let dif_x_percentage = difference_x / window_width;
-    let dif_y_percentage = difference_y / window_height;
+    // Compute Euclidean distance between origin and current cursor position
+    let distance = (difference_x.powi(2) + difference_y.powi(2)).sqrt();
 
-    // Determin total bonk power normalized across both height and width 
-    let mut bonk_power = (dif_x_percentage + dif_y_percentage) / 2.0;
+    // Calculate the maximum possible distance (screen diagonal)
+    let max_distance = (window_width.powi(2) + window_height.powi(2)).sqrt();
+
+    // Normalize power based on distance ratio
+    let mut bonk_power = distance / max_distance;
     
     // adjust bonk power to always deliver a positive value
     if bonk_power < 0.0 {
@@ -341,14 +360,45 @@ fn end_bonk(
         bonk_power *= 4.0;
     };
 
-    info!("bonk_power: {:?}", bonk_power);
     bonk.power = bonk_power;
     bonk.set_cursor_updated();
-    info!(
-        "bool check: {} {}",
-        bonk.cursor_origin_position_updated,
-        bonk.cursor_bonk_position_updated,
-    );
+}
+
+
+
+
+
+
+
+
+
+
+fn check_sleeping_entities(
+    sleeping_query: Query<(Entity, &Sleeping)>
+) {
+    for (entity, sleeping) in sleeping_query.iter() {
+            println!("Entity {:?} is sleeping", entity);
+    }
+}
+
+
+
+fn end_bonk( // Fires bonk 
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut gsh: ResMut<GameStateHandler>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
+    mut impulses: Query<&mut ExternalImpulse>,
+    bonk_res: Res<Bonk>,
+    sleeping_query: Query<(Entity, &Sleeping), With<RigidBody>>,
+) {
+    // let mut asleep = false;
+    for (entity, _) in sleeping_query.iter() {
+        info!("{:?}", entity);
+    }
+    if gsh.get_arrow_state() {
+        toggle_arrow_state(gsh, arrow_state, next_arrow_state);
+    }
+    bonk(impulses, bonk_res);
 }
 
 fn bonk(
@@ -358,60 +408,44 @@ fn bonk(
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
         // impulse.impulse = Vec3::new(0.0, 0.0, 20.0);
-        impulse.impulse = -bonk.direction * (5.0 * bonk.power);
+        info!("bonk.power: {:?}", bonk.power);
+        impulse.impulse = bonk.direction * (15.0 * bonk.power);
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
     }
 }
 
-fn bonk_gizmo (
+
+
+fn bonk_gizmo(
     mut gizmos: Gizmos,
     mut raycast: Raycast,
     mut bonk: ResMut<Bonk>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>,
     scene_meshes: Query<(&Name, &Transform)>,
     windows: Query<&Window>,
 ) {
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
-    };
-
     let Some(cursor_position) = windows.single().cursor_position() else {
         return;
     };
+    for (name, transform) in scene_meshes.iter() {
+        if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+            let ball_position = transform.translation;
+            
+            // Calculate the direction from the ball to the intersection point.
+            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
+            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
+            
+            // Localize arrow to a flat xz plane 
+            let direction_xyz: Vec3 = Vec3::new(direction_x, 0.0, direction_y).normalize() * (24.0 * bonk.power);
+            bonk.update_direction(&direction_xyz);
 
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    if let Some((_, intersection)) = hits.first() {
-        // Get the intersection point.
-        let point = intersection.position();
-        for (name, transform) in scene_meshes.iter() {
-            if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
-                // info!("Name: {:?}", &name);
-                // info!("Transform: {:?}", &transform);
-                // Golf ball's position.
-                let ball_position = transform.translation;
-
-                // Calculate the direction from the ball to the intersection point.
-                let mut direction = (point - ball_position).normalize() * (12.0 * bonk.power); // Scale to desired length.
-                direction.y = 0.0;
-                bonk.update_direction(&direction);
-                // Draw an arrow from the ball in the direction toward the cursor.
-                gizmos.arrow(
-                    ball_position,            // Start position of the arrow (at the ball)
-                    ball_position - direction, // End position, 10 units toward the cursor
-                    Color::srgb(0.0, 1.0, 0.0),             // Color of the arrow
-                );
-
-                // info!("Arrow drawn from ball at {:?} towards {:?}", ball_position, point);
-            }
+            // // Draw an arrow from the ball in the direction toward the cursor.
+            gizmos.arrow(
+                ball_position,            // Start position of the arrow (at the ball)
+                ball_position + direction_xyz, // End position, 12 units away from the cursor
+                Color::srgb(0.0, 1.0, 0.0),             // Color of the arrow
+            );
         }
-    }
+    } 
 }
 
 fn collision_events_listener(
@@ -428,6 +462,7 @@ fn collision_events_listener(
         }
     }
 }
+
 pub fn add_physics_query_and_update_scene(
     mut arrow_state: ResMut<State<ArrowState>>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
@@ -445,7 +480,8 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
                 .insert(ExternalImpulse::default())
-                .insert(GravityScale(4.0))
+                .insert(ColliderMassProperties::Density(10.0))
+                .insert(GravityScale(10.0))
                 .insert(Transform::from_xyz(0.0, 5.0, -20.0));
         }
         if name.as_str() == "cup" {
@@ -503,11 +539,5 @@ pub fn add_physics_query_and_update_scene(
                 .insert(RigidBody::Fixed)
                 .insert(Transform::from_xyz(0.0, 0.0, 0.0));
         }
-    }
-    match arrow_state.get() {
-        ArrowState::Idle => {
-            toggle_arrow_state(arrow_state, next_arrow_state);
-        },
-        _ => {},
     }
 }

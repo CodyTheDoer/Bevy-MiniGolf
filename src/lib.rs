@@ -206,16 +206,31 @@ pub enum GameState {
 pub struct GameStateHandler {
     current_level: i32,
     maps_index: i32,
+    arrow_state: bool,
 }
 
 impl GameStateHandler {
     pub fn new() -> Self {
         let current_level = 0;
         let maps_index = 0;
+        let arrow_state = false;
         GameStateHandler {
             current_level,
             maps_index,
+            arrow_state,
         }
+    }
+
+    pub fn get_arrow_state (&self) -> bool {
+        self.arrow_state
+    }
+
+    pub fn set_arrow_state_true (&mut self) {
+        self.arrow_state = true;
+    }
+
+    pub fn set_arrow_state_false (&mut self) {
+        self.arrow_state = false;
     }
 }
 
