@@ -44,6 +44,95 @@ impl OpIndex {
     }
 }
 
+// --- Physics Handler --- //
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum ArrowState {
+    #[default]
+    Idle,
+    DrawingArrow,
+}
+
+#[derive(Clone, Debug)] // could tie into player struct once assembled
+pub struct BonkMouseXY {
+    pub x: f32,
+    pub y: f32, 
+}
+
+impl BonkMouseXY {
+    pub fn new() -> Self {
+        let x: f32 = 0.0;
+        let y: f32 = 0.0;
+        BonkMouseXY {
+            x,
+            y,
+        }
+    }
+    
+    pub fn set(&mut self, x: f32, y: f32) {
+        self.x = x;
+        self.y = y;
+    }
+}
+
+#[derive(Clone, Debug, Resource)] // could tie into physics/player struct once assembled
+pub struct BonkHandler {
+    pub direction: Vec3,
+    pub power: f32,
+    pub cursor_origin_position: BonkMouseXY,
+    pub cursor_origin_position_updated: bool,
+    pub cursor_bonk_position: BonkMouseXY,
+    pub cursor_bonk_position_updated: bool,
+}
+
+impl BonkHandler {
+    pub fn new() -> Self {
+        let direction: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        let power: f32 = 0.0;
+        let cursor_origin_position: BonkMouseXY = BonkMouseXY::new();
+        let cursor_origin_position_updated: bool = false;
+        let cursor_bonk_position: BonkMouseXY = BonkMouseXY::new();
+        let cursor_bonk_position_updated: bool = false;
+        BonkHandler {
+            direction,
+            power,
+            cursor_origin_position,
+            cursor_origin_position_updated,
+            cursor_bonk_position,
+            cursor_bonk_position_updated,
+        }
+    }
+
+    pub fn update_direction(&mut self, direction: &Vec3) {
+        self.direction = *direction;
+    }
+
+    pub fn update_power(&mut self, power: f32) {
+        self.power = power;
+    }
+
+    pub fn update_cursor_origin_position(
+        &mut self, 
+        bonk_coords: BonkMouseXY
+    ) {
+        self.cursor_origin_position = bonk_coords;
+        self.cursor_origin_position_updated = true;
+    }
+
+    pub fn update_cursor_bonk_position(
+        &mut self, 
+        bonk_coords: BonkMouseXY
+    ) {
+        self.cursor_bonk_position = bonk_coords;
+        self.cursor_bonk_position_updated = true;
+    }
+
+    pub fn set_cursor_updated(&mut self) {
+        self.cursor_origin_position_updated = false;
+        self.cursor_bonk_position_updated = false;
+    }
+}
+
 // --- Level Handler --- //
 
 #[derive(Component)]
@@ -148,16 +237,6 @@ impl GLBPurgeID {
     }
 }
 
-// --- User Interface --> CameraUI --- //
-
-#[derive(Asset, Component, TypePath)]
-pub struct CameraUi;
-
-// --- User Interface --> CameraWorld --- //
-
-#[derive(Asset, Component, TypePath)]
-pub struct CameraWorld;
-
 // --- User Interface --- //
 
 pub struct UserInterface {}
@@ -178,16 +257,6 @@ pub enum InfoCall {
     Call4,
     Call5,
     Call6,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum MapSetState {
-    #[default]
-    Tutorial,
-    WholeCorse,
-    FrontNine,
-    BackNine,
-    SelectAHole,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -234,6 +303,16 @@ impl GameStateHandler {
     }
 }
 
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum MapSetState {
+    #[default]
+    Tutorial,
+    WholeCorse,
+    FrontNine,
+    BackNine,
+    SelectAHole,
+}
+
 
 // --- Rapier Integration --- //
 pub fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
@@ -243,3 +322,13 @@ pub fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>
         println!("Ball altitude: {}", transform.translation.y);
     }
 }
+
+// --- User Interface --> CameraUI --- //
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraUi;
+
+// --- User Interface --> CameraWorld --- //
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraWorld;

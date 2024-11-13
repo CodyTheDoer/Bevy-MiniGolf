@@ -1,9 +1,8 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::{Collider, RigidBody};
+use bevy_rapier3d::prelude::RigidBody;
 
 use std::collections::HashMap;
 
-use crate::print_ball_altitude;
 use crate::{
     GameStateHandler,
     GLBStorageID,
