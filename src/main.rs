@@ -416,15 +416,6 @@ fn mid_bonk( // Determines bonks power by measuring the difference between origi
     bonk.set_cursor_updated();
 }
 
-
-// fn cam_query(
-//     camera_query: Query<(&Camera, &Transform), With<CameraWorld>>, // Only query for the CameraWorld    
-// ) {
-//     for (_, transform) in camera_query.iter() {
-//         info!("transform: {:?}", transform.rotation);
-//     }
-// }
-
 fn end_bonk( // Fires bonk 
     mut arrow_state: ResMut<State<ArrowState>>,
     mut gsh: ResMut<GameStateHandler>,
