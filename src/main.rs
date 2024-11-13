@@ -155,9 +155,8 @@ fn main() {
         // .add_systems(Update, toggle_arrow_state.after(add_physics_query_and_update_scene))
         // .add_systems(Update, bonk_gizmo.run_if(input_just_released(KeyCode::KeyB)))
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
-        // .add_systems(Update, bonk.run_if(input_just_released(KeyCode::Space)))
+        // .add_systems(Update, cam_query)//.run_if(input_just_released(KeyCode::Space)))
         .add_systems(Update, collision_events_listener)
-        .add_systems(Update, check_sleeping_entities)
         .add_systems(Update, start_bonk.run_if(input_just_pressed(MouseButton::Middle)))
         .add_systems(Update, mid_bonk.run_if(input_pressed(MouseButton::Middle)))
         .add_systems(Update, end_bonk.run_if(input_just_released(MouseButton::Middle)));
@@ -295,9 +294,9 @@ impl Bonk {
 
 fn start_bonk( // set's bonk start xy
     windows: Query<&Window>,
-    mut arrow_state: ResMut<State<ArrowState>>,
     mut bonk: ResMut<Bonk>,
     mut gsh: ResMut<GameStateHandler>,
+    mut arrow_state: ResMut<State<ArrowState>>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
 ) {
     info!("Start bonk");
@@ -317,7 +316,60 @@ fn start_bonk( // set's bonk start xy
 }
 
 
-use bevy::window::WindowResolution;
+
+// fn mid_bonk( 
+//     mut bonk: ResMut<Bonk>,
+//     windows: Query<&Window>,
+//     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
+// ) {
+//     // Calculate cursor position as before
+//     let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
+//     let Some(position) = windows.single().cursor_position() else {
+//         return;
+//     };
+//     let window_width: f32 = windows.single().width();
+//     let window_height: f32 = windows.single().height();
+//     cursor_xy.set(position.x, position.y);
+//     bonk.update_cursor_bonk_position(cursor_xy);
+
+//     // Calculate the distance from the origin to the cursor position
+//     let difference_x = bonk.cursor_origin_position.x - bonk.cursor_bonk_position.x;
+//     let difference_y = bonk.cursor_origin_position.y - bonk.cursor_bonk_position.y;
+//     let distance = (difference_x.powi(2) + difference_y.powi(2)).sqrt();
+//     let max_distance = (window_width.powi(2) + window_height.powi(2)).sqrt();
+
+//     // Normalize power based on distance ratio
+//     let mut bonk_power = distance / max_distance;
+//     if bonk_power < 0.0 {
+//         bonk_power *= -1.0;
+//     };
+//     if bonk_power >= 0.25 {
+//         bonk_power = 1.0;
+//     } else {
+//         bonk_power *= 4.0;
+//     };
+
+//     bonk.power = bonk_power;
+
+//     // Now, adjust the bonk direction to match the camera's yaw rotation
+//     let camera = camera_query.get_single();
+    
+//     // Extract the yaw rotation around the y-axis from the camera's quaternion
+//     let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Yaw (rotation around Y)
+
+//     // Calculate the direction in the xz-plane
+//     let raw_bonk_direction = Vec3::new(difference_x, 0.0, difference_y).normalize_or_zero();
+
+//     // Create a rotation to align with the camera’s yaw
+//     let yaw_rotation = Quat::from_rotation_y(camera_yaw);
+
+//     // Rotate the bonk direction vector to match the camera's yaw
+//     bonk.direction = yaw_rotation * raw_bonk_direction;
+
+//     bonk.set_cursor_updated();
+// }
+
+
 
 fn mid_bonk( // Determines bonks power by measuring the difference between origin and current mouse xy
     mut bonk: ResMut<Bonk>,
@@ -365,17 +417,13 @@ fn mid_bonk( // Determines bonks power by measuring the difference between origi
 }
 
 
-
-
-
-
-fn check_sleeping_entities(
-    sleeping_query: Query<(Entity, &Sleeping)>
-) {
-    for (entity, sleeping) in sleeping_query.iter() {
-            println!("Entity {:?} is sleeping", entity);
-    }
-}
+// fn cam_query(
+//     camera_query: Query<(&Camera, &Transform), With<CameraWorld>>, // Only query for the CameraWorld    
+// ) {
+//     for (_, transform) in camera_query.iter() {
+//         info!("transform: {:?}", transform.rotation);
+//     }
+// }
 
 fn end_bonk( // Fires bonk 
     mut arrow_state: ResMut<State<ArrowState>>,
@@ -383,16 +431,16 @@ fn end_bonk( // Fires bonk
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
     mut impulses: Query<&mut ExternalImpulse>,
     bonk_res: Res<Bonk>,
-    sleeping_query: Query<(Entity, &Sleeping), With<RigidBody>>,
+    rapier_context: Res<RapierContext>,
+    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+    scene_meshes: Query<(Entity, &Name)>,
 ) {
-    // let mut asleep = false;
-    for (entity, _) in sleeping_query.iter() {
-        info!("{:?}", entity);
+    if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes) {
+        bonk(impulses, bonk_res);
     }
     if gsh.get_arrow_state() {
         toggle_arrow_state(gsh, arrow_state, next_arrow_state);
     }
-    bonk(impulses, bonk_res);
 }
 
 fn bonk(
@@ -407,8 +455,6 @@ fn bonk(
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
     }
 }
-
-
 
 fn bonk_gizmo(
     mut gizmos: Gizmos,
@@ -455,6 +501,35 @@ fn collision_events_listener(
             }
         }
     }
+}
+
+fn golf_ball_is_asleep(
+    rapier_context: Res<RapierContext>,
+    query: Query<(Entity, &RapierRigidBodyHandle)>,
+    scene_meshes: Query<(Entity, &Name)>,
+) -> bool {
+    let mut results = false;
+    // iterate over all meshes in the scene and match them by their name.
+    for (entity, name) in scene_meshes.iter() {
+        if name.as_str() == "ball" {
+            let active_entity = entity;
+            for (entity, rb_handle) in query.iter() {
+                // Access the rigid body from the physics world using its handle
+                if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
+                    // Check if the rigid body is currently sleeping
+                    if active_entity == entity {
+                        if rigid_body.is_sleeping() {
+                            println!("Entity {:?} is sleeping", entity);
+                            results = true;
+                        } else {
+                            println!("Entity {:?} is awake", entity);
+                        }
+                    }
+                }
+            }        
+        }
+    }
+    results
 }
 
 pub fn add_physics_query_and_update_scene(
