@@ -21,7 +21,6 @@ use minigolf::{
     BonkHandler,
     Fonts, 
     GameStateHandler, 
-    GLBPurgeID, 
     GLBStorageID, 
     OpIndex,
 };
@@ -99,7 +98,6 @@ fn main() {
         .insert_resource(BonkHandler::new())
         .insert_resource(Fonts::new())
         .insert_resource(GameStateHandler::new())
-        .insert_resource(GLBPurgeID::new())
         .insert_resource(GLBStorageID::new())
         .insert_resource(OpIndex::new())
 

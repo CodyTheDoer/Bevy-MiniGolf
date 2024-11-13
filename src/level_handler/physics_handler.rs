@@ -17,7 +17,7 @@ pub fn add_physics_query_and_update_scene(
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform), Added<Name>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
 ) {
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {

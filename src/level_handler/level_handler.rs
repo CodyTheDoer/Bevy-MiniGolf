@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::RigidBody;
+use bevy_rapier3d::prelude::*;
 
 use std::collections::HashMap;
 
@@ -311,15 +311,30 @@ pub fn purge_glb_all_prep(
 }
 
 pub fn purge_glb_all(
-    commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
+    mut commands: Commands,
+    rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
+    scene_meshes: Query<(Entity, &Name)>,
 ) {
-    purge_glb_all_prep(&mut purge, glb_storage);
-    gltf_handler_purge(commands, scene_query, asset_server, purge);
+    for (entity, _) in rigid_bodies.iter() {
+        // Access the rigid body from the physics world using its handle
+        commands.entity(entity).despawn_recursive();
+    }    
+    for (entity, _) in scene_meshes.iter() {
+        // Access the rigid body from the physics world using its handle
+        commands.entity(entity).despawn_recursive();
+    }        
 }
+
+// pub fn purge_glb_all(
+//     commands: Commands,
+//     scene_query: Query<(Entity, &Handle<Scene>)>,
+//     asset_server: Res<AssetServer>,
+//     mut purge: ResMut<GLBPurgeID>,
+//     glb_storage: Res<GLBStorageID>,
+// ) {
+//     purge_glb_all_prep(&mut purge, glb_storage);
+//     gltf_handler_purge(commands, scene_query, asset_server, purge);
+// }
 
 pub fn map_set_state_update(
     map_set_state: Res<State<MapSetState>>,
