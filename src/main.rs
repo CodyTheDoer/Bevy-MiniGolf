@@ -315,62 +315,6 @@ fn start_bonk( // set's bonk start xy
     }
 }
 
-
-
-// fn mid_bonk( 
-//     mut bonk: ResMut<Bonk>,
-//     windows: Query<&Window>,
-//     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
-// ) {
-//     // Calculate cursor position as before
-//     let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
-//     let Some(position) = windows.single().cursor_position() else {
-//         return;
-//     };
-//     let window_width: f32 = windows.single().width();
-//     let window_height: f32 = windows.single().height();
-//     cursor_xy.set(position.x, position.y);
-//     bonk.update_cursor_bonk_position(cursor_xy);
-
-//     // Calculate the distance from the origin to the cursor position
-//     let difference_x = bonk.cursor_origin_position.x - bonk.cursor_bonk_position.x;
-//     let difference_y = bonk.cursor_origin_position.y - bonk.cursor_bonk_position.y;
-//     let distance = (difference_x.powi(2) + difference_y.powi(2)).sqrt();
-//     let max_distance = (window_width.powi(2) + window_height.powi(2)).sqrt();
-
-//     // Normalize power based on distance ratio
-//     let mut bonk_power = distance / max_distance;
-//     if bonk_power < 0.0 {
-//         bonk_power *= -1.0;
-//     };
-//     if bonk_power >= 0.25 {
-//         bonk_power = 1.0;
-//     } else {
-//         bonk_power *= 4.0;
-//     };
-
-//     bonk.power = bonk_power;
-
-//     // Now, adjust the bonk direction to match the camera's yaw rotation
-//     let camera = camera_query.get_single();
-    
-//     // Extract the yaw rotation around the y-axis from the camera's quaternion
-//     let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Yaw (rotation around Y)
-
-//     // Calculate the direction in the xz-plane
-//     let raw_bonk_direction = Vec3::new(difference_x, 0.0, difference_y).normalize_or_zero();
-
-//     // Create a rotation to align with the camera’s yaw
-//     let yaw_rotation = Quat::from_rotation_y(camera_yaw);
-
-//     // Rotate the bonk direction vector to match the camera's yaw
-//     bonk.direction = yaw_rotation * raw_bonk_direction;
-
-//     bonk.set_cursor_updated();
-// }
-
-
-
 fn mid_bonk( // Determines bonks power by measuring the difference between origin and current mouse xy
     mut bonk: ResMut<Bonk>,
     windows: Query<&Window>,
@@ -447,16 +391,45 @@ fn bonk(
     }
 }
 
+use std::f32::consts::PI;
+
+fn apply_rotation_matrix_camera_yaw(
+    camera_yaw: &f32, // Query only for CameraWorld's Transform
+    bonk_magnitude: &f32,
+    direction_x: f32,
+    direction_y: f32,
+) -> BonkMouseXY {
+    // let angleRadians: f32 = camera_yaw * PI / 180.0; // Convert to radians
+
+    // 2D rotation matrix
+    let rotation_matrix = vec![
+        [camera_yaw.cos(), camera_yaw.sin()],
+        [-camera_yaw.sin(), camera_yaw.cos()],
+    ];
+
+    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
+    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
+
+    BonkMouseXY {
+        x: rotated_x,
+        y: rotated_y,
+    }
+}
+
 fn bonk_gizmo(
     mut gizmos: Gizmos,
     mut raycast: Raycast,
     mut bonk: ResMut<Bonk>,
     scene_meshes: Query<(&Name, &Transform)>,
     windows: Query<&Window>,
+    camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
 ) {
     let Some(cursor_position) = windows.single().cursor_position() else {
         return;
     };
+    let camera = camera_query.get_single();
+    // Extract the yaw rotation around the y-axis from the camera's quaternion
+    let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
     for (name, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
             let ball_position = transform.translation;
@@ -464,9 +437,20 @@ fn bonk_gizmo(
             // Calculate the direction from the ball to the intersection point.
             let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
             let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
-            
+
+            let bonk_magnitude: f32 = 24.0;
+            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, &bonk_magnitude, direction_x, direction_y);
+            // let adj_x = adjusted_xy.x;
+            info!(
+                "direction_x: {}, direction_y: {}, adjusted_xy.x: {}, adjusted_xy.y: {}",
+                direction_x,
+                direction_y,
+                adjusted_xy.x,
+                adjusted_xy.y,
+            );
+
             // Localize arrow to a flat xz plane 
-            let direction_xyz: Vec3 = Vec3::new(direction_x, 0.0, direction_y).normalize() * (24.0 * bonk.power);
+            let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
             bonk.update_direction(&direction_xyz);
 
             // // Draw an arrow from the ball in the direction toward the cursor.
