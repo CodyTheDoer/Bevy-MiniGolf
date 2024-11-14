@@ -23,13 +23,17 @@ pub fn add_physics_query_and_update_scene(
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            let collider = Collider::ball(0.5);
+            let collider = Collider::ball(0.022);
             commands
                 .entity(entity)
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
+                .insert(Damping {
+                    angular_damping: 2.0,
+                    ..default()
+                })
                 .insert(ExternalImpulse::default())
-                .insert(ColliderMassProperties::Density(1.0))
+                .insert(ColliderMassProperties::Density(20.0))
                 .insert(GravityScale(1.0));
         }
         if name.as_str() == "cup" {
@@ -65,10 +69,16 @@ pub fn add_physics_query_and_update_scene(
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
-                .insert(collider);
+                .insert(collider)
+                .insert(RigidBody::Fixed)
+                .insert(Friction {
+                    coefficient: 5.0,
+                    combine_rule: CoefficientCombineRule::Max,
+                });
         }
         if name.as_str() == "cannon" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -77,15 +87,13 @@ pub fn add_physics_query_and_update_scene(
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
-                .insert(collider)
-                .insert(RigidBody::Fixed);
+                .insert(collider);
         }
     }
 }
 
 pub fn apply_rotation_matrix_camera_yaw(
     camera_yaw: &f32, // Query only for CameraWorld's Transform
-    bonk_magnitude: &f32,
     direction_x: f32,
     direction_y: f32,
 ) -> BonkMouseXY {
@@ -110,8 +118,9 @@ pub fn bonk(
 ) {
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
-        info!("bonk.power: {:?}", bonk.power);
-        impulse.impulse = bonk.direction * (15.0 * bonk.power);
+        let scaled_bonk = bonk.power * 0.025;
+        info!("bonk.power: {:?}", scaled_bonk);
+        impulse.impulse = bonk.direction * scaled_bonk;
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
     }
 }
@@ -138,8 +147,8 @@ pub fn bonk_gizmo(
             let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
             let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
 
-            let bonk_magnitude: f32 = 24.0;
-            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, &bonk_magnitude, direction_x, direction_y);
+            let bonk_magnitude: f32 = 2.5;
+            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
 
             // Localize arrow to a flat xz plane 
             let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
