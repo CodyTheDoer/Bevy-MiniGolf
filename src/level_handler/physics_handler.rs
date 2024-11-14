@@ -23,15 +23,14 @@ pub fn add_physics_query_and_update_scene(
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            let collider = Collider::ball(1.0);
+            let collider = Collider::ball(0.5);
             commands
                 .entity(entity)
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
                 .insert(ExternalImpulse::default())
-                .insert(ColliderMassProperties::Density(10.0))
-                .insert(GravityScale(10.0))
-                .insert(Transform::from_xyz(0.0, 5.0, -20.0));
+                .insert(ColliderMassProperties::Density(1.0))
+                .insert(GravityScale(1.0));
         }
         if name.as_str() == "cup" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -40,8 +39,7 @@ pub fn add_physics_query_and_update_scene(
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
-                .insert(collider)
-                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+                .insert(collider);
         }
         if name.as_str() == "cup_sensor" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -61,8 +59,7 @@ pub fn add_physics_query_and_update_scene(
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
-                .insert(collider)
-                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+                .insert(collider);
         }
         if name.as_str() == "green" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -71,8 +68,7 @@ pub fn add_physics_query_and_update_scene(
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
-                .insert(collider)
-                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+                .insert(collider);
         }
         if name.as_str() == "cannon" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -82,8 +78,7 @@ pub fn add_physics_query_and_update_scene(
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Fixed)
-                .insert(Transform::from_xyz(0.0, 0.0, 0.0));
+                .insert(RigidBody::Fixed);
         }
     }
 }

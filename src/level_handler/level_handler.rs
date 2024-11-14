@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use crate::{
     GameStateHandler,
     GLBStorageID,
-    GLBPurgeID,
     Ground, 
     Interactable, 
     InteractableEntities, 
@@ -226,28 +225,26 @@ pub fn gltf_handler_init_hole_n(
 ) {
     if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
         let ball_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/basic_ball.glb"),
+            GltfAssetLabel::Scene(0).from_asset("glb/scaled/golf_ball.glb"),
         );
         let map_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/basic_level_1.glb"),
+            GltfAssetLabel::Scene(0).from_asset("glb/scaled/level_1.glb"),
         );
         let scene_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(glb_file.map),
         );
 
         if hole == 0 {
-            let root_entity_ball = commands // Eventually will be attached to player.
-                .spawn(SceneBundle {
-                    scene: ball_handle.clone(),
-                    // transform: Transform::from_xyz(0.0, 10.0, 60.0),
-                    ..default()
-                })
-                .insert(Interactable)
-                .id();   
+            // let root_entity_ball = commands // Eventually will be attached to player.
+            //     .spawn(SceneBundle {
+            //         scene: ball_handle.clone(),
+            //         ..default()
+            //     })
+            //     .insert(Interactable)
+            //     .id();   
             let root_entity_map = commands
                 .spawn(SceneBundle {
                     scene: map_handle.clone(),
-                    // transform: Transform::from_xyz(0.0, 0.0, 0.0),
                     ..default()
                 })
                 .insert(Interactable)
@@ -257,7 +254,6 @@ pub fn gltf_handler_init_hole_n(
             let root_entity = commands
                 .spawn(SceneBundle {
                     scene: scene_handle.clone(),
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
                     ..default()
                 })
                 .insert(Interactable)
@@ -271,45 +267,6 @@ pub fn gltf_handler_init_hole_n(
 }
 
 // When exiting state 
-pub fn remove_match_from_vec(vec: &mut ResMut<GLBPurgeID>, pattern: &str) {
-    if let Some(pos) = vec.glb.iter().position(|x| x == pattern) {
-        vec.glb.remove(pos);
-    }
-}
-
-pub fn gltf_handler_purge(
-    mut commands: Commands,
-    scene_query: Query<(Entity, &Handle<Scene>)>,
-    asset_server: Res<AssetServer>,
-    mut purge: ResMut<GLBPurgeID>,
-) {
-    let targets = purge.clone();
-    for asset_to_despawn in targets.glb.iter() {
-        let target_asset = format!("{}#Scene0",asset_to_despawn);
-        // We load the specific scene handle to compare it directly
-        let despawn_target: Handle<Scene> = asset_server.load(target_asset);// format!("{}#Scene0", glb_file)
-        for (entity, scene_handle) in scene_query.iter() {
-            // Check if the scene handle matches the target handle
-            if scene_handle.id() == despawn_target.id() {
-                commands.entity(entity).despawn_recursive();
-                info!("Despawned Entity: {:?}", entity);
-            }
-        }
-        remove_match_from_vec(&mut purge, asset_to_despawn);
-    }
-}
-
-pub fn purge_glb_all_prep(
-    purge: &mut ResMut<GLBPurgeID>,
-    glb_storage: Res<GLBStorageID>,
-) {
-    let targets = glb_storage.clone();
-    // info!("{:?}", targets);
-    for asset_to_despawn in targets.glb.iter() {
-        purge.glb.push(asset_to_despawn.map.to_string());
-    }
-}
-
 pub fn purge_glb_all(
     mut commands: Commands,
     rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
@@ -324,17 +281,6 @@ pub fn purge_glb_all(
         commands.entity(entity).despawn_recursive();
     }        
 }
-
-// pub fn purge_glb_all(
-//     commands: Commands,
-//     scene_query: Query<(Entity, &Handle<Scene>)>,
-//     asset_server: Res<AssetServer>,
-//     mut purge: ResMut<GLBPurgeID>,
-//     glb_storage: Res<GLBStorageID>,
-// ) {
-//     purge_glb_all_prep(&mut purge, glb_storage);
-//     gltf_handler_purge(commands, scene_query, asset_server, purge);
-// }
 
 pub fn map_set_state_update(
     map_set_state: Res<State<MapSetState>>,
