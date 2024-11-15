@@ -58,6 +58,7 @@ use minigolf::level_handler::physics_handler::{
     bonk_step_mid,
     bonk_step_end,
     collision_events_listener,
+    performance_physics_setup,
 };
 
 fn main() {
@@ -93,6 +94,7 @@ fn main() {
         .insert_state(LevelState::HoleTutorial)
         .insert_state(MapSetState::Tutorial)
         .insert_state(ArrowState::Idle)
+        .insert_state(CameraOrbitEntityState::Ball)
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
@@ -100,6 +102,7 @@ fn main() {
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
         .insert_resource(OpIndex::new())
+        .insert_resource(CameraOrbitEntityStateHandler::new())
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
@@ -167,53 +170,94 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
-
-        // .add_systems(Update, smooth_golf_ball_motion),
+        .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
+        
+        
+        .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
+        .add_systems(Update, camera_orbit_entity_state_logic);
 
         app.run();
 }
 
-fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
-    // Set fixed timestep mode
-    rapier_config.timestep_mode = TimestepMode::Fixed {
-        dt: 1.0 / 60.0,       // Physics update rate
-        substeps: 24,          // Number of physics steps per frame
-    };
-
-    // // Alternative: Variable timestep mode
-    // rapier_config.timestep_mode = TimestepMode::Variable {
-    //     max_dt: 1.0 / 240.0,  // Maximum time step
-    //     time_scale: 1.0,     // Time scaling factor
-    //     substeps: 4,         // Number of physics steps per frame
-    // };
-
-    // Enable/disable physics systems
-    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
-    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
-    
-    // Gravity configuration
-    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+enum CameraOrbitEntityState {
+    #[default]
+    Ball,
+    Cup,
+    FreePan,
 }
 
-// fn smooth_golf_ball_motion(
-//     mut ball_query: Query<(Entity, &Name, &mut Velocity, &Transform)>,
-//     time: Res<Time>,
-// ) {
-//     for (entity, name, velocity, transform) in ball_query.iter_mut() {
-//         if name.as_str() == "ball" {
-//             // Get the current surface normal at the ball's position
-//             let surface_normal = get_surface_normal(transform.translation);
-            
-//             // Project velocity along the surface
-//             let tangent_velocity = velocity.linvel - velocity.linvel.project_onto(surface_normal);
-            
-//             // Apply smoothing
-//             velocity.linvel = velocity.linvel.lerp(tangent_velocity, 0.1);
-            
-//             // Optional: Apply additional rolling resistance based on slope
-//             let slope_factor = surface_normal.dot(Vec3::Y).abs();
-//             velocity.linvel *= 1.0 - (0.01 * slope_factor * time.delta_seconds());
-//         }
-//     }
-// }
+#[derive(Debug, Resource)]
+pub struct CameraOrbitEntityStateHandler {
+    current_state: i32,
+}
+
+impl CameraOrbitEntityStateHandler {
+    pub fn new() -> Self {
+        let current_state = 0;
+        CameraOrbitEntityStateHandler {
+            current_state,
+        }
+    }
+}
+
+use minigolf::user_interface::camera_world::PanOrbitSettings;
+pub fn camera_orbit_entity_state_update(    
+    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
+    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
+) {
+    match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::Ball => {
+            info!("CameraOrbitEntityState::Cup");
+            camera_orbit_entity_state_handler.current_state = 1;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
+        },
+        CameraOrbitEntityState::Cup => {
+            info!("CameraOrbitEntityState::FreePan");
+            camera_orbit_entity_state_handler.current_state = 2;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
+        },
+        CameraOrbitEntityState::FreePan => {
+            info!("CameraOrbitEntityState::Ball");
+            camera_orbit_entity_state_handler.current_state = 0;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
+        },
+    }
+}
+
+pub fn camera_orbit_entity_state_logic(
+    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
+    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
+    camera_orbit_entity_state_handler: Res<CameraOrbitEntityStateHandler>,
+    scene_meshes: Query<(Entity, &Name, &Transform)>,
+    mut q_camera: Query<(
+        &PanOrbitSettings,
+        &mut PanOrbitState,
+        &Transform,
+    )>,
+) {
+    match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::Ball => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "ball" {
+                    let coords = transform;
+                    info!("Coords: {:?}", transform.translation);
+                    for (_, state, _) in q_camera.iter() {
+                        info!("state: {:?}", state);
+                    }
+                }
+            }        
+        }
+        CameraOrbitEntityState::Cup => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "cup" {
+                    let coords = transform;
+                    info!("Coords: {:?}", transform.translation);
+                }
+            }        
+        }
+        CameraOrbitEntityState::FreePan => {    
+        }
+    }
+}

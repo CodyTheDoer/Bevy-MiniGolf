@@ -32,7 +32,7 @@ pub struct PanOrbitCameraBundle {
 }
 
 // The internal state of the pan-orbit controller
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct PanOrbitState {
     pub center: Vec3,
     pub radius: f32,

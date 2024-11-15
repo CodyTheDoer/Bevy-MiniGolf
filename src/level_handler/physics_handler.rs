@@ -47,8 +47,8 @@ pub fn add_physics_query_and_update_scene(
                 })
                 .insert(ExternalImpulse::default())
                 .insert(ColliderMassProperties::Density(0.2))
-                .insert(GravityScale(1.0));
-                // .insert(Ccd::enabled());
+                .insert(GravityScale(1.0))
+                .insert(Ccd::enabled());
         }
         if name.as_str() == "cup" {
             // Create the collider from the mesh.
@@ -109,7 +109,7 @@ pub fn add_physics_query_and_update_scene(
     }
 }
 
-fn extract_mesh_vertices_indices(
+fn extract_mesh_vertices_indices( // Helper function for ^add_physics_query_and_update_scene^
     mesh: &Mesh,
 ) -> Option<(
     Vec<bevy_rapier3d::na::Point3<bevy_rapier3d::prelude::Real>>,
@@ -319,7 +319,7 @@ pub fn collision_events_listener(
     }
 }
 
-pub fn golf_ball_is_asleep(
+fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
     query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
@@ -348,7 +348,7 @@ pub fn golf_ball_is_asleep(
     results
 }
 
-pub fn toggle_arrow_state(
+fn toggle_arrow_state(
     mut gsh: ResMut<GameStateHandler>,
     mut state: ResMut<State<ArrowState>>,
     mut next_state: ResMut<NextState<ArrowState>>,
@@ -365,4 +365,19 @@ pub fn toggle_arrow_state(
             next_state.set(ArrowState::DrawingArrow);
         },
     }
+}
+
+pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
+    // Set fixed timestep mode
+    rapier_config.timestep_mode = TimestepMode::Fixed {
+        dt: 1.0 / 60.0,       // Physics update rate
+        substeps: 4,          // Number of physics steps per frame
+    };
+
+    // Enable/disable physics systems
+    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
+    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
+    
+    // Gravity configuration
+    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
 }
