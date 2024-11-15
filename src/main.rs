@@ -243,8 +243,8 @@ pub fn camera_orbit_entity_state_logic(
                 if name.as_str() == "ball" {
                     let coords = transform;
                     info!("Coords: {:?}", transform.translation);
-                    for (_, state, _) in q_camera.iter() {
-                        info!("state: {:?}", state);
+                    for (_, _, transform) in q_camera.iter() {
+                        info!("transform: {:?}", transform);
                     }
                 }
             }        
