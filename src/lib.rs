@@ -319,7 +319,81 @@ pub struct CameraUi;
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
 
-// --- Active Integration --- //
+    // Bundle to spawn our custom camera easily
+#[derive(Bundle, Default)]
+pub struct PanOrbitCameraBundle {
+    pub camera: Camera3dBundle,
+    pub state: PanOrbitState,
+    pub settings: PanOrbitSettings,
+}
+
+    // The internal state of the pan-orbit controller
+#[derive(Component, Debug)]
+pub struct PanOrbitState {
+    pub center: Vec3,
+    pub radius: f32,
+    pub upside_down: bool,
+    pub pitch: f32,
+    pub yaw: f32,
+}
+
+    // The configuration of the pan-orbit controller
+#[derive(Component)]
+pub struct PanOrbitSettings {
+    /// World units per pixel of mouse motion
+    pub pan_sensitivity: f32,
+    /// Radians per pixel of mouse motion
+    pub orbit_sensitivity: f32,
+    /// Exponent per pixel of mouse motion
+    pub zoom_sensitivity: f32,
+    /// Key to hold for panning
+    pub pan_key: Option<KeyCode>,
+    /// Key to hold for orbiting
+    pub orbit_key: Option<KeyCode>,
+    /// Key to hold for zooming
+    pub zoom_key: Option<KeyCode>,
+    /// What action is bound to the scroll wheel?
+    pub scroll_action: Option<PanOrbitAction>,
+    /// For devices with a notched scroll wheel, like desktop mice
+    pub scroll_line_sensitivity: f32,
+    /// For devices with smooth scrolling, like touchpads
+    pub scroll_pixel_sensitivity: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PanOrbitAction {
+    Pan,
+    Orbit,
+    Zoom,
+}
+
+impl Default for PanOrbitState {
+    fn default() -> Self {
+        PanOrbitState {
+            center: Vec3::ZERO,
+            radius: 1.0,
+            upside_down: false,
+            pitch: 0.0,
+            yaw: 0.0,
+        }
+    }
+}
+
+impl Default for PanOrbitSettings {
+    fn default() -> Self {
+        PanOrbitSettings {
+            pan_sensitivity: 0.001, // 1000 pixels per world unit
+            orbit_sensitivity: 0.1f32.to_radians(), // 0.1 degree per pixel
+            zoom_sensitivity: 0.01,
+            pan_key: Some(KeyCode::ControlLeft),
+            orbit_key: Some(KeyCode::AltLeft),
+            zoom_key: Some(KeyCode::ShiftLeft),
+            scroll_action: Some(PanOrbitAction::Zoom),
+            scroll_line_sensitivity: 16.0, // 1 "line" == 16 "pixels of motion"
+            scroll_pixel_sensitivity: 1.0,
+        }
+    }
+}
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum CameraOrbitEntityState {
@@ -343,32 +417,6 @@ impl CameraOrbitEntityStateHandler {
     }
 }
 
-use crate::user_interface::camera_world::PanOrbitSettings;
-
-pub fn camera_orbit_entity_state_update(    
-    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
-    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
-) {
-    match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Ball => {
-            info!("CameraOrbitEntityState::Cup");
-            camera_orbit_entity_state_handler.current_state = 1;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
-        },
-        CameraOrbitEntityState::Cup => {
-            info!("CameraOrbitEntityState::FreePan");
-            camera_orbit_entity_state_handler.current_state = 2;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
-        },
-        CameraOrbitEntityState::FreePan => {
-            info!("CameraOrbitEntityState::Ball");
-            camera_orbit_entity_state_handler.current_state = 0;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
-        },
-    }
-}
-
 #[derive(Debug, Resource)]
 pub struct CameraCoordTracker {
     current_coords: Vec3,
@@ -383,35 +431,4 @@ impl CameraCoordTracker {
     }
 }
 
-pub fn camera_orbit_entity_state_logic(
-    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
-    mut camera_coord_tracker: ResMut<CameraCoordTracker>,
-    scene_meshes: Query<(Entity, &Name, &Transform)>,
-    mut q_rigid_body: Query<(&RigidBody, &Transform)>,
-) {
-    let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
-    for (_, transform) in q_rigid_body.iter() {
-        ball_rigid_body_coords = transform.translation.clone();
-    }
-
-    match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Ball => {
-            for (entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "ball" {
-                    camera_coord_tracker.current_coords = ball_rigid_body_coords;
-                    break;
-                }
-            }        
-        }
-        CameraOrbitEntityState::Cup => {
-            for (entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "cup" {
-                    camera_coord_tracker.current_coords = transform.translation;
-                    break;
-                }
-            }        
-        }
-        CameraOrbitEntityState::FreePan => {    
-        }
-    }
-}
+// --- Active Integration --- //

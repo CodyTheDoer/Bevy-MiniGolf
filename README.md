@@ -11,6 +11,10 @@ Deeply inspired by 3-D Ultra Minigolf from the late nineties.
 
 - Old School Golf Game
     - Game Engine: Sound, UI, and Animations built with Bevy's ECS (Entity Component System).
+    - Multiple camera modes:
+        - Live Ball Camera
+        - Cup Orbit Camera
+        - Free Pan Orbit Camera for those really tricky shots!
 
 ![Screenshot of level 1 post Rapier Integration during development](images/Minigolf%20000.png)
 

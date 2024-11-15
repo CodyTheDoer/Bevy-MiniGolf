@@ -28,17 +28,13 @@ use minigolf::{
     OpIndex,
 };
 
-use minigolf::{
-    camera_orbit_entity_state_logic,
-    camera_orbit_entity_state_update,
-};
-
 // --- User Interface Import --- //
 use minigolf::user_interface::camera_world::{
     setup_3d_camera,
     pan_orbit_camera, 
+    camera_orbit_entity_state_logic,
+    camera_orbit_entity_state_update,
 };
-use minigolf::user_interface::camera_world::PanOrbitState;
 use minigolf::user_interface::user_interface::{
     game_state_update, 
     fire_ray, 
@@ -94,17 +90,20 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
 
         // --- State Initialization --- //
+        .insert_state(ArrowState::Idle)
+        .insert_state(CameraOrbitEntityState::Ball)
         .insert_state(GameState::LoadingScreen)
         .insert_state(LevelState::HoleTutorial)
         .insert_state(MapSetState::Tutorial)
-        .insert_state(ArrowState::Idle)
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
+        .insert_resource(CameraOrbitEntityStateHandler::new())
+        .insert_resource(CameraCoordTracker::new())
         .insert_resource(Fonts::new())
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
@@ -118,16 +117,22 @@ fn main() {
         .add_systems(Startup, performance_physics_setup)
 
         // --- Update Systems Initialization --- //
-        // User Interface //
-        // .add_systems(Update, pan_orbit_camera.run_if(any_with_component::<PanOrbitState>))
-        .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
-        .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
+        // states //
         .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
         .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
         .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
+
+        // User Interface //
+        .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
+        .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, draw_cursor)
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
         // .add_systems(Update, level_state_logic) // uncomment for level based logic every frame
+        
+        // Camera //
+        .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
+        .add_systems(Update, camera_orbit_entity_state_logic)
+        .add_systems(Update, pan_orbit_camera)
 
         // Physics //
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
@@ -176,15 +181,7 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
-        
-        
-        .insert_state(CameraOrbitEntityState::Ball)
-        .insert_resource(CameraOrbitEntityStateHandler::new())
-        .insert_resource(CameraCoordTracker::new())
-        .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
-        .add_systems(Update, camera_orbit_entity_state_logic)
-        .add_systems(Update, pan_orbit_camera);
+        .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
 
         app.run();
 }
