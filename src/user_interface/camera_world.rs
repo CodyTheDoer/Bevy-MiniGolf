@@ -99,6 +99,20 @@ impl Default for PanOrbitSettings {
     }
 }
 
+pub fn camera_orbit_entity_state_logic(
+    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
+    mut camera_coord_tracker: ResMut<CameraCoordTracker>,
+    scene_meshes: Query<(Entity, &Name, &Transform)>,
+) {
+    match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::Ball => {}
+        CameraOrbitEntityState::Cup => {}
+        CameraOrbitEntityState::FreePan => {}
+    }
+}
+
+use crate::{CameraOrbitEntityState, CameraCoordTracker};
+
 pub fn pan_orbit_camera(
     kbd: Res<ButtonInput<KeyCode>>,
     mut evr_motion: EventReader<MouseMotion>,
@@ -108,6 +122,8 @@ pub fn pan_orbit_camera(
         &mut PanOrbitState,
         &mut Transform,
     )>,
+    camera_coord_tracker: Res<CameraCoordTracker>,
+    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
 ) {
     // First, accumulate the total amount of
     // mouse motion and scroll, from all pending events:
@@ -132,8 +148,14 @@ pub fn pan_orbit_camera(
             }
         }
     }
-
     for (settings, mut state, mut transform) in &mut q_camera {
+        let mut target = match camera_orbit_entity_state.get() {
+            CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => {
+                camera_coord_tracker.current_coords
+            }
+            CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
+        };
+
         // Check how much of each thing we need to apply.
         // Accumulate values from motion and scroll,
         // based on our configuration settings.
@@ -241,7 +263,120 @@ pub fn pan_orbit_camera(
                 Quat::from_euler(EulerRot::YXZ, state.yaw, state.pitch, 0.0);
             // To position the camera, get the backward direction vector
             // and place the camera at the desired radius from the center.
-            transform.translation = state.center + transform.back() * state.radius;
+            transform.translation = target + transform.back() * state.radius;
         }
-    }
+    }        
 }
+
+
+
+// pub fn pan_orbit_camera(
+//     kbd: Res<Input<KeyCode>>,
+//     mut evr_motion: EventReader<MouseMotion>,
+//     mut evr_scroll: EventReader<MouseWheel>,
+//     mut q_camera: Query<(&PanOrbitSettings, &mut PanOrbitState, &mut Transform)>,
+//     camera_coord_tracker: Res<CameraCoordTracker>,
+//     camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
+// ) {
+//     // Accumulate mouse motion
+//     let total_motion: Vec2 = evr_motion.iter().map(|ev| ev.delta).sum();
+//     let mut total_motion = total_motion;
+//     total_motion.y = -total_motion.y;
+
+//     // Accumulate scroll motion
+//     let mut total_scroll_lines = Vec2::ZERO;
+//     let mut total_scroll_pixels = Vec2::ZERO;
+//     for ev in evr_scroll.iter() {
+//         match ev.unit {
+//             MouseScrollUnit::Line => {
+//                 total_scroll_lines.x += ev.x;
+//                 total_scroll_lines.y -= ev.y;
+//             }
+//             MouseScrollUnit::Pixel => {
+//                 total_scroll_pixels.x += ev.x;
+//                 total_scroll_pixels.y -= ev.y;
+//             }
+//         }
+//     }
+
+//     // Iterate over camera entities
+//     for (settings, mut state, mut transform) in q_camera.iter_mut() {
+//         // Determine the target based on the camera state
+//         let target = match camera_orbit_entity_state.get() {
+//             CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => {
+//                 camera_coord_tracker.current_coords
+//             }
+//             CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
+//         };
+
+//         // Pan, Orbit, and Zoom calculations
+//         let mut total_pan = Vec2::ZERO;
+//         if settings.pan_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+//             total_pan -= total_motion * settings.pan_sensitivity;
+//         }
+//         if settings.scroll_action == Some(PanOrbitAction::Pan) {
+//             total_pan -= total_scroll_lines * settings.scroll_line_sensitivity * settings.pan_sensitivity;
+//             total_pan -= total_scroll_pixels * settings.scroll_pixel_sensitivity * settings.pan_sensitivity;
+//         }
+
+//         let mut total_orbit = Vec2::ZERO;
+//         if settings.orbit_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+//             total_orbit -= total_motion * settings.orbit_sensitivity;
+//         }
+//         if settings.scroll_action == Some(PanOrbitAction::Orbit) {
+//             total_orbit -= total_scroll_lines * settings.scroll_line_sensitivity * settings.orbit_sensitivity;
+//             total_orbit -= total_scroll_pixels * settings.scroll_pixel_sensitivity * settings.orbit_sensitivity;
+//         }
+
+//         let mut total_zoom = Vec2::ZERO;
+//         if settings.zoom_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+//             total_zoom -= total_motion * settings.zoom_sensitivity;
+//         }
+//         if settings.scroll_action == Some(PanOrbitAction::Zoom) {
+//             total_zoom -= total_scroll_lines * settings.scroll_line_sensitivity * settings.zoom_sensitivity;
+//             total_zoom -= total_scroll_pixels * settings.scroll_pixel_sensitivity * settings.zoom_sensitivity;
+//         }
+
+//         let mut any = false;
+
+//         // Zoom by adjusting the radius
+//         if total_zoom != Vec2::ZERO {
+//             any = true;
+//             state.radius *= (-total_zoom.y).exp();
+//         }
+
+//         // Orbit by adjusting the yaw and pitch
+//         if total_orbit != Vec2::ZERO {
+//             any = true;
+//             state.yaw += total_orbit.x;
+//             state.pitch -= total_orbit.y;
+
+//             if state.yaw > PI {
+//                 state.yaw -= TAU;
+//             }
+//             if state.yaw < -PI {
+//                 state.yaw += TAU;
+//             }
+//             if state.pitch > PI {
+//                 state.pitch -= TAU;
+//             }
+//             if state.pitch < -PI {
+//                 state.pitch += TAU;
+//             }
+//         }
+
+//         // Pan by adjusting the center
+//         if total_pan != Vec2::ZERO {
+//             any = true;
+//             let radius = state.radius;
+//             state.center += transform.right() * total_pan.x * radius;
+//             state.center += transform.up() * total_pan.y * radius;
+//         }
+
+//         // Update camera transform based on new values
+//         if any || state.is_added() {
+//             transform.rotation = Quat::from_euler(EulerRot::YXZ, state.yaw, state.pitch, 0.0);
+//             transform.translation = target + transform.back() * state.radius;
+//         }
+//     }
+// }

@@ -11,6 +11,7 @@ use bevy_rapier3d::prelude::*;
 // --- States --- //
 use minigolf::{ 
     ArrowState,
+    CameraOrbitEntityState,
     GameState, 
     LevelState, 
     MapSetState,
@@ -19,10 +20,17 @@ use minigolf::{
 // --- Resources --- //
 use minigolf::{
     BonkHandler,
+    CameraCoordTracker,
+    CameraOrbitEntityStateHandler,
     Fonts, 
     GameStateHandler, 
     GLBStorageID, 
     OpIndex,
+};
+
+use minigolf::{
+    camera_orbit_entity_state_logic,
+    camera_orbit_entity_state_update,
 };
 
 // --- User Interface Import --- //
@@ -94,7 +102,6 @@ fn main() {
         .insert_state(LevelState::HoleTutorial)
         .insert_state(MapSetState::Tutorial)
         .insert_state(ArrowState::Idle)
-        .insert_state(CameraOrbitEntityState::Ball)
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
@@ -102,7 +109,6 @@ fn main() {
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
         .insert_resource(OpIndex::new())
-        .insert_resource(CameraOrbitEntityStateHandler::new())
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
@@ -173,91 +179,12 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
         
         
+        .insert_state(CameraOrbitEntityState::Ball)
+        .insert_resource(CameraOrbitEntityStateHandler::new())
+        .insert_resource(CameraCoordTracker::new())
         .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
         .add_systems(Update, camera_orbit_entity_state_logic);
 
         app.run();
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-enum CameraOrbitEntityState {
-    #[default]
-    Ball,
-    Cup,
-    FreePan,
-}
-
-#[derive(Debug, Resource)]
-pub struct CameraOrbitEntityStateHandler {
-    current_state: i32,
-}
-
-impl CameraOrbitEntityStateHandler {
-    pub fn new() -> Self {
-        let current_state = 0;
-        CameraOrbitEntityStateHandler {
-            current_state,
-        }
-    }
-}
-
-use minigolf::user_interface::camera_world::PanOrbitSettings;
-pub fn camera_orbit_entity_state_update(    
-    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
-    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
-) {
-    match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Ball => {
-            info!("CameraOrbitEntityState::Cup");
-            camera_orbit_entity_state_handler.current_state = 1;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
-        },
-        CameraOrbitEntityState::Cup => {
-            info!("CameraOrbitEntityState::FreePan");
-            camera_orbit_entity_state_handler.current_state = 2;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
-        },
-        CameraOrbitEntityState::FreePan => {
-            info!("CameraOrbitEntityState::Ball");
-            camera_orbit_entity_state_handler.current_state = 0;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
-        },
-    }
-}
-
-pub fn camera_orbit_entity_state_logic(
-    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
-    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
-    camera_orbit_entity_state_handler: Res<CameraOrbitEntityStateHandler>,
-    scene_meshes: Query<(Entity, &Name, &Transform)>,
-    mut q_camera: Query<(
-        &PanOrbitSettings,
-        &mut PanOrbitState,
-        &Transform,
-    )>,
-) {
-    match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Ball => {
-            for (entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "ball" {
-                    let coords = transform;
-                    info!("Coords: {:?}", transform.translation);
-                    for (_, _, transform) in q_camera.iter() {
-                        info!("transform: {:?}", transform);
-                    }
-                }
-            }        
-        }
-        CameraOrbitEntityState::Cup => {
-            for (entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "cup" {
-                    let coords = transform;
-                    info!("Coords: {:?}", transform.translation);
-                }
-            }        
-        }
-        CameraOrbitEntityState::FreePan => {    
-        }
-    }
-}

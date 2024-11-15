@@ -223,20 +223,6 @@ pub enum LevelState {
     Hole18,
 }
 
-#[derive(Clone, Resource)]
-pub struct GLBPurgeID {
-    glb: Vec<String>,
-}
-
-impl GLBPurgeID {
-    pub fn new() -> Self {
-        let glb: Vec<String> = Vec::new();
-        GLBPurgeID {
-            glb,
-        }
-    }
-}
-
 // --- User Interface --- //
 
 pub struct UserInterface {}
@@ -332,3 +318,103 @@ pub struct CameraUi;
 
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
+
+// --- Active Integration --- //
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum CameraOrbitEntityState {
+    #[default]
+    Ball,
+    Cup,
+    FreePan,
+}
+
+#[derive(Debug, Resource)]
+pub struct CameraOrbitEntityStateHandler {
+    current_state: i32,
+}
+
+impl CameraOrbitEntityStateHandler {
+    pub fn new() -> Self {
+        let current_state = 0;
+        CameraOrbitEntityStateHandler {
+            current_state,
+        }
+    }
+}
+
+use crate::user_interface::camera_world::PanOrbitSettings;
+
+pub fn camera_orbit_entity_state_update(    
+    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
+    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
+) {
+    match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::Ball => {
+            info!("CameraOrbitEntityState::Cup");
+            camera_orbit_entity_state_handler.current_state = 1;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
+        },
+        CameraOrbitEntityState::Cup => {
+            info!("CameraOrbitEntityState::FreePan");
+            camera_orbit_entity_state_handler.current_state = 2;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
+        },
+        CameraOrbitEntityState::FreePan => {
+            info!("CameraOrbitEntityState::Ball");
+            camera_orbit_entity_state_handler.current_state = 0;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
+        },
+    }
+}
+
+#[derive(Debug, Resource)]
+pub struct CameraCoordTracker {
+    current_coords: Vec3,
+}
+
+impl CameraCoordTracker {
+    pub fn new() -> Self {
+        let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        CameraCoordTracker {
+            current_coords,
+        }
+    }
+}
+
+pub fn camera_orbit_entity_state_logic(
+    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
+    mut camera_coord_tracker: ResMut<CameraCoordTracker>,
+    scene_meshes: Query<(Entity, &Name, &Transform)>,
+    mut q_rigid_body: Query<(&RigidBody, &Transform)>,
+) {
+    let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
+    for (_, transform) in q_rigid_body.iter() {
+        // info!("Rigid Body Ball: transform: {:?}", transform.translation.clone());
+        ball_rigid_body_coords = transform.translation.clone();
+    }
+
+    match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::Ball => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "ball" {
+                    // info!("Ball: Current Transform: {:?}", transform.clone());
+                    camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                    break;
+                }
+            }        
+        }
+        CameraOrbitEntityState::Cup => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "cup" {
+                    info!("Cup: Current Translation: {:?}", transform.translation.clone());
+                    camera_coord_tracker.current_coords = transform.translation;
+                    break;
+                }
+            }        
+        }
+        CameraOrbitEntityState::FreePan => {    
+        }
+    }
+}
