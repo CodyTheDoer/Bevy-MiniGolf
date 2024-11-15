@@ -1,35 +1,223 @@
 use bevy::prelude::*;
 
 use bevy_mod_raycast::prelude::*;
+use bevy_rapier3d::prelude::*; 
 
 use std::collections::HashMap;
 
 use crate::{
+    BonkHandler,
     CameraUi, 
     CameraWorld, 
     Fonts, 
     GameState,
     Ground, 
-    InfoCall, 
     Interactable, 
     InteractableEntities, 
     OpIndex,
 };
 
-impl InfoCall {
-    pub fn from_index(
-        index: u32,
-    ) -> Option<InfoCall> {
-        let mut info_call_map = HashMap::new();
-        info_call_map.insert(0, InfoCall::Call0);
-        info_call_map.insert(1, InfoCall::Call1);
-        info_call_map.insert(2, InfoCall::Call2);
-        info_call_map.insert(3, InfoCall::Call3);
-        info_call_map.insert(4, InfoCall::Call4);
-        info_call_map.insert(5, InfoCall::Call5);
-        info_call_map.insert(6, InfoCall::Call6);
+use crate::level_handler::physics_handler::{
+    apply_rotation_matrix_camera_yaw,
+    golf_ball_is_asleep,
+};
 
-        info_call_map.get(&index).cloned()
+pub fn bonk_gizmo(
+    mut gizmos: Gizmos,
+    mut raycast: Raycast,
+    mut bonk: ResMut<BonkHandler>,
+    scene_meshes: Query<(&Name, &Transform)>,
+    windows: Query<&Window>,
+    camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
+    rapier_context: Res<RapierContext>,
+    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+    scene_meshes_asleep: Query<(Entity, &Name)>,
+) {
+    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes_asleep) {
+        Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
+    } else {
+        Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
+    };
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+    let camera = camera_query.get_single();
+    // Extract the yaw rotation around the y-axis from the camera's quaternion
+    let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
+    for (name, transform) in scene_meshes.iter() {
+        if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+            let ball_position = transform.translation;
+            
+            // Calculate the direction from the ball to the intersection point.
+            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
+            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
+
+            let bonk_magnitude: f32 = 2.5;
+            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
+
+            // Localize arrow to a flat xz plane 
+            let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
+            bonk.update_direction(&direction_xyz);
+
+            // Draw an arrow from the ball in the direction toward the cursor.
+            gizmos.arrow(
+                ball_position,            // Start position of the arrow (at the ball)
+                ball_position + direction_xyz, // End position, 12 units away from the cursor
+                arrow_color.clone(),
+            );
+        }
+    } 
+}
+
+pub fn draw_cursor(
+    mut raycast: Raycast,
+    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
+    windows: Query<&Window>,
+    mut gizmos: Gizmos,
+) {    
+    let (camera, camera_transform) = match camera_query.get_single() {
+        Ok(result) => result,
+        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
+    };
+    
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+
+    // Calculate a ray pointing from the camera into the world based on the cursor's position.
+    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        return;
+    };
+
+    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
+
+    if let Some((_, intersection)) = hits.first() {
+        // Get the intersection point.
+        let point = intersection.position();
+
+        // Draw a circle at the intersection point using Gizmos (just above the surface).
+        let up = Dir3::Y; 
+        gizmos.circle(point + up * 0.05, up, 0.2, Color::WHITE);
+    }
+}
+
+pub fn game_state_update(
+    game_state: Res<State<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {
+            info!("GameState::MenuMain");
+            next_game_state.set(GameState::MenuMain);
+        },
+        GameState::MenuMain => {
+            info!("GameState::MenuSettings");
+            next_game_state.set(GameState::MenuSettings);
+        },
+        GameState::MenuSettings => {
+            info!("GameState::MenuOnline");
+            next_game_state.set(GameState::MenuOnline);
+        },
+        GameState::MenuOnline => {
+            info!("GameState::InGame");
+            next_game_state.set(GameState::InGame);
+        },
+        GameState::InGame => {
+            info!("GameState::InGamePaused");
+            next_game_state.set(GameState::InGamePaused);
+        },
+        GameState::InGamePaused => {
+            info!("GameState::PostGameReview");
+            next_game_state.set(GameState::PostGameReview);
+        },
+        GameState::PostGameReview => {
+            info!("GameState::LoadingScreen");
+            next_game_state.set(GameState::LoadingScreen);
+        },
+    }
+}
+
+pub fn game_state_logic(
+    game_state: Res<State<GameState>>,
+) {
+    match game_state.get() {
+        GameState::LoadingScreen => {},
+        GameState::MenuMain => {},
+        GameState::MenuSettings => {},
+        GameState::MenuOnline => {},
+        GameState::InGame => {},
+        GameState::InGamePaused => {},
+        GameState::PostGameReview => {},
+    }
+}
+
+pub fn ray_fire(
+    mut raycast: Raycast,
+    op_index: Res<OpIndex>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
+    interactable_query: Query<Entity, With<Interactable>>,
+    windows: Query<&Window>,
+) {    
+    let (camera, camera_transform) = match camera_query.get_single() {
+        Ok(result) => result,
+        Err(_) => {
+            warn!("No CameraWorld found or multiple CameraWorlds detected.");
+            return;
+        },
+    };
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+
+    // Calculate a ray pointing from the camera into the world based on the cursor's position.
+    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        return;
+    };
+
+    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
+
+    // Loop through the raycast hits and detect if we hit an interactable entity
+    for (entity, _intersection) in hits {
+        if Some(interactable_query.get(*entity)).is_some() {
+            let entity_index = entity.index();
+        }
+    }
+}
+
+pub fn ray_release(
+    mut raycast: Raycast,
+    op_index: Res<OpIndex>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
+    interactable_query: Query<Entity, With<Interactable>>,
+    windows: Query<&Window>,
+) {    
+    let (camera, camera_transform) = match camera_query.get_single() {
+        Ok(result) => result,
+        Err(_) => {
+            warn!("No CameraWorld found or multiple CameraWorlds detected.");
+            return;
+        },
+    };
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+
+    // Calculate a ray pointing from the camera into the world based on the cursor's position.
+    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        return;
+    };
+
+    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
+
+    // Loop through the raycast hits and detect if we hit an interactable entity
+    for (entity, _intersection) in hits {
+        if Some(interactable_query.get(*entity)).is_some() {
+            info!("Entity: {:?}", entity);
+            let entity_index = entity.index();
+        }
     }
 }
 
@@ -95,174 +283,4 @@ pub fn setup_ui(
             ..default()
         });
     });
-}
-
-pub fn draw_cursor(
-    mut raycast: Raycast,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    windows: Query<&Window>,
-    mut gizmos: Gizmos,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
-    };
-    
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    if let Some((_, intersection)) = hits.first() {
-        // Get the intersection point.
-        let point = intersection.position();
-
-        // Draw a circle at the intersection point using Gizmos (just above the surface).
-        let up = Dir3::Y; 
-        gizmos.circle(point + up * 0.05, up, 0.2, Color::WHITE);
-    }
-}
-
-pub fn fire_ray(
-    mut raycast: Raycast,
-    op_index: Res<OpIndex>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    interactable_query: Query<Entity, With<Interactable>>,
-    windows: Query<&Window>,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => {
-            warn!("No CameraWorld found or multiple CameraWorlds detected.");
-            return;
-        },
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    // Loop through the raycast hits and detect if we hit an interactable entity
-    for (entity, _intersection) in hits {
-        if Some(interactable_query.get(*entity)).is_some() {
-            let entity_index = entity.index();
-            if let Some(entity) = InteractableEntities::from_index(&op_index, entity_index) {
-                match entity {
-                    InteractableEntities::Ground => {
-                        info!("Cast: Ground");
-                    },
-                    _ => {
-                    },
-                }
-            } 
-        }
-    }
-}
-
-pub fn release_ray(
-    mut raycast: Raycast,
-    op_index: Res<OpIndex>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    interactable_query: Query<Entity, With<Interactable>>,
-    windows: Query<&Window>,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => {
-            warn!("No CameraWorld found or multiple CameraWorlds detected.");
-            return;
-        },
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    // Loop through the raycast hits and detect if we hit an interactable entity
-    for (entity, _intersection) in hits {
-        if Some(interactable_query.get(*entity)).is_some() {
-            info!("Entity: {:?}", entity);
-            let entity_index = entity.index();
-            if let Some(entity) = InteractableEntities::from_index(&op_index, entity_index) {
-                // info!("Entity: {:?}", entity);
-                match entity {
-                    InteractableEntities::Ground => {
-                        info!("Release: Ground");
-                    },
-                    _ => {
-                    },
-                }
-            } 
-        }
-    }
-}
-
-pub fn game_state_update(
-    game_state: Res<State<GameState>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-) {
-    match game_state.get() {
-        GameState::LoadingScreen => {
-            info!("GameState::MenuMain");
-            next_game_state.set(GameState::MenuMain);
-        },
-        GameState::MenuMain => {
-            info!("GameState::MenuSettings");
-            next_game_state.set(GameState::MenuSettings);
-        },
-        GameState::MenuSettings => {
-            info!("GameState::MenuOnline");
-            next_game_state.set(GameState::MenuOnline);
-        },
-        GameState::MenuOnline => {
-            info!("GameState::InGame");
-            next_game_state.set(GameState::InGame);
-        },
-        GameState::InGame => {
-            info!("GameState::InGamePaused");
-            next_game_state.set(GameState::InGamePaused);
-        },
-        GameState::InGamePaused => {
-            info!("GameState::PostGameReview");
-            next_game_state.set(GameState::PostGameReview);
-        },
-        GameState::PostGameReview => {
-            info!("GameState::LoadingScreen");
-            next_game_state.set(GameState::LoadingScreen);
-        },
-    }
-}
-
-pub fn game_state_logic(
-    game_state: Res<State<GameState>>,
-) {
-    match game_state.get() {
-        GameState::LoadingScreen => {},
-        GameState::MenuMain => {},
-        GameState::MenuSettings => {},
-        GameState::MenuOnline => {},
-        GameState::InGame => {},
-        GameState::InGamePaused => {},
-        GameState::PostGameReview => {},
-    }
 }

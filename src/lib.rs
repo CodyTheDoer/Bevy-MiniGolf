@@ -234,17 +234,6 @@ impl UserInterface {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum InfoCall {
-    Call0,
-    Call1,
-    Call2,
-    Call3,
-    Call4,
-    Call5,
-    Call6,
-}
-
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum GameState {
     #[default]

@@ -36,9 +36,10 @@ use minigolf::user_interface::camera_world::{
     camera_orbit_entity_state_update,
 };
 use minigolf::user_interface::user_interface::{
+    bonk_gizmo,
     game_state_update, 
-    fire_ray, 
-    release_ray, 
+    ray_fire, 
+    ray_release, 
     draw_cursor, 
     setup_ui
 };
@@ -57,7 +58,6 @@ use minigolf::level_handler::level_handler::{
 // --- Physics Handler Import --- //
 use minigolf::level_handler::physics_handler::{
     add_physics_query_and_update_scene,
-    bonk_gizmo,
     bonk_step_start,
     bonk_step_mid,
     bonk_step_end,
@@ -123,8 +123,8 @@ fn main() {
         .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
 
         // User Interface //
-        .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
-        .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
+        .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
+        .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, draw_cursor)
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
         // .add_systems(Update, level_state_logic) // uncomment for level based logic every frame
