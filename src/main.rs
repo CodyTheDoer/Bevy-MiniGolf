@@ -106,6 +106,7 @@ fn main() {
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_ui)
         .add_systems(Startup, setup_3d_camera)
+        .add_systems(Startup, performance_physics_setup)
 
         // --- Update Systems Initialization --- //
         // User Interface //
@@ -167,6 +168,52 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
         .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
-        
+
+        // .add_systems(Update, smooth_golf_ball_motion),
+
         app.run();
 }
+
+fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
+    // Set fixed timestep mode
+    rapier_config.timestep_mode = TimestepMode::Fixed {
+        dt: 1.0 / 60.0,       // Physics update rate
+        substeps: 24,          // Number of physics steps per frame
+    };
+
+    // // Alternative: Variable timestep mode
+    // rapier_config.timestep_mode = TimestepMode::Variable {
+    //     max_dt: 1.0 / 240.0,  // Maximum time step
+    //     time_scale: 1.0,     // Time scaling factor
+    //     substeps: 4,         // Number of physics steps per frame
+    // };
+
+    // Enable/disable physics systems
+    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
+    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
+    
+    // Gravity configuration
+    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
+}
+
+// fn smooth_golf_ball_motion(
+//     mut ball_query: Query<(Entity, &Name, &mut Velocity, &Transform)>,
+//     time: Res<Time>,
+// ) {
+//     for (entity, name, velocity, transform) in ball_query.iter_mut() {
+//         if name.as_str() == "ball" {
+//             // Get the current surface normal at the ball's position
+//             let surface_normal = get_surface_normal(transform.translation);
+            
+//             // Project velocity along the surface
+//             let tangent_velocity = velocity.linvel - velocity.linvel.project_onto(surface_normal);
+            
+//             // Apply smoothing
+//             velocity.linvel = velocity.linvel.lerp(tangent_velocity, 0.1);
+            
+//             // Optional: Apply additional rolling resistance based on slope
+//             let slope_factor = surface_normal.dot(Vec3::Y).abs();
+//             velocity.linvel *= 1.0 - (0.01 * slope_factor * time.delta_seconds());
+//         }
+//     }
+// }

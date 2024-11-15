@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::prelude::*;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::{parry::shape::SharedShape, prelude::*};
+use bevy_render::mesh::{Indices, VertexAttributeValues};
 
 use crate::{
     ArrowState, 
@@ -8,6 +9,7 @@ use crate::{
     BonkMouseXY,
     CameraWorld,
     GameStateHandler,
+    Ground,
 };
 
 use std::f32::consts::PI;
@@ -18,27 +20,39 @@ pub fn add_physics_query_and_update_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
+    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
 ) {
+    let ground_sensor = commands
+        .spawn(Collider::cylinder(0.1, 2000.0))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(Sensor)
+        .id();
+
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
         if name.as_str() == "ball" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             let collider = Collider::ball(0.022);
             commands
                 .entity(entity)
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
                 .insert(Damping {
-                    angular_damping: 2.0,
+                    angular_damping: 1.5,
                     ..default()
                 })
+                .insert(Friction {
+                    coefficient: 0.2,   // Lower friction to reduce edge catching
+                    combine_rule: CoefficientCombineRule::Min, // Use minimum friction between surfaces
+                })
                 .insert(ExternalImpulse::default())
-                .insert(ColliderMassProperties::Density(20.0))
+                .insert(ColliderMassProperties::Density(0.2))
                 .insert(GravityScale(1.0));
+                // .insert(Ccd::enabled());
         }
         if name.as_str() == "cup" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
             // Attach collider to the entity of this same object.
             commands
@@ -46,19 +60,18 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider);
         }
         if name.as_str() == "cup_sensor" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            // Create the collider from the mesh.
-            let collider = Collider::cuboid(0.8, 0.5, 0.8);
+            let collider = Collider::cuboid(0.04, 0.01, 0.04);
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
+                // .insert(material_color.into())
                 .insert(collider)
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Sensor);
         }
         if name.as_str() == "start" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             // Create the collider from the mesh.
+            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
             let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
             // Attach collider to the entity of this same object.
             commands
@@ -67,18 +80,22 @@ pub fn add_physics_query_and_update_scene(
         }
         if name.as_str() == "green" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+
+            let mut flags = TriMeshFlags::default();
+            flags.set(TriMeshFlags::FIX_INTERNAL_EDGES, true);
+
+            let (vtx, idx) =
+                    extract_mesh_vertices_indices(mesh).unwrap();
+            let collider: Collider = SharedShape::trimesh_with_flags(vtx, idx, flags).into();
+
             // Create the collider from the mesh.
-            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+            // let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
 
             // Attach collider to the entity of this same object.
             commands
                 .entity(entity)
                 .insert(collider)
-                .insert(RigidBody::Fixed)
-                .insert(Friction {
-                    coefficient: 5.0,
-                    combine_rule: CoefficientCombineRule::Max,
-                });
+                .insert(RigidBody::Fixed);
         }
         if name.as_str() == "cannon" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -90,6 +107,43 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider);
         }
     }
+}
+
+fn extract_mesh_vertices_indices(
+    mesh: &Mesh,
+) -> Option<(
+    Vec<bevy_rapier3d::na::Point3<bevy_rapier3d::prelude::Real>>,
+    Vec<[u32; 3]>,
+)> {
+    use bevy_rapier3d::math::Real;
+    use bevy_rapier3d::na::Point3;
+
+    let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+    let indices = mesh.indices()?;
+
+    let vtx: Vec<_> = match vertices {
+        VertexAttributeValues::Float32(vtx) => Some(
+            vtx.chunks(3)
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect(),
+        ),
+        VertexAttributeValues::Float32x3(vtx) => Some(
+            vtx.iter()
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect(),
+        ),
+        _ => None,
+    }?;
+
+    let idx = match indices {
+        Indices::U16(idx) => idx
+            .chunks_exact(3)
+            .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
+            .collect(),
+        Indices::U32(idx) => idx.chunks_exact(3).map(|i| [i[0], i[1], i[2]]).collect(),
+    };
+
+    Some((vtx, idx))
 }
 
 pub fn apply_rotation_matrix_camera_yaw(
@@ -118,7 +172,7 @@ pub fn bonk(
 ) {
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
-        let scaled_bonk = bonk.power * 0.025;
+        let scaled_bonk = bonk.power * 0.000125;
         info!("bonk.power: {:?}", scaled_bonk);
         impulse.impulse = bonk.direction * scaled_bonk;
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
