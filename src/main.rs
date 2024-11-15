@@ -119,7 +119,7 @@ fn main() {
 
         // --- Update Systems Initialization --- //
         // User Interface //
-        .add_systems(Update, pan_orbit_camera.run_if(any_with_component::<PanOrbitState>))
+        // .add_systems(Update, pan_orbit_camera.run_if(any_with_component::<PanOrbitState>))
         .add_systems(Update, fire_ray.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, release_ray.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
@@ -183,7 +183,8 @@ fn main() {
         .insert_resource(CameraOrbitEntityStateHandler::new())
         .insert_resource(CameraCoordTracker::new())
         .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
-        .add_systems(Update, camera_orbit_entity_state_logic);
+        .add_systems(Update, camera_orbit_entity_state_logic)
+        .add_systems(Update, pan_orbit_camera);
 
         app.run();
 }
