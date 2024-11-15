@@ -8,34 +8,11 @@ use crate::{
     GLBStorageID,
     Ground, 
     Interactable, 
-    InteractableEntities, 
     LevelState,
     MapSetState,
     OpIndex,
     UserInterface,
 };
-
-impl InteractableEntities {
-    pub fn from_index(
-        op_index: &Res<OpIndex>,
-        index: u32,
-    ) -> Option<InteractableEntities> {
-        let mut interactable_entity_map = HashMap::new();
-        interactable_entity_map.insert(0 + op_index.ui_entities, InteractableEntities::Ground);
-        interactable_entity_map.insert(1 + op_index.ui_entities, InteractableEntities::Ent1);
-        interactable_entity_map.insert(2 + op_index.ui_entities, InteractableEntities::Ent2);
-        interactable_entity_map.insert(3 + op_index.ui_entities, InteractableEntities::Ent3);
-        interactable_entity_map.insert(4 + op_index.ui_entities, InteractableEntities::Ent4);
-        interactable_entity_map.insert(5 + op_index.ui_entities, InteractableEntities::Ent5);
-        interactable_entity_map.insert(6 + op_index.ui_entities, InteractableEntities::Ent6);
-
-        interactable_entity_map.get(&index).cloned()
-    }
-
-    pub fn entity_info(&self) {
-        info!("Entity:\n   {:?}", self);
-    }
-}
 
 pub fn setup_ground(
     mut commands: Commands,
@@ -79,7 +56,7 @@ pub fn level_state_update(
     mut gsh: ResMut<GameStateHandler>,
 ) {
     match level_state.get() {
-        LevelState::HoleTutorial => {
+        LevelState::MainMenu => {
             gsh.current_level += 1;
             info!("LevelState::Hole1");
             next_game_state.set(LevelState::Hole1);
@@ -170,9 +147,14 @@ pub fn level_state_update(
             next_game_state.set(LevelState::Hole18);
         },
         LevelState::Hole18 => {
-            gsh.current_level = 0;
+            gsh.current_level += 1;
             info!("LevelState::HoleTutorial");
             next_game_state.set(LevelState::HoleTutorial);
+        },
+        LevelState::HoleTutorial => {
+            gsh.current_level = 0;
+            info!("LevelState::Hole1");
+            next_game_state.set(LevelState::MainMenu);
         },
     }
 }
@@ -182,7 +164,7 @@ pub fn level_state_logic(
     mut positions: Query<&mut Transform, With<RigidBody>>,
 ) {
     match level_state.get() {
-        LevelState::HoleTutorial => {},
+        LevelState::MainMenu => {},
         LevelState::Hole1 => {},
         LevelState::Hole2 => {},
         LevelState::Hole3 => {},
@@ -201,6 +183,7 @@ pub fn level_state_logic(
         LevelState::Hole16 => {},
         LevelState::Hole17 => {},
         LevelState::Hole18 => {},
+        LevelState::HoleTutorial => {},
     }
 }
 
@@ -234,7 +217,7 @@ pub fn gltf_handler_init_hole_n(
             GltfAssetLabel::Scene(0).from_asset(glb_file.map),
         );
 
-        if hole == 0 {
+        if hole == 19 {
             // let root_entity_ball = commands // Eventually will be attached to player.
             //     .spawn(SceneBundle {
             //         scene: ball_handle.clone(),
@@ -266,20 +249,27 @@ pub fn gltf_handler_init_hole_n(
     };
 }
 
+
 // When exiting state 
-pub fn purge_glb_all(
+pub fn purge_glb(
     mut commands: Commands,
-    rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
-    for (entity, _) in rigid_bodies.iter() {
-        // Access the rigid body from the physics world using its handle
-        commands.entity(entity).despawn_recursive();
-    }    
     for (entity, _) in scene_meshes.iter() {
         // Access the rigid body from the physics world using its handle
         commands.entity(entity).despawn_recursive();
     }        
+}
+
+// When exiting state 
+pub fn purge_rigid_bodies(
+    mut commands: Commands,
+    rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
+) {
+    for (entity, _) in rigid_bodies.iter() {
+        // Access the rigid body from the physics world using its handle
+        commands.entity(entity).despawn_recursive();
+    }      
 }
 
 pub fn map_set_state_update(

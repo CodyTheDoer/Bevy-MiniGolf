@@ -52,7 +52,8 @@ use minigolf::level_handler::level_handler::{
     map_set_state_update, 
     setup_ground, 
     setup_light, 
-    purge_glb_all
+    purge_glb,
+    purge_rigid_bodies,
 };
 
 // --- Physics Handler Import --- //
@@ -97,7 +98,7 @@ fn main() {
         .insert_state(ArrowState::Idle)
         .insert_state(CameraOrbitEntityState::Ball)
         .insert_state(GameState::LoadingScreen)
-        .insert_state(LevelState::HoleTutorial)
+        .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
 
         // --- Resource Initialization --- //
@@ -130,9 +131,9 @@ fn main() {
         // .add_systems(Update, level_state_logic) // uncomment for level based logic every frame
         
         // Camera //
-        .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
         .add_systems(Update, camera_orbit_entity_state_logic)
         .add_systems(Update, pan_orbit_camera)
+        .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
 
         // Physics //
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
@@ -142,7 +143,7 @@ fn main() {
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Middle)))
 
         // --- OnEnter State Reaction Initialization --- //
-        .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
+        .add_systems(OnEnter(LevelState::MainMenu), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole3), init_hole_n)
@@ -161,27 +162,49 @@ fn main() {
         .add_systems(OnEnter(LevelState::Hole16), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole17), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole18), init_hole_n)
+        .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
 
         // --- OnExit State Reaction Initialization --- //
-        .add_systems(OnExit(LevelState::HoleTutorial), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole1), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole2), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole3), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole4), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole5), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole6), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole7), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole8), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole9), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole10), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole11), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole12), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole13), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole14), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
-        .add_systems(OnExit(LevelState::Hole18), purge_glb_all);
+        .add_systems(OnExit(LevelState::MainMenu), purge_glb)
+        .add_systems(OnExit(LevelState::Hole1), purge_glb)
+        .add_systems(OnExit(LevelState::Hole2), purge_glb)
+        .add_systems(OnExit(LevelState::Hole3), purge_glb)
+        .add_systems(OnExit(LevelState::Hole4), purge_glb)
+        .add_systems(OnExit(LevelState::Hole5), purge_glb)
+        .add_systems(OnExit(LevelState::Hole6), purge_glb)
+        .add_systems(OnExit(LevelState::Hole7), purge_glb)
+        .add_systems(OnExit(LevelState::Hole8), purge_glb)
+        .add_systems(OnExit(LevelState::Hole9), purge_glb)
+        .add_systems(OnExit(LevelState::Hole10), purge_glb)
+        .add_systems(OnExit(LevelState::Hole11), purge_glb)
+        .add_systems(OnExit(LevelState::Hole12), purge_glb)
+        .add_systems(OnExit(LevelState::Hole13), purge_glb)
+        .add_systems(OnExit(LevelState::Hole14), purge_glb)
+        .add_systems(OnExit(LevelState::Hole15), purge_glb)
+        .add_systems(OnExit(LevelState::Hole16), purge_glb)
+        .add_systems(OnExit(LevelState::Hole17), purge_glb)
+        .add_systems(OnExit(LevelState::Hole18), purge_glb)
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_glb)
+        
+        .add_systems(OnExit(LevelState::Hole1), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole2), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole3), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole4), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole5), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole6), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole7), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole8), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole9), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole10), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole11), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole12), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole13), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole14), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole15), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole16), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole17), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies);
 
         app.run();
 }

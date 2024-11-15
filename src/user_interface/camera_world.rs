@@ -48,8 +48,18 @@ pub fn camera_orbit_entity_state_logic(
     }
 
     match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::MainMenu => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "cam_target" {
+                    info!("CameraOrbitEntityState::MainMenu");
+                    camera_coord_tracker.current_coords = transform.translation;
+                    break;
+                }
+            }        
+        }
         CameraOrbitEntityState::Ball => {
             for (entity, name, transform) in scene_meshes.iter() {
+                info!("CameraOrbitEntityState::ball");
                 if name.as_str() == "ball" {
                     camera_coord_tracker.current_coords = ball_rigid_body_coords;
                     break;
@@ -58,6 +68,7 @@ pub fn camera_orbit_entity_state_logic(
         }
         CameraOrbitEntityState::Cup => {
             for (entity, name, transform) in scene_meshes.iter() {
+                info!("CameraOrbitEntityState::cup");
                 if name.as_str() == "cup" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
@@ -65,6 +76,7 @@ pub fn camera_orbit_entity_state_logic(
             }        
         }
         CameraOrbitEntityState::FreePan => {    
+            info!("CameraOrbitEntityState::FreePan");
         }
     }
 }
@@ -75,20 +87,25 @@ pub fn camera_orbit_entity_state_update(
     mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
 ) {
     match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::MainMenu => {
+            info!("CameraOrbitEntityState::Ball");
+            camera_orbit_entity_state_handler.current_state = 1;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
+        },
         CameraOrbitEntityState::Ball => {
             info!("CameraOrbitEntityState::Cup");
-            camera_orbit_entity_state_handler.current_state = 1;
+            camera_orbit_entity_state_handler.current_state = 2;
             next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
         },
         CameraOrbitEntityState::Cup => {
             info!("CameraOrbitEntityState::FreePan");
-            camera_orbit_entity_state_handler.current_state = 2;
+            camera_orbit_entity_state_handler.current_state = 3;
             next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
         },
         CameraOrbitEntityState::FreePan => {
-            info!("CameraOrbitEntityState::Ball");
+            info!("CameraOrbitEntityState::MainMenu");
             camera_orbit_entity_state_handler.current_state = 0;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
         },
     }
 }
@@ -123,7 +140,7 @@ pub fn pan_orbit_camera(
     for (settings, mut state, mut transform) in &mut q_camera {
         // Determine the target based on the current camera state
         let target = match camera_orbit_entity_state.get() {
-            CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => {
+            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
                 camera_coord_tracker.current_coords
             }
             CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center

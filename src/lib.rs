@@ -158,7 +158,7 @@ pub struct SceneLoadedEvent {
 impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
-            "glb/boilerplate_level_tutorial.glb",
+            "glb/main_menu.glb",
             "glb/boilerplate_level_1.glb",
             "glb/boilerplate_level_2.glb",
             "glb/boilerplate_level_3.glb",
@@ -177,6 +177,7 @@ impl GLBStorageID {
             "glb/boilerplate_level_16.glb",
             "glb/boilerplate_level_17.glb",
             "glb/boilerplate_level_18.glb",
+            "glb/boilerplate_level_tutorial.glb",
         ];
         let map_ids: Vec<MapID> = map_paths
             .iter()
@@ -188,21 +189,10 @@ impl GLBStorageID {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum InteractableEntities {
-    Ground,
-    Ent1,
-    Ent2,
-    Ent3,
-    Ent4,
-    Ent5,
-    Ent6,
-}
-
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum LevelState {
     #[default]
-    HoleTutorial,
+    MainMenu,
     Hole1,
     Hole2,
     Hole3,
@@ -221,6 +211,7 @@ pub enum LevelState {
     Hole16,
     Hole17,
     Hole18,
+    HoleTutorial,
 }
 
 // --- User Interface --- //
@@ -387,6 +378,7 @@ impl Default for PanOrbitSettings {
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum CameraOrbitEntityState {
     #[default]
+    MainMenu,
     Ball,
     Cup,
     FreePan,

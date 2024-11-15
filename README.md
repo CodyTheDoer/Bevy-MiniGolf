@@ -25,5 +25,4 @@ Deeply inspired by 3-D Ultra Minigolf from the late nineties.
     - Back Nine
     - Select A Hole
 - Custom Golf Balls 
-- Custom Putters
 - Leaderboards... 

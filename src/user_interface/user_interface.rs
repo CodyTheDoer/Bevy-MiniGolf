@@ -12,8 +12,7 @@ use crate::{
     Fonts, 
     GameState,
     Ground, 
-    Interactable, 
-    InteractableEntities, 
+    Interactable,
     OpIndex,
 };
 
@@ -98,7 +97,7 @@ pub fn draw_cursor(
 
         // Draw a circle at the intersection point using Gizmos (just above the surface).
         let up = Dir3::Y; 
-        gizmos.circle(point + up * 0.05, up, 0.2, Color::WHITE);
+        gizmos.circle(point + up * 0.05, up, 0.05, Color::WHITE);
     }
 }
 

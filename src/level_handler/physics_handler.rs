@@ -69,15 +69,6 @@ pub fn add_physics_query_and_update_scene(
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Sensor);
         }
-        if name.as_str() == "start" {
-            // Create the collider from the mesh.
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
-            // Attach collider to the entity of this same object.
-            commands
-                .entity(entity)
-                .insert(collider);
-        }
         if name.as_str() == "green" {
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
 
@@ -262,6 +253,7 @@ pub fn bonk_step_end( // Fires bonk
 
 pub fn collision_events_listener(
     mut collision_events: EventReader<CollisionEvent>,
+    scene_meshes_asleep: Query<(Entity, &Name)>,
 ) {
     for collision_event in collision_events.read() {
         match collision_event {
@@ -291,10 +283,8 @@ pub fn golf_ball_is_asleep(
                     // Check if the rigid body is currently sleeping
                     if active_entity == entity {
                         if rigid_body.is_sleeping() {
-                            println!("Entity {:?} is sleeping", entity);
+                            // println!("Entity {:?} is sleeping", entity);
                             results = true;
-                        } else {
-                            println!("Entity {:?} is awake", entity);
                         }
                     }
                 }
