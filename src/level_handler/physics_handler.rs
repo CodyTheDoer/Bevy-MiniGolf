@@ -41,12 +41,12 @@ pub fn add_physics_query_and_update_scene(
                     angular_damping: 1.5,
                     ..default()
                 })
-                .insert(Friction {
-                    coefficient: 0.2,   // Lower friction to reduce edge catching
-                    combine_rule: CoefficientCombineRule::Min, // Use minimum friction between surfaces
-                })
+                // .insert(Friction {
+                //     coefficient: 0.2,   // Lower friction to reduce edge catching
+                //     combine_rule: CoefficientCombineRule::Min, // Use minimum friction between surfaces
+                // })
                 .insert(ExternalImpulse::default())
-                .insert(ColliderMassProperties::Density(0.2))
+                .insert(ColliderMassProperties::Density(1.0))
                 .insert(GravityScale(1.0))
                 .insert(Ccd::enabled());
         }
@@ -172,7 +172,7 @@ pub fn bonk(
 ) {
     for mut impulse in impulses.iter_mut() {
         // Reset or set the impulse every frame
-        let scaled_bonk = bonk.power * 0.000125;
+        let scaled_bonk = bonk.power * 0.00025;
         info!("bonk.power: {:?}", scaled_bonk);
         impulse.impulse = bonk.direction * scaled_bonk;
         impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
