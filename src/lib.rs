@@ -391,7 +391,6 @@ pub fn camera_orbit_entity_state_logic(
 ) {
     let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
     for (_, transform) in q_rigid_body.iter() {
-        // info!("Rigid Body Ball: transform: {:?}", transform.translation.clone());
         ball_rigid_body_coords = transform.translation.clone();
     }
 
@@ -399,7 +398,6 @@ pub fn camera_orbit_entity_state_logic(
         CameraOrbitEntityState::Ball => {
             for (entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "ball" {
-                    // info!("Ball: Current Transform: {:?}", transform.clone());
                     camera_coord_tracker.current_coords = ball_rigid_body_coords;
                     break;
                 }
@@ -408,7 +406,6 @@ pub fn camera_orbit_entity_state_logic(
         CameraOrbitEntityState::Cup => {
             for (entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cup" {
-                    info!("Cup: Current Translation: {:?}", transform.translation.clone());
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
                 }
