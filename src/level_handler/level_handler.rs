@@ -186,9 +186,6 @@ pub fn level_state_logic(
     }
 }
 
-
-use crate::LoadedSceneHandle;
-
 // When entering state 
 pub fn init_hole_n(
     asset_server: Res<AssetServer>,

@@ -17,7 +17,7 @@ use minigolf::{
     LevelState,
     MapSetState,
     MenuState,
-    PartyState,
+    PartyConnectionState,
     PlayerCompletionState,
     PlayThroughStyleState,
     TurnState,
@@ -33,6 +33,8 @@ use minigolf::{
     GLBStorageID, 
     PanOrbitState,
     PanOrbitSettings,
+    Party,
+    Player,
 };
 
 // --- User Interface Import --- //
@@ -109,7 +111,7 @@ fn main() {
         .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
         .insert_state(MenuState::NoSelection)
-        .insert_state(PartyState::Local)
+        .insert_state(PartyConnectionState::Local)
         .insert_state(PlayerCompletionState::NotInGame)
         .insert_state(PlayThroughStyleState::Proximity)
         .insert_state(TurnState::Idle)
@@ -121,6 +123,7 @@ fn main() {
         .insert_resource(Fonts::new())
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
+        .insert_resource(Party::new())
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
@@ -136,9 +139,9 @@ fn main() {
         .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
 
         // User Interface //
+        .add_systems(Update, draw_cursor)
         .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
-        .add_systems(Update, draw_cursor)
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
         // .add_systems(Update, level_state_logic) // uncomment for level based logic every frame
         
@@ -223,6 +226,7 @@ fn main() {
         // .add_systems(OnEnter(MenuState::Online), _______)
         // .add_systems(OnEnter(MenuState::Preferences), _______)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
+        // .add_systems(OnEnter(MenuState::Tutorial), turn_state_response_hole_complete)
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener));
         // .add_systems(Update, );
 
@@ -254,6 +258,7 @@ fn asset_event_listener(
 
 fn menu_state_response_tutorial(
     mut gsh: ResMut<GameStateHandler>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
@@ -261,12 +266,14 @@ fn menu_state_response_tutorial(
     mut next_turn_state: ResMut<NextState<TurnState>>,
     mut camera_query: Query<&mut PanOrbitState>,
 ) {
+    info!("menu_state_response: tutorial");
     gsh.set_current_level(19);
+    next_map_set_state.set(MapSetState::Tutorial);
+    next_level_state.set(LevelState::HoleTutorial);
     next_camera_state.set(CameraOrbitEntityState::Ball);
     next_game_state.set(GameState::InGame);
-    next_map_set_state.set(MapSetState::Tutorial);
     next_player_completion_state.set(PlayerCompletionState::HoleIncomplete);
-    next_turn_state.set(TurnState::Player1);
+    next_turn_state.set(TurnState::Turn);
     for mut state in camera_query.iter_mut() {
         info!("{:?}", state);
         state.radius = 2.0;
@@ -274,21 +281,26 @@ fn menu_state_response_tutorial(
         state.yaw = 22.0f32.to_radians();
     }
 }
+// fn menu_state_response_leader_board() {}
+// fn menu_state_response_local() {}
+// fn menu_state_response_online() {}
+// fn menu_state_response_preferences() {}
 
-fn menu_state_response_leader_board() {}
+fn turn_state_response_hole_complete(
+    mut party: ResMut<Party>,
 
-fn menu_state_response_local() {}
+    mut map_set_state: Res<State<MapSetState>>,
+    mut turn_state: Res<State<TurnState>>,
 
-fn menu_state_response_online() {}
-
-fn menu_state_response_preferences() {}
-
-// fn map_set_state_response_tutorial(
-//     mut next_level_state: ResMut<NextState<LevelState>>,
-// ) {
-//     next_level_state.set(LevelState::HoleTutorial);
-// }
-fn map_set_state_response_whole_course() {}
-fn map_set_state_response_front_nine() {}
-fn map_set_state_response_back_nine() {}
-fn map_set_state_response_select_a_hole() {}
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_turn_state: ResMut<NextState<TurnState>>,
+) {
+    // let owned_map_set_state = map_set_state;
+    info!("map_set_state: {:?}\n\n\n\n", map_set_state);
+    // match owned_map_set_state {
+    //     ""
+    // }
+}
+// fn turn_state_response_new_game() {}
+// fn turn_state_response_next_turn() {}
+// fn turn_state_response_game_complete() {}

@@ -23,9 +23,97 @@ impl Fonts {
     }
 }
 
-// --- Party Handler --- //
+// --- State Enums --- //
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum PartyState {
+pub enum ArrowState {
+    #[default]
+    Idle,
+    DrawingArrow,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum CameraOrbitEntityState {
+    #[default]
+    MainMenu,
+    Ball,
+    Cup,
+    FreePan,
+    LeaderBoard,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum GameState {
+    #[default]
+    LoadingScreen,
+    MenuMain,
+    MenuSettings,
+    MenuOnline,
+    GameInitLocal,
+    GameInitOnline,
+    InGame,
+    InGamePaused,
+    PostGameReview,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum LeaderBoardState {
+    #[default]
+    Mixed,
+    Online,
+    Local,
+    PostGame,
+    InGame,
+    InGameOnline,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum LevelState {
+    #[default]
+    MainMenu,
+    Hole1,
+    Hole2,
+    Hole3,
+    Hole4,
+    Hole5,
+    Hole6,
+    Hole7,
+    Hole8,
+    Hole9,
+    Hole10,
+    Hole11,
+    Hole12,
+    Hole13,
+    Hole14,
+    Hole15,
+    Hole16,
+    Hole17,
+    Hole18,
+    HoleTutorial,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum MapSetState {
+    #[default]
+    Tutorial,
+    WholeCorse,
+    FrontNine,
+    BackNine,
+    SelectAHole,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum MenuState {
+    #[default]
+    NoSelection,
+    Online,
+    Local,
+    Tutorial,
+    LeaderBoard,
+    Preferences,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum PartyConnectionState {
     #[default]
     Local,
     Online,
@@ -50,33 +138,127 @@ pub enum PlayThroughStyleState {
 pub enum TurnState {
     #[default]
     Idle,
-    Player1, // ;ocal player is always the Player1, co-op players locally get the others incrementally
-    Player2,
-    Player3,
-    Player4,
-    Player5,
-    Player6,
+    NewGame,
+    Turn,
+    NextTurn,
+    HoleComplete,
+    GameComplete,
+}
+
+// --- Player Handler --- //
+
+#[derive(Resource)]
+pub struct Player {
+    pub player_id: String,
+	pub hole_completion_state: PlayerCompletionState,
+	pub ball_material: Color, // For now custom material/shaders planned
+	pub ball_location: Vec3,
+	pub puts_count_total: u32,
+	pub puts_hole_1: u32,
+	pub puts_hole_2: u32,
+	pub puts_hole_3: u32,
+	pub puts_hole_4: u32,
+	pub puts_hole_5: u32,
+	pub puts_hole_6: u32,
+	pub puts_hole_7: u32,
+	pub puts_hole_8: u32,
+	pub puts_hole_9: u32,
+	pub puts_hole_10: u32,
+	pub puts_hole_11: u32,
+	pub puts_hole_12: u32,
+	pub puts_hole_13: u32,
+	pub puts_hole_14: u32,
+	pub puts_hole_15: u32,
+	pub puts_hole_16: u32,
+	pub puts_hole_17: u32,
+	pub puts_hole_18: u32,
+}
+
+impl Player {
+    pub fn new() -> Self {
+        Player {
+            player_id: String::from("Player 1"),
+            hole_completion_state: PlayerCompletionState::NotInGame,
+            ball_material: Color::srgb(1.0, 0.0, 1.0),
+            ball_location: Vec3::new(0.0, 0.0, 0.0),
+            puts_count_total: 0,
+            puts_hole_1: 0,
+            puts_hole_2: 0,
+            puts_hole_3: 0,
+            puts_hole_4: 0,
+            puts_hole_5: 0,
+            puts_hole_6: 0,
+            puts_hole_7: 0,
+            puts_hole_8: 0,
+            puts_hole_9: 0,
+            puts_hole_10: 0,
+            puts_hole_11: 0,
+            puts_hole_12: 0,
+            puts_hole_13: 0,
+            puts_hole_14: 0,
+            puts_hole_15: 0,
+            puts_hole_16: 0,
+            puts_hole_17: 0,
+            puts_hole_18: 0,
+        }
+    }
+
+    pub fn start_game(&mut self) {
+        self.hole_completion_state = PlayerCompletionState::HoleIncomplete;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
+        self.puts_count_total = 0;
+        self.puts_hole_1 = 0;
+        self.puts_hole_2 = 0;
+        self.puts_hole_3 = 0;
+        self.puts_hole_4 = 0;
+        self.puts_hole_5 = 0;
+        self.puts_hole_6 = 0;
+        self.puts_hole_7 = 0;
+        self.puts_hole_8 = 0;
+        self.puts_hole_9 = 0;
+        self.puts_hole_10 = 0;
+        self.puts_hole_11 = 0;
+        self.puts_hole_12 = 0;
+        self.puts_hole_13 = 0;
+        self.puts_hole_14 = 0;
+        self.puts_hole_15 = 0;
+        self.puts_hole_16 = 0;
+        self.puts_hole_17 = 0;
+        self.puts_hole_18 = 0;
+    }
+
+    pub fn add_put(&mut self, hole: i32) {
+    }
+}
+
+// --- Party Handler --- //
+
+#[derive(Resource)]
+pub struct Party {
+    players: Arc<[Player]>,
+    active_player: Arc<i32>,
+}
+
+impl Party {
+    pub fn new() -> Self {
+        let players: Arc<[Player]> = Arc::new([Player::new()]);
+        let active_player: Arc<i32> = 0.into();
+        Party {
+            players,
+            active_player,
+        } 
+    }
+
+    pub fn next_proximity_player() {
+    }
+
+    pub fn next_set_order_player() {
+    }
 }
 
 // --- LeaderBoard Handler --- //
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum LeaderBoardState {
-    #[default]
-    Mixed,
-    Online,
-    Local,
-    PostGame,
-    InGame,
-    InGameOnline,
-}
 
 // --- Physics Handler --- //
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum ArrowState {
-    #[default]
-    Idle,
-    DrawingArrow,
-}
 
 #[derive(Clone, Debug)] // could tie into player struct once assembled
 pub struct BonkMouseXY {
@@ -159,30 +341,6 @@ impl BonkHandler {
 }
 
 // --- Level Handler --- //
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum LevelState {
-    #[default]
-    MainMenu,
-    Hole1,
-    Hole2,
-    Hole3,
-    Hole4,
-    Hole5,
-    Hole6,
-    Hole7,
-    Hole8,
-    Hole9,
-    Hole10,
-    Hole11,
-    Hole12,
-    Hole13,
-    Hole14,
-    Hole15,
-    Hole16,
-    Hole17,
-    Hole18,
-    HoleTutorial,
-}
 
 #[derive(Component)]
 pub struct Ground;
@@ -249,20 +407,6 @@ impl UserInterface {
     }
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum GameState {
-    #[default]
-    LoadingScreen,
-    MenuMain,
-    MenuSettings,
-    MenuOnline,
-    GameInitLocal,
-    GameInitOnline,
-    InGame,
-    InGamePaused,
-    PostGameReview,
-}
-
 #[derive(Resource)]
 pub struct GameStateHandler {
     current_level: i32,
@@ -303,17 +447,6 @@ impl GameStateHandler {
     }
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum MapSetState {
-    #[default]
-    Tutorial,
-    WholeCorse,
-    FrontNine,
-    BackNine,
-    SelectAHole,
-}
-
-
 // --- Rapier Integration --- //
 pub fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
     for mut transform in positions.iter_mut() {
@@ -332,18 +465,6 @@ pub struct CameraUi;
 
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
-
-
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum CameraOrbitEntityState {
-    #[default]
-    MainMenu,
-    Ball,
-    Cup,
-    FreePan,
-    LeaderBoard,
-}
 
 #[derive(Debug, Resource)]
 pub struct CameraOrbitEntityStateHandler {
@@ -447,23 +568,4 @@ impl Default for PanOrbitSettings {
             scroll_pixel_sensitivity: 1.0,
         }
     }
-}
-
-// --- Active Integration --- //
-
-
-#[derive(Resource)]
-pub struct LoadedSceneHandle {
-    handle: Handle<Scene>,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum MenuState {
-    #[default]
-    NoSelection,
-    Online,
-    Local,
-    Tutorial,
-    LeaderBoard,
-    Preferences,
 }
