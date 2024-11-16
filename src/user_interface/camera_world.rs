@@ -25,9 +25,9 @@ pub fn setup_3d_camera(
     // Position our camera using our component,
     // not Transform (it would get overwritten)
     camera.state.center = Vec3::new(0.0, 0.0, 0.0);
-    camera.state.radius = 20.0;
-    camera.state.pitch = -55.0f32.to_radians();
-    camera.state.yaw = 0.0f32.to_radians();
+    camera.state.radius = 35.0;
+    camera.state.pitch = -9.0f32.to_radians();
+    camera.state.yaw = 15.0f32.to_radians();
     commands.spawn((
         camera,
         CameraWorld,
@@ -46,29 +46,25 @@ pub fn camera_orbit_entity_state_logic(
     for (_, transform) in q_rigid_body.iter() {
         ball_rigid_body_coords = transform.translation.clone();
     }
-
     match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::MainMenu => {
-            for (entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "cam_target" {
-                    info!("CameraOrbitEntityState::MainMenu");
-                    camera_coord_tracker.current_coords = transform.translation;
-                    break;
-                }
-            }        
-        }
         CameraOrbitEntityState::Ball => {
             for (entity, name, transform) in scene_meshes.iter() {
-                info!("CameraOrbitEntityState::ball");
                 if name.as_str() == "ball" {
                     camera_coord_tracker.current_coords = ball_rigid_body_coords;
                     break;
                 }
             }        
         }
+        CameraOrbitEntityState::MainMenu => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "cam_target" {
+                    camera_coord_tracker.current_coords = transform.translation;
+                    break;
+                }
+            }        
+        }
         CameraOrbitEntityState::Cup => {
             for (entity, name, transform) in scene_meshes.iter() {
-                info!("CameraOrbitEntityState::cup");
                 if name.as_str() == "cup" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
@@ -76,7 +72,6 @@ pub fn camera_orbit_entity_state_logic(
             }        
         }
         CameraOrbitEntityState::FreePan => {    
-            info!("CameraOrbitEntityState::FreePan");
         }
     }
 }
@@ -87,6 +82,11 @@ pub fn camera_orbit_entity_state_update(
     mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
 ) {
     match camera_orbit_entity_state.get() {
+        CameraOrbitEntityState::FreePan => {
+            info!("CameraOrbitEntityState::MainMenu");
+            camera_orbit_entity_state_handler.current_state = 0;
+            next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
+        },
         CameraOrbitEntityState::MainMenu => {
             info!("CameraOrbitEntityState::Ball");
             camera_orbit_entity_state_handler.current_state = 1;
@@ -101,11 +101,6 @@ pub fn camera_orbit_entity_state_update(
             info!("CameraOrbitEntityState::FreePan");
             camera_orbit_entity_state_handler.current_state = 3;
             next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
-        },
-        CameraOrbitEntityState::FreePan => {
-            info!("CameraOrbitEntityState::MainMenu");
-            camera_orbit_entity_state_handler.current_state = 0;
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
         },
     }
 }

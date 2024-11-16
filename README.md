@@ -1,3 +1,5 @@
+![Screenshot of the first iteraction of the main menu](images/Minigolf%20001.png)
+
 # MiniGolf Simulator
 
 This project is my personal learning space for building a functional online enabled game in the bevy engine. It is a work-in-progress where I experiment and build knowledge.

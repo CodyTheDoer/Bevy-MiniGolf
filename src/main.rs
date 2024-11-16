@@ -96,7 +96,7 @@ fn main() {
 
         // --- State Initialization --- //
         .insert_state(ArrowState::Idle)
-        .insert_state(CameraOrbitEntityState::Ball)
+        .insert_state(CameraOrbitEntityState::MainMenu)
         .insert_state(GameState::LoadingScreen)
         .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
