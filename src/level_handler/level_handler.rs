@@ -192,59 +192,13 @@ use crate::LoadedSceneHandle;
 // When entering state 
 pub fn init_hole_n(
     asset_server: Res<AssetServer>,
-    asset_server_2: Res<AssetServer>,
-    loaded_scene_handle: Option<Res<LoadedSceneHandle>>,
     commands: Commands,
-    commands_2: Commands,
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameStateHandler>,
-    mut arrow_state: ResMut<State<ArrowState>>,
-    mut next_arrow_state: ResMut<NextState<ArrowState>>,
-    mut mut_commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
-    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
 ) {
     info!("Init Hole: Hole {}", gsh.current_level);
     gltf_handler_init_hole_n(asset_server, commands, glb_storage, gsh.current_level);
-    check_scene_loaded(asset_server_2, loaded_scene_handle, commands_2, arrow_state, next_arrow_state, mut_commands, meshes, scene_meshes, ground_query);
 }
-
-// This system checks if the scene has finished loading
-pub fn check_scene_loaded(
-    asset_server: Res<AssetServer>,
-    loaded_scene_handle: Option<Res<LoadedSceneHandle>>,
-    mut commands: Commands,
-    mut arrow_state: ResMut<State<ArrowState>>,
-    mut next_arrow_state: ResMut<NextState<ArrowState>>,
-    mut mut_commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
-    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
-) {
-    if let Some(loaded_scene_handle) = loaded_scene_handle {
-        let load_state = asset_server.get_load_state(&loaded_scene_handle.handle);
-
-        if load_state == Some(LoadState::Loaded) {
-            // Scene has finished loading, now proceed to add physics
-            info!("Scene has finished loading, proceeding to add physics.");
-
-            add_physics_query_and_update_scene(
-                arrow_state,
-                next_arrow_state,
-                mut_commands,
-                meshes,
-                scene_meshes,
-                ground_query,
-            );
-
-            // Remove the handle resource, as it is no longer needed
-            commands.remove_resource::<LoadedSceneHandle>();
-        }
-    }
-}
-
-use bevy::asset::LoadState;
 
 pub fn gltf_handler_init_hole_n(
     asset_server: Res<AssetServer>,
@@ -253,9 +207,6 @@ pub fn gltf_handler_init_hole_n(
     hole: i32,
 ) {
     if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
-        let ball_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/scaled/golf_ball.glb"),
-        );
         let map_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset("glb/scaled/level_1.glb"),
         );
@@ -264,13 +215,6 @@ pub fn gltf_handler_init_hole_n(
         );
 
         if hole == 19 {
-            // let root_entity_ball = commands // Eventually will be attached to player.
-            //     .spawn(SceneBundle {
-            //         scene: ball_handle.clone(),
-            //         ..default()
-            //     })
-            //     .insert(Interactable)
-            //     .id();   
             let root_entity_map = commands
                 .spawn(SceneBundle {
                     scene: map_handle.clone(),
@@ -280,7 +224,6 @@ pub fn gltf_handler_init_hole_n(
                 .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
                 .id();
             
-            commands.insert_resource(LoadedSceneHandle { handle: scene_handle });
         } else {
             let root_entity = commands
                 .spawn(SceneBundle {
@@ -294,7 +237,6 @@ pub fn gltf_handler_init_hole_n(
     } else {
         warn!("Target map was not valid. Hole was out of bounds, 0 for the main menu, 1-18 for the holes, 19 for the tutorial.");    };
 }
-
 
 // When exiting state 
 pub fn purge_glb(

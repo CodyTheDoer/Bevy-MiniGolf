@@ -65,7 +65,7 @@ use minigolf::level_handler::level_handler::{
 
 // --- Physics Handler Import --- //
 use minigolf::level_handler::physics_handler::{
-    // add_physics_query_and_update_scene,
+    add_physics_query_and_update_scene,
     bonk_step_start,
     bonk_step_mid,
     bonk_step_end,
@@ -150,9 +150,9 @@ fn main() {
         // Physics //
         // .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
         .add_systems(Update, collision_events_listener)
-        .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Middle)))
-        .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Middle)))
-        .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Middle)))
+        .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Left)))
+        .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Left)))
+        .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Left)))
 
         // --- OnEnter State Reaction Initialization --- //        
         .add_systems(OnEnter(LevelState::MainMenu), init_hole_n)
@@ -222,18 +222,12 @@ fn main() {
         // .add_systems(OnEnter(MenuState::Local), _______)
         // .add_systems(OnEnter(MenuState::Online), _______)
         // .add_systems(OnEnter(MenuState::Preferences), _______)
-        .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial);
+        .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener));
+        // .add_systems(Update, );
 
         app.run();
 }
-
-fn menu_state_response_leader_board() {}
-
-fn menu_state_response_local() {}
-
-fn menu_state_response_online() {}
-
-fn menu_state_response_preferences() {}
 
 // .insert_state(ArrowState::Idle)
 // .insert_state(CameraOrbitEntityState::MainMenu)
@@ -247,12 +241,22 @@ fn menu_state_response_preferences() {}
 // .insert_state(PlayThroughStyleState::Proximity)
 // .insert_state(TurnState::Idle)
 
+fn asset_event_listener(
+    mut ev_asset: EventReader<AssetEvent<Mesh>>,
+    // mut assets: ResMut<Assets<Mesh>>,
+) -> bool {
+    let mut event_occurred = false;
+    for event in ev_asset.read() {
+        event_occurred = true;
+    };
+    event_occurred
+}
+
 fn menu_state_response_tutorial(
     mut gsh: ResMut<GameStateHandler>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_player_completion_state: ResMut<NextState<PlayerCompletionState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
     mut camera_query: Query<&mut PanOrbitState>,
@@ -261,7 +265,6 @@ fn menu_state_response_tutorial(
     next_camera_state.set(CameraOrbitEntityState::Ball);
     next_game_state.set(GameState::InGame);
     next_map_set_state.set(MapSetState::Tutorial);
-    next_level_state.set(LevelState::HoleTutorial);
     next_player_completion_state.set(PlayerCompletionState::HoleIncomplete);
     next_turn_state.set(TurnState::Player1);
     for mut state in camera_query.iter_mut() {
@@ -271,3 +274,21 @@ fn menu_state_response_tutorial(
         state.yaw = 22.0f32.to_radians();
     }
 }
+
+fn menu_state_response_leader_board() {}
+
+fn menu_state_response_local() {}
+
+fn menu_state_response_online() {}
+
+fn menu_state_response_preferences() {}
+
+// fn map_set_state_response_tutorial(
+//     mut next_level_state: ResMut<NextState<LevelState>>,
+// ) {
+//     next_level_state.set(LevelState::HoleTutorial);
+// }
+fn map_set_state_response_whole_course() {}
+fn map_set_state_response_front_nine() {}
+fn map_set_state_response_back_nine() {}
+fn map_set_state_response_select_a_hole() {}
