@@ -55,6 +55,14 @@ pub fn camera_orbit_entity_state_logic(
                 }
             }        
         }
+        CameraOrbitEntityState::LeaderBoard => {
+            for (entity, name, transform) in scene_meshes.iter() {
+                if name.as_str() == "leader_board" {
+                    camera_coord_tracker.current_coords = transform.translation;
+                    break;
+                }
+            }        
+        }
         CameraOrbitEntityState::MainMenu => {
             for (entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cam_target" {
@@ -86,6 +94,8 @@ pub fn camera_orbit_entity_state_update(
             info!("CameraOrbitEntityState::MainMenu");
             camera_orbit_entity_state_handler.current_state = 0;
             next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
+        },
+        CameraOrbitEntityState::LeaderBoard => {
         },
         CameraOrbitEntityState::MainMenu => {
             info!("CameraOrbitEntityState::Ball");
@@ -135,14 +145,15 @@ pub fn pan_orbit_camera(
     for (settings, mut state, mut transform) in &mut q_camera {
         // Determine the target based on the current camera state
         let target = match camera_orbit_entity_state.get() {
-            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
+            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
                 camera_coord_tracker.current_coords
             }
             CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
         };
 
-        let allow_interaction = match camera_orbit_entity_state.get() {
-            CameraOrbitEntityState::MainMenu => false, // Disable all interactions in MainMenu
+        let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
+            CameraOrbitEntityState::MainMenu => false,
+            CameraOrbitEntityState::LeaderBoard => false,
             _ => true, // Enable interactions in all other states
         };
 

@@ -4,21 +4,24 @@ use bevy_rapier3d::prelude::*;
 use std::collections::HashMap;
 
 use crate::{
+    ArrowState,
     GameStateHandler,
     GLBStorageID,
     Ground, 
     Interactable, 
     LevelState,
     MapSetState,
-    OpIndex,
     UserInterface,
+};
+
+use crate::level_handler::physics_handler::{
+    add_physics_query_and_update_scene,
 };
 
 pub fn setup_ground(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut op_index: ResMut<OpIndex>,
 ) {
     // Circular plane
     commands.spawn((
@@ -34,20 +37,16 @@ pub fn setup_ground(
         },
         Ground,
     ));
-
-    op_index.add_ui_entity();
 }
 
 pub fn setup_light(
     mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
 ) {
     // Light
     commands.spawn(DirectionalLightBundle {
         transform: Transform::from_translation(Vec3::ONE).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
-    op_index.add_ui_entity();
 }
 
 pub fn level_state_update(
@@ -187,22 +186,69 @@ pub fn level_state_logic(
     }
 }
 
+
+use crate::LoadedSceneHandle;
+
 // When entering state 
 pub fn init_hole_n(
     asset_server: Res<AssetServer>,
+    asset_server_2: Res<AssetServer>,
+    loaded_scene_handle: Option<Res<LoadedSceneHandle>>,
     commands: Commands,
-    mut op_index: ResMut<OpIndex>,
+    commands_2: Commands,
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameStateHandler>,
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
+    mut mut_commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
+    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
 ) {
     info!("Init Hole: Hole {}", gsh.current_level);
-    gltf_handler_init_hole_n(asset_server, commands, op_index.into(), glb_storage, gsh.current_level);
+    gltf_handler_init_hole_n(asset_server, commands, glb_storage, gsh.current_level);
+    check_scene_loaded(asset_server_2, loaded_scene_handle, commands_2, arrow_state, next_arrow_state, mut_commands, meshes, scene_meshes, ground_query);
 }
+
+// This system checks if the scene has finished loading
+pub fn check_scene_loaded(
+    asset_server: Res<AssetServer>,
+    loaded_scene_handle: Option<Res<LoadedSceneHandle>>,
+    mut commands: Commands,
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
+    mut mut_commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
+    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
+) {
+    if let Some(loaded_scene_handle) = loaded_scene_handle {
+        let load_state = asset_server.get_load_state(&loaded_scene_handle.handle);
+
+        if load_state == Some(LoadState::Loaded) {
+            // Scene has finished loading, now proceed to add physics
+            info!("Scene has finished loading, proceeding to add physics.");
+
+            add_physics_query_and_update_scene(
+                arrow_state,
+                next_arrow_state,
+                mut_commands,
+                meshes,
+                scene_meshes,
+                ground_query,
+            );
+
+            // Remove the handle resource, as it is no longer needed
+            commands.remove_resource::<LoadedSceneHandle>();
+        }
+    }
+}
+
+use bevy::asset::LoadState;
 
 pub fn gltf_handler_init_hole_n(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    mut op_index: ResMut<OpIndex>,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     hole: i32,
 ) {
@@ -233,6 +279,8 @@ pub fn gltf_handler_init_hole_n(
                 .insert(Interactable)
                 .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
                 .id();
+            
+            commands.insert_resource(LoadedSceneHandle { handle: scene_handle });
         } else {
             let root_entity = commands
                 .spawn(SceneBundle {
@@ -242,11 +290,9 @@ pub fn gltf_handler_init_hole_n(
                 .insert(Interactable)
                 .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
                 .id(); 
-            op_index.add_ui_entity();    
         }
     } else {
-        warn!("Target map was not valid. Hole was out of bounds, 0 for the tutorial, 1-18 for the golf holes.");
-    };
+        warn!("Target map was not valid. Hole was out of bounds, 0 for the main menu, 1-18 for the holes, 19 for the tutorial.");    };
 }
 
 
@@ -257,7 +303,9 @@ pub fn purge_glb(
 ) {
     for (entity, _) in scene_meshes.iter() {
         // Access the rigid body from the physics world using its handle
-        commands.entity(entity).despawn_recursive();
+        if Some(entity).is_some()  {
+            commands.entity(entity).despawn_recursive()
+        };
     }        
 }
 

@@ -23,27 +23,6 @@ impl Fonts {
     }
 }
 
-#[derive(Clone, Resource)]
-pub struct OpIndex {
-    pub ui_entities: u32,
-    pub state_info_call: u32,
-}
-
-impl OpIndex {
-    pub fn new() -> Self {
-        let ui_entities: u32 = 0;
-        let state_info_call: u32 = 0;
-        OpIndex {
-            ui_entities,
-            state_info_call,
-        }
-    }
-
-    pub fn add_ui_entity(&mut self) {
-        self.ui_entities += 1;
-    }
-}
-
 // --- Party Handler --- //
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum PartyState {
@@ -53,7 +32,7 @@ pub enum PartyState {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum PlayerCompletionStatus {
+pub enum PlayerCompletionState {
     #[default]
     NotInGame,
     HoleIncomplete,
@@ -61,7 +40,7 @@ pub enum PlayerCompletionStatus {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum PlaythroughStyleState {
+pub enum PlayThroughStyleState {
     #[default]
     Proximity,
     RandomSetOrder,
@@ -71,7 +50,7 @@ pub enum PlaythroughStyleState {
 pub enum TurnState {
     #[default]
     Idle,
-    Player1,
+    Player1, // ;ocal player is always the Player1, co-op players locally get the others incrementally
     Player2,
     Player3,
     Player4,
@@ -92,7 +71,6 @@ pub enum LeaderBoardState {
 }
 
 // --- Physics Handler --- //
-
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum ArrowState {
     #[default]
@@ -278,8 +256,8 @@ pub enum GameState {
     MenuMain,
     MenuSettings,
     MenuOnline,
-    OnlineGameInit,
-    GameInit,
+    GameInitLocal,
+    GameInitOnline,
     InGame,
     InGamePaused,
     PostGameReview,
@@ -302,6 +280,14 @@ impl GameStateHandler {
             maps_index,
             arrow_state,
         }
+    }
+
+    pub fn get_current_level (&self) -> i32 {
+        self.current_level
+    }
+
+    pub fn set_current_level (&mut self, level: i32) {
+        self.current_level = level;
     }
 
     pub fn get_arrow_state (&self) -> bool {
@@ -464,3 +450,20 @@ impl Default for PanOrbitSettings {
 }
 
 // --- Active Integration --- //
+
+
+#[derive(Resource)]
+pub struct LoadedSceneHandle {
+    handle: Handle<Scene>,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum MenuState {
+    #[default]
+    NoSelection,
+    Online,
+    Local,
+    Tutorial,
+    LeaderBoard,
+    Preferences,
+}

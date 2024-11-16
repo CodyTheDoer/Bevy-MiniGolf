@@ -12,9 +12,15 @@ use bevy_rapier3d::prelude::*;
 use minigolf::{ 
     ArrowState,
     CameraOrbitEntityState,
-    GameState, 
-    LevelState, 
+    GameState,
+    LeaderBoardState,
+    LevelState,
     MapSetState,
+    MenuState,
+    PartyState,
+    PlayerCompletionState,
+    PlayThroughStyleState,
+    TurnState,
 };
 
 // --- Resources --- //
@@ -25,7 +31,8 @@ use minigolf::{
     Fonts, 
     GameStateHandler, 
     GLBStorageID, 
-    OpIndex,
+    PanOrbitState,
+    PanOrbitSettings,
 };
 
 // --- User Interface Import --- //
@@ -58,7 +65,7 @@ use minigolf::level_handler::level_handler::{
 
 // --- Physics Handler Import --- //
 use minigolf::level_handler::physics_handler::{
-    add_physics_query_and_update_scene,
+    // add_physics_query_and_update_scene,
     bonk_step_start,
     bonk_step_mid,
     bonk_step_end,
@@ -98,8 +105,14 @@ fn main() {
         .insert_state(ArrowState::Idle)
         .insert_state(CameraOrbitEntityState::MainMenu)
         .insert_state(GameState::LoadingScreen)
+        .insert_state(LeaderBoardState::Mixed)
         .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
+        .insert_state(MenuState::NoSelection)
+        .insert_state(PartyState::Local)
+        .insert_state(PlayerCompletionState::NotInGame)
+        .insert_state(PlayThroughStyleState::Proximity)
+        .insert_state(TurnState::Idle)
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
@@ -108,7 +121,6 @@ fn main() {
         .insert_resource(Fonts::new())
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
-        .insert_resource(OpIndex::new())
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
@@ -136,13 +148,13 @@ fn main() {
         .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
 
         // Physics //
-        .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
+        // .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
         .add_systems(Update, collision_events_listener)
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Middle)))
         .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Middle)))
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Middle)))
 
-        // --- OnEnter State Reaction Initialization --- //
+        // --- OnEnter State Reaction Initialization --- //        
         .add_systems(OnEnter(LevelState::MainMenu), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
@@ -204,8 +216,58 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole16), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole17), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
-        .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies);
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
+
+        // .add_systems(OnEnter(MenuState::LeaderBoard), _______)
+        // .add_systems(OnEnter(MenuState::Local), _______)
+        // .add_systems(OnEnter(MenuState::Online), _______)
+        // .add_systems(OnEnter(MenuState::Preferences), _______)
+        .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial);
 
         app.run();
 }
 
+fn menu_state_response_leader_board() {}
+
+fn menu_state_response_local() {}
+
+fn menu_state_response_online() {}
+
+fn menu_state_response_preferences() {}
+
+// .insert_state(ArrowState::Idle)
+// .insert_state(CameraOrbitEntityState::MainMenu)
+// .insert_state(GameState::LoadingScreen)
+// .insert_state(LeaderBoardState::Mixed)
+// .insert_state(LevelState::MainMenu)
+// .insert_state(MapSetState::Tutorial)
+// .insert_state(MenuState::NoSelection)
+// .insert_state(PartyState::Local)
+// .insert_state(PlayerCompletionState::NotInGame)
+// .insert_state(PlayThroughStyleState::Proximity)
+// .insert_state(TurnState::Idle)
+
+fn menu_state_response_tutorial(
+    mut gsh: ResMut<GameStateHandler>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_map_set_state: ResMut<NextState<MapSetState>>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_player_completion_state: ResMut<NextState<PlayerCompletionState>>,
+    mut next_turn_state: ResMut<NextState<TurnState>>,
+    mut camera_query: Query<&mut PanOrbitState>,
+) {
+    gsh.set_current_level(19);
+    next_camera_state.set(CameraOrbitEntityState::Ball);
+    next_game_state.set(GameState::InGame);
+    next_map_set_state.set(MapSetState::Tutorial);
+    next_level_state.set(LevelState::HoleTutorial);
+    next_player_completion_state.set(PlayerCompletionState::HoleIncomplete);
+    next_turn_state.set(TurnState::Player1);
+    for mut state in camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 2.0;
+        state.pitch = -8.0f32.to_radians();
+        state.yaw = 22.0f32.to_radians();
+    }
+}

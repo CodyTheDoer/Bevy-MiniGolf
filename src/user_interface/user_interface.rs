@@ -13,7 +13,7 @@ use crate::{
     GameState,
     Ground, 
     Interactable,
-    OpIndex,
+    MenuState,
 };
 
 use crate::level_handler::physics_handler::{
@@ -122,6 +122,10 @@ pub fn game_state_update(
             info!("GameState::InGame");
             next_game_state.set(GameState::InGame);
         },
+        GameState::GameInitLocal => {
+        },
+        GameState::GameInitOnline => {
+        },
         GameState::InGame => {
             info!("GameState::InGamePaused");
             next_game_state.set(GameState::InGamePaused);
@@ -145,6 +149,8 @@ pub fn game_state_logic(
         GameState::MenuMain => {},
         GameState::MenuSettings => {},
         GameState::MenuOnline => {},
+        GameState::GameInitLocal => {},
+        GameState::GameInitOnline => {},
         GameState::InGame => {},
         GameState::InGamePaused => {},
         GameState::PostGameReview => {},
@@ -153,9 +159,8 @@ pub fn game_state_logic(
 
 pub fn ray_fire(
     mut raycast: Raycast,
-    op_index: Res<OpIndex>,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    interactable_query: Query<Entity, With<Interactable>>,
+    interactable_query: Query<(Entity, &Name), With<Interactable>>,
     windows: Query<&Window>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
@@ -180,17 +185,17 @@ pub fn ray_fire(
     // Loop through the raycast hits and detect if we hit an interactable entity
     for (entity, _intersection) in hits {
         if Some(interactable_query.get(*entity)).is_some() {
-            let entity_index = entity.index();
         }
     }
 }
 
 pub fn ray_release(
     mut raycast: Raycast,
-    op_index: Res<OpIndex>,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
     interactable_query: Query<Entity, With<Interactable>>,
+    scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
@@ -214,8 +219,37 @@ pub fn ray_release(
     // Loop through the raycast hits and detect if we hit an interactable entity
     for (entity, _intersection) in hits {
         if Some(interactable_query.get(*entity)).is_some() {
-            info!("Entity: {:?}", entity);
-            let entity_index = entity.index();
+            for (target_entity, name) in scene_meshes.iter() {
+                if *entity == target_entity {
+                    info!("Name: {:?}", name);
+                    let owned_name = name.as_str();
+                    match owned_name {
+                        // --- Main Menu Interface Mapping --- //
+                        "main_menu_interface_leaderboard" => {
+                            next_menu_state.set(MenuState::LeaderBoard);
+                        },
+                        "main_menu_interface_leaderboard_board.0" => {
+                            next_menu_state.set(MenuState::LeaderBoard);
+                        },
+                        "main_menu_interface_local" => {
+                            next_menu_state.set(MenuState::Local);
+                        },
+                        "main_menu_interface_online" => {
+                            next_menu_state.set(MenuState::Online);
+                        },
+                        "main_menu_interface_preferences" => {
+                            next_menu_state.set(MenuState::Preferences);
+                        },
+                        "main_menu_interface_tutorial" => {
+                            next_menu_state.set(MenuState::Tutorial);
+                        },
+                        // Free Options to Build From
+                        "main_menu_interface_minigolf" => {},
+                        "main_menu_interface_sign_body" => {},
+                        _ => {},
+                    }
+                };
+            }
         }
     }
 }

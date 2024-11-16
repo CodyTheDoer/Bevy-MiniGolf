@@ -10,6 +10,7 @@ use crate::{
     CameraWorld,
     GameStateHandler,
     Ground,
+    LevelState,
 };
 
 use std::f32::consts::PI;
@@ -280,6 +281,7 @@ pub fn golf_ball_is_asleep(
             for (entity, rb_handle) in query.iter() {
                 // Access the rigid body from the physics world using its handle
                 if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
+                    info!("Rigid body exists!");
                     // Check if the rigid body is currently sleeping
                     if active_entity == entity {
                         if rigid_body.is_sleeping() {
