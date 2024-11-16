@@ -44,6 +44,53 @@ impl OpIndex {
     }
 }
 
+// --- Party Handler --- //
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum PartyState {
+    #[default]
+    Local,
+    Online,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum PlayerCompletionStatus {
+    #[default]
+    NotInGame,
+    HoleIncomplete,
+    HoleCompleted,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum PlaythroughStyleState {
+    #[default]
+    Proximity,
+    RandomSetOrder,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum TurnState {
+    #[default]
+    Idle,
+    Player1,
+    Player2,
+    Player3,
+    Player4,
+    Player5,
+    Player6,
+}
+
+// --- LeaderBoard Handler --- //
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum LeaderBoardState {
+    #[default]
+    Mixed,
+    Online,
+    Local,
+    PostGame,
+    InGame,
+    InGameOnline,
+}
+
 // --- Physics Handler --- //
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -134,6 +181,30 @@ impl BonkHandler {
 }
 
 // --- Level Handler --- //
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum LevelState {
+    #[default]
+    MainMenu,
+    Hole1,
+    Hole2,
+    Hole3,
+    Hole4,
+    Hole5,
+    Hole6,
+    Hole7,
+    Hole8,
+    Hole9,
+    Hole10,
+    Hole11,
+    Hole12,
+    Hole13,
+    Hole14,
+    Hole15,
+    Hole16,
+    Hole17,
+    Hole18,
+    HoleTutorial,
+}
 
 #[derive(Component)]
 pub struct Ground;
@@ -189,31 +260,6 @@ impl GLBStorageID {
     }
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum LevelState {
-    #[default]
-    MainMenu,
-    Hole1,
-    Hole2,
-    Hole3,
-    Hole4,
-    Hole5,
-    Hole6,
-    Hole7,
-    Hole8,
-    Hole9,
-    Hole10,
-    Hole11,
-    Hole12,
-    Hole13,
-    Hole14,
-    Hole15,
-    Hole16,
-    Hole17,
-    Hole18,
-    HoleTutorial,
-}
-
 // --- User Interface --- //
 
 pub struct UserInterface {}
@@ -232,6 +278,8 @@ pub enum GameState {
     MenuMain,
     MenuSettings,
     MenuOnline,
+    OnlineGameInit,
+    GameInit,
     InGame,
     InGamePaused,
     PostGameReview,
@@ -298,6 +346,46 @@ pub struct CameraUi;
 
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
+
+
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum CameraOrbitEntityState {
+    #[default]
+    MainMenu,
+    Ball,
+    Cup,
+    FreePan,
+    LeaderBoard,
+}
+
+#[derive(Debug, Resource)]
+pub struct CameraOrbitEntityStateHandler {
+    current_state: i32,
+}
+
+impl CameraOrbitEntityStateHandler {
+    pub fn new() -> Self {
+        let current_state = 0;
+        CameraOrbitEntityStateHandler {
+            current_state,
+        }
+    }
+}
+
+#[derive(Debug, Resource)]
+pub struct CameraCoordTracker {
+    current_coords: Vec3,
+}
+
+impl CameraCoordTracker {
+    pub fn new() -> Self {
+        let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        CameraCoordTracker {
+            current_coords,
+        }
+    }
+}
 
     // Bundle to spawn our custom camera easily
 #[derive(Bundle, Default)]
@@ -371,43 +459,6 @@ impl Default for PanOrbitSettings {
             scroll_action: Some(PanOrbitAction::Zoom),
             scroll_line_sensitivity: 16.0, // 1 "line" == 16 "pixels of motion"
             scroll_pixel_sensitivity: 1.0,
-        }
-    }
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum CameraOrbitEntityState {
-    #[default]
-    MainMenu,
-    Ball,
-    Cup,
-    FreePan,
-}
-
-#[derive(Debug, Resource)]
-pub struct CameraOrbitEntityStateHandler {
-    current_state: i32,
-}
-
-impl CameraOrbitEntityStateHandler {
-    pub fn new() -> Self {
-        let current_state = 0;
-        CameraOrbitEntityStateHandler {
-            current_state,
-        }
-    }
-}
-
-#[derive(Debug, Resource)]
-pub struct CameraCoordTracker {
-    current_coords: Vec3,
-}
-
-impl CameraCoordTracker {
-    pub fn new() -> Self {
-        let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-        CameraCoordTracker {
-            current_coords,
         }
     }
 }

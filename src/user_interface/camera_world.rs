@@ -141,6 +141,11 @@ pub fn pan_orbit_camera(
             CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
         };
 
+        let allow_interaction = match camera_orbit_entity_state.get() {
+            CameraOrbitEntityState::MainMenu => false, // Disable all interactions in MainMenu
+            _ => true, // Enable interactions in all other states
+        };
+
         // Accumulate values for pan, orbit, and zoom based on mouse input and key states
         let mut total_pan = Vec2::ZERO;
         let mut total_orbit = Vec2::ZERO;
@@ -158,7 +163,7 @@ pub fn pan_orbit_camera(
         }
 
         // Orbit logic - applicable in all modes
-        if settings.orbit_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+        if allow_interaction && settings.orbit_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
             total_orbit -= total_motion * settings.orbit_sensitivity;
         }
         if settings.scroll_action == Some(PanOrbitAction::Orbit) {
@@ -167,7 +172,7 @@ pub fn pan_orbit_camera(
         }
 
         // Zoom logic - applicable in all modes
-        if settings.zoom_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+        if allow_interaction && settings.zoom_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
             total_zoom -= total_motion * settings.zoom_sensitivity;
         }
         if settings.scroll_action == Some(PanOrbitAction::Zoom) {
