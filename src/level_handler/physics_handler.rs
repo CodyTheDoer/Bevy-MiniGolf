@@ -28,6 +28,7 @@ pub fn add_physics_query_and_update_scene(
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Sensor)
+        .insert(Name::new("ground_sensor"))
         .id();
 
     // iterate over all meshes in the scene and match them by their name.
@@ -252,17 +253,44 @@ pub fn bonk_step_end( // Fires bonk
     }
 }
 
+use crate::TurnState;
+
 pub fn collision_events_listener(
     mut collision_events: EventReader<CollisionEvent>,
-    scene_meshes_asleep: Query<(Entity, &Name)>,
+    scene_meshes: Query<(Entity, &Name)>,
+    mut next_turn_state: ResMut<NextState<TurnState>>,
 ) {
     for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _flags) => {
-                info!("Collision started between {:?} and {:?}", entity1, entity2);
+                // info!("Collision started between {:?} and {:?}", entity1, entity2);
+                for (entity, name) in &scene_meshes {
+                    let owned_name = name.as_str();
+                    if *entity1 == entity {
+                        match owned_name {
+                            "cup_sensor" => {
+                                info!("1: Cups baby!!!!");
+                                next_turn_state.set(TurnState::HoleComplete);
+                            },
+                            "ground_sensor" => {
+                                info!("1: Ooof grounded...");
+                                next_turn_state.set(TurnState::TurnReset);
+                            },
+                            _ => {},
+                        }
+                    }
+                    if *entity2 == entity {
+                        match owned_name {
+                            "cup_sensor" => {info!("2: Cups baby!!!!")},
+                            "ground_sensor" => {info!("2: Ooof grounded...")},
+                            _ => {},
+                        }
+                    }
+                    
+                }
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-                info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+                // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
             }
         }
     }

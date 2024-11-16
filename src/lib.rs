@@ -140,6 +140,7 @@ pub enum TurnState {
     Idle,
     NewGame,
     Turn,
+    TurnReset,
     NextTurn,
     HoleComplete,
     GameComplete,

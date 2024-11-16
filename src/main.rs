@@ -225,25 +225,31 @@ fn main() {
         // .add_systems(OnEnter(MenuState::Local), _______)
         // .add_systems(OnEnter(MenuState::Online), _______)
         // .add_systems(OnEnter(MenuState::Preferences), _______)
+        
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
+
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
-        // .add_systems(OnEnter(MenuState::Tutorial), turn_state_response_hole_complete)
-        .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener));
+
+        .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
+        .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
         // .add_systems(Update, );
 
         app.run();
 }
 
-// .insert_state(ArrowState::Idle)
-// .insert_state(CameraOrbitEntityState::MainMenu)
-// .insert_state(GameState::LoadingScreen)
-// .insert_state(LeaderBoardState::Mixed)
-// .insert_state(LevelState::MainMenu)
-// .insert_state(MapSetState::Tutorial)
-// .insert_state(MenuState::NoSelection)
-// .insert_state(PartyState::Local)
-// .insert_state(PlayerCompletionState::NotInGame)
-// .insert_state(PlayThroughStyleState::Proximity)
-// .insert_state(TurnState::Idle)
+/*
+    .insert_state(ArrowState::Idle)
+    .insert_state(CameraOrbitEntityState::MainMenu)
+    .insert_state(GameState::LoadingScreen)
+    .insert_state(LeaderBoardState::Mixed)
+    .insert_state(LevelState::MainMenu)
+    .insert_state(MapSetState::Tutorial)
+    .insert_state(MenuState::NoSelection)
+    .insert_state(PartyState::Local)
+    .insert_state(PlayerCompletionState::NotInGame)
+    .insert_state(PlayThroughStyleState::Proximity)
+    .insert_state(TurnState::Idle)
+*/
 
 fn asset_event_listener(
     mut ev_asset: EventReader<AssetEvent<Mesh>>,
@@ -288,18 +294,20 @@ fn menu_state_response_tutorial(
 
 fn turn_state_response_hole_complete(
     mut party: ResMut<Party>,
-
     mut map_set_state: Res<State<MapSetState>>,
     mut turn_state: Res<State<TurnState>>,
-
     mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
 ) {
-    // let owned_map_set_state = map_set_state;
-    info!("map_set_state: {:?}\n\n\n\n", map_set_state);
-    // match owned_map_set_state {
-    //     ""
-    // }
+}
+
+fn turn_state_response_turn_reset(
+    mut party: ResMut<Party>,
+    mut map_set_state: Res<State<MapSetState>>,
+    mut turn_state: Res<State<TurnState>>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_turn_state: ResMut<NextState<TurnState>>,
+) {
 }
 // fn turn_state_response_new_game() {}
 // fn turn_state_response_next_turn() {}
