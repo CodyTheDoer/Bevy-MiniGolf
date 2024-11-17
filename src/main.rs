@@ -225,7 +225,7 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole16), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole17), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
-        .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
+        // .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
 
         // .add_systems(OnEnter(MenuState::LeaderBoard), _______)
         // .add_systems(OnEnter(MenuState::Local), _______)
