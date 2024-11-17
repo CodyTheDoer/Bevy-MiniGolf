@@ -228,6 +228,7 @@ fn main() {
         
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
+        .add_systems(OnEnter(MenuState::Local), menu_state_response_tutorial)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
 
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
@@ -236,20 +237,6 @@ fn main() {
 
         app.run();
 }
-
-/*
-    .insert_state(ArrowState::Idle)
-    .insert_state(CameraOrbitEntityState::MainMenu)
-    .insert_state(GameState::LoadingScreen)
-    .insert_state(LeaderBoardState::Mixed)
-    .insert_state(LevelState::MainMenu)
-    .insert_state(MapSetState::Tutorial)
-    .insert_state(MenuState::NoSelection)
-    .insert_state(PartyState::Local)
-    .insert_state(PlayerCompletionState::NotInGame)
-    .insert_state(PlayThroughStyleState::Proximity)
-    .insert_state(TurnState::Idle)
-*/
 
 fn asset_event_listener(
     mut ev_asset: EventReader<AssetEvent<Mesh>>,
@@ -312,3 +299,62 @@ fn turn_state_response_turn_reset(
 // fn turn_state_response_new_game() {}
 // fn turn_state_response_next_turn() {}
 // fn turn_state_response_game_complete() {}
+
+/*
+GameState                   MenuState                   PlayerCompletionState               LevelState
+    #[default]                  #[default]                  #[default]                          #[default]
+    LoadingScreen,              NoSelection,                NotInGame,                          MainMenu,
+    MenuMain,                   Online,                     HoleIncomplete,                     Hole1,
+    MenuSettings,               Local,                      HoleCompleted,                      Hole2,
+    MenuOnline,                 Tutorial,                                                       Hole3,
+    GameInitLocal,              LeaderBoard,                                                    Hole4,
+    GameInitOnline,             Preferences,                                                    Hole5,
+    InGame,                                                                                     Hole6,
+    InGamePaused,                                                                               Hole7,
+    PostGameReview,                                                                             Hole8,
+                                                                                                Hole9,
+TurnState                   MapSetState                 PlayThroughStyleState                   Hole10,
+    #[default]                  #[default]                  #[default]                          Hole11,
+    Idle,                       Tutorial,                   Proximity,                          Hole12,
+    NewGame,                    WholeCorse,                 RandomSetOrder,                     Hole13,
+    Turn,                       FrontNine,                                                      Hole14,
+    TurnReset,                  BackNine,                                                       Hole15,
+    NextTurn,                   SelectAHole,                                                    Hole16,
+    HoleComplete,                                                                               Hole17,
+    GameComplete,                                                                               Hole18,
+                                                                                                HoleTutorial
+
+LeaderBoardState            PartyConnectionState        Party {
+    #[default]                  #[default]                  players: Arc<[Player]>,
+    Mixed,                      Local,                      active_player: Arc<i32>,
+    Online,                     Online,                 }
+    Local,
+    PostGame,
+    InGame,
+    InGameOnline, 
+
+CameraOrbitEntityState      Player {
+    #[default]                  pub player_id: String,
+    MainMenu,                   pub hole_completion_state: PlayerCompletionState,
+    Ball,                       pub ball_material: Color, // For now custom material/shaders planned
+    Cup,                        pub ball_location: Vec3,
+    FreePan,                    pub puts_count_total: u32,
+    LeaderBoard,                pub puts_hole_1: u32,
+                                pub puts_hole_2: u32,
+                                pub puts_hole_3: u32,
+                                pub puts_hole_4: u32,
+                                pub puts_hole_5: u32,
+                                pub puts_hole_6: u32,
+                                pub puts_hole_7: u32,
+                                pub puts_hole_8: u32,
+                                pub puts_hole_9: u32,
+                                pub puts_hole_10: u32,
+                                pub puts_hole_11: u32,
+                                pub puts_hole_12: u32,
+                                pub puts_hole_13: u32,
+                                pub puts_hole_14: u32,
+                                pub puts_hole_15: u32,
+                                pub puts_hole_16: u32,
+                                pub puts_hole_17: u32,
+                                pub puts_hole_18: u32,
+*/
