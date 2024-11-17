@@ -242,11 +242,13 @@ pub fn bonk_step_end( // Fires bonk
     rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
-    if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes) {
-        bonk(impulses, bonk_res);
-    }
     if gsh.get_arrow_state() {
         toggle_arrow_state(gsh, arrow_state, next_arrow_state);
+    }
+    if bonk_res.power != 0.0 {
+        if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes) {
+            bonk(impulses, bonk_res);
+        }
     }
 }
 

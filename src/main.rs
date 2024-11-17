@@ -151,9 +151,9 @@ fn main() {
         // Physics //
         // .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
         .add_systems(Update, collision_events_listener)
-        .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Left)))
-        .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Left)))
-        .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Left)))
+        .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
+        .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Right)))
+        .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
 
         // --- OnEnter State Reaction Initialization --- //        
         .add_systems(OnEnter(LevelState::MainMenu), init_hole_n)
@@ -225,7 +225,7 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole16), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole17), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
-        // .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
 
         // .add_systems(OnEnter(MenuState::LeaderBoard), _______)
         // .add_systems(OnEnter(MenuState::Local), _______)

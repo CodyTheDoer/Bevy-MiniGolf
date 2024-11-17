@@ -258,7 +258,7 @@ pub fn ray_release(
                             match map_set_state.get() {
                                 MapSetState::Tutorial => {
                                     game_handler.set_current_level(19);
-                                    // next_level_state.set(LevelState::HoleTutorial);
+                                    next_level_state.set(LevelState::HoleTutorial);
                                 },
                                 MapSetState::WholeCorse => {
                                     game_handler.set_current_level(1);
