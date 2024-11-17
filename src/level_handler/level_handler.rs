@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use crate::{
     ArrowState,
-    GameStateHandler,
+    GameHandler,
     GLBStorageID,
     Ground, 
     Interactable, 
@@ -52,7 +52,7 @@ pub fn setup_light(
 pub fn level_state_update(
     level_state: Res<State<LevelState>>,
     mut next_game_state: ResMut<NextState<LevelState>>,
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
 ) {
     match level_state.get() {
         LevelState::MainMenu => {
@@ -155,34 +155,10 @@ pub fn level_state_update(
             info!("LevelState::Hole1");
             next_game_state.set(LevelState::MainMenu);
         },
-    }
-}
-
-pub fn level_state_logic(
-    level_state: Res<State<LevelState>>,
-    mut positions: Query<&mut Transform, With<RigidBody>>,
-) {
-    match level_state.get() {
-        LevelState::MainMenu => {},
-        LevelState::Hole1 => {},
-        LevelState::Hole2 => {},
-        LevelState::Hole3 => {},
-        LevelState::Hole4 => {},
-        LevelState::Hole5 => {},
-        LevelState::Hole6 => {},
-        LevelState::Hole7 => {},
-        LevelState::Hole8 => {},
-        LevelState::Hole9 => {},
-        LevelState::Hole10 => {},
-        LevelState::Hole11 => {},
-        LevelState::Hole12 => {},
-        LevelState::Hole13 => {},
-        LevelState::Hole14 => {},
-        LevelState::Hole15 => {},
-        LevelState::Hole16 => {},
-        LevelState::Hole17 => {},
-        LevelState::Hole18 => {},
-        LevelState::HoleTutorial => {},
+        LevelState::MenuLeaderBoard => {},
+        LevelState::MenuLocal => {},
+        LevelState::MenuOnline => {},
+        LevelState::MenuPreferences => {},
     }
 }
 
@@ -191,7 +167,7 @@ pub fn init_hole_n(
     asset_server: Res<AssetServer>,
     commands: Commands,
     glb_storage: Res<GLBStorageID>,
-    gsh: Res<GameStateHandler>,
+    gsh: Res<GameHandler>,
 ) {
     info!("Init Hole: Hole {}", gsh.current_level);
     gltf_handler_init_hole_n(asset_server, commands, glb_storage, gsh.current_level);
@@ -262,37 +238,32 @@ pub fn purge_rigid_bodies(
 pub fn map_set_state_update(
     map_set_state: Res<State<MapSetState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
 ) {
     match map_set_state.get() {
         MapSetState::Tutorial => {
             info!("MapSetState::Tutorial");
             gsh.current_level = 0;
-            gsh.maps_index = 1;
             next_map_set_state.set(MapSetState::WholeCorse);
         },
         MapSetState::WholeCorse => {
             info!("MapSetState::WholeCorse");
             gsh.current_level = 0;
-            gsh.maps_index = 18;
             next_map_set_state.set(MapSetState::FrontNine);
         },
         MapSetState::FrontNine => {
             info!("MapSetState::FrontNine");
             gsh.current_level = 0;
-            gsh.maps_index = 9;
             next_map_set_state.set(MapSetState::BackNine);
         },
         MapSetState::BackNine => {
             info!("MapSetState::BackNine");
             gsh.current_level = 0;
-            gsh.maps_index = 9;
             next_map_set_state.set(MapSetState::SelectAHole);
         },
         MapSetState::SelectAHole => {
             info!("MapSetState::SelectAHole");
             gsh.current_level = 0;
-            gsh.maps_index = 1;
             let hole = UserInterface::select_a_hole_widget();
             match hole {
                 0 => {

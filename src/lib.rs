@@ -47,9 +47,7 @@ pub enum CameraOrbitEntityState {
 pub enum GameState {
     #[default]
     LoadingScreen,
-    MenuMain,
-    MenuSettings,
-    MenuOnline,
+    Menus,
     GameInitLocal,
     GameInitOnline,
     InGame,
@@ -91,6 +89,10 @@ pub enum LevelState {
     Hole17,
     Hole18,
     HoleTutorial,
+    MenuLeaderBoard,
+    MenuLocal,
+    MenuOnline,
+    MenuPreferences,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -234,6 +236,10 @@ impl Player {
         self.hole_completion_state = PlayerCompletionState::HoleCompleted;
     }
 
+    pub fn end_game(&mut self) {
+        self.hole_completion_state = PlayerCompletionState::NotInGame;
+    }
+
     pub fn add_put(&mut self, hole: i32) {
     }
 }
@@ -284,18 +290,29 @@ impl Party {
         active_level
     }
 
-    pub fn get_party_size(&self, ) -> i32 {
-        // let party = *self.players.lock().unwrap();
+    pub fn get_party_size(&self) -> i32 {
         let party_size = self.players.len();
-        party_size.try_into().unwrap()
+        party_size.try_into().unwrap() // drios usize and presents an i32
     }
 
     pub fn next_level(&mut self, ) {
         todo!(); 
     }
+
+    pub fn end_game(&mut self) {
+        for player in 0..self.players.len() {
+            // Get the active player (Arc<Mutex<Player>>)
+            let player_arc = &self.players[player];
+            
+            // Lock the player mutex to get a mutable reference to the player
+            let mut player = player_arc.lock().unwrap();
+            player.end_game();
+        }
+    }
 }
 
 // --- LeaderBoard Handler --- //
+
 
 // --- Physics Handler --- //
 
@@ -414,6 +431,10 @@ impl LevelHandler {
             LevelState::Hole17,
             LevelState::Hole18,
             LevelState::HoleTutorial,
+            LevelState::MenuLeaderBoard,
+            LevelState::MenuLocal,
+            LevelState::MenuOnline,
+            LevelState::MenuPreferences,
         ];
         let level_state_ids: Vec<LevelStateID> = level_state_names
             .iter()
@@ -453,7 +474,7 @@ pub struct GLBStorageID {
 impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
-            "glb/main_menu.glb",
+            "glb/menu/main_menu.glb",
             "glb/boilerplate_level_1.glb",
             "glb/boilerplate_level_2.glb",
             "glb/boilerplate_level_3.glb",
@@ -473,6 +494,10 @@ impl GLBStorageID {
             "glb/boilerplate_level_17.glb",
             "glb/boilerplate_level_18.glb",
             "glb/boilerplate_level_tutorial.glb",
+            "glb/menu/menu_leader_board.glb",
+            "glb/menu/menu_local.glb",
+            "glb/menu/menu_online.glb",
+            "glb/menu/menu_preferences.glb",
         ];
         let map_ids: Vec<MapID> = map_paths
             .iter()
@@ -500,41 +525,57 @@ impl UserInterface {
 }
 
 #[derive(Resource)]
-pub struct GameStateHandler {
+pub struct GameHandler {
     current_level: i32,
-    maps_index: i32,
     arrow_state: bool,
 }
 
-impl GameStateHandler {
+impl GameHandler {
     pub fn new() -> Self {
         let current_level = 0;
-        let maps_index = 0;
         let arrow_state = false;
-        GameStateHandler {
+        GameHandler {
             current_level,
-            maps_index,
             arrow_state,
         }
     }
 
-    pub fn get_current_level (&self) -> i32 {
+    // Level Handling logic
+    pub fn next_level(&mut self) {
+        self.current_level += 1;
+    }
+
+    pub fn get_current_level(&self) -> i32 {
         self.current_level
     }
 
-    pub fn set_current_level (&mut self, level: i32) {
+    pub fn set_current_level(&mut self, level: i32) {
         self.current_level = level;
     }
 
-    pub fn get_arrow_state (&self) -> bool {
+    pub fn init_postgame_leaderboard(
+        &mut self, 
+        mut party: ResMut<Party>,
+    ) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(20);
+    }
+
+    pub fn init_main_menu(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(0);
+    }
+
+    // Bonk UI Logic
+    pub fn get_arrow_state(&self) -> bool {
         self.arrow_state
     }
 
-    pub fn set_arrow_state_true (&mut self) {
+    pub fn set_arrow_state_true(&mut self) {
         self.arrow_state = true;
     }
 
-    pub fn set_arrow_state_false (&mut self) {
+    pub fn set_arrow_state_false(&mut self) {
         self.arrow_state = false;
     }
 }
@@ -557,20 +598,6 @@ pub struct CameraUi;
 
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
-
-#[derive(Debug, Resource)]
-pub struct CameraOrbitEntityStateHandler {
-    current_state: i32,
-}
-
-impl CameraOrbitEntityStateHandler {
-    pub fn new() -> Self {
-        let current_state = 0;
-        CameraOrbitEntityStateHandler {
-            current_state,
-        }
-    }
-}
 
 #[derive(Debug, Resource)]
 pub struct CameraCoordTracker {

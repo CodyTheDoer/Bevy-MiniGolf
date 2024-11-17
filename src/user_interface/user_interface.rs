@@ -7,13 +7,17 @@ use std::collections::HashMap;
 
 use crate::{
     BonkHandler,
+    CameraOrbitEntityState,
     CameraUi, 
     CameraWorld, 
     Fonts, 
+    GameHandler,
     GameState,
     Ground, 
+    LevelState,
     Interactable,
     MenuState,
+    PanOrbitState,
 };
 
 use crate::level_handler::physics_handler::{
@@ -108,17 +112,9 @@ pub fn game_state_update(
     match game_state.get() {
         GameState::LoadingScreen => {
             info!("GameState::MenuMain");
-            next_game_state.set(GameState::MenuMain);
+            next_game_state.set(GameState::Menus);
         },
-        GameState::MenuMain => {
-            info!("GameState::MenuSettings");
-            next_game_state.set(GameState::MenuSettings);
-        },
-        GameState::MenuSettings => {
-            info!("GameState::MenuOnline");
-            next_game_state.set(GameState::MenuOnline);
-        },
-        GameState::MenuOnline => {
+        GameState::Menus => {
             info!("GameState::InGame");
             next_game_state.set(GameState::InGame);
         },
@@ -138,22 +134,6 @@ pub fn game_state_update(
             info!("GameState::LoadingScreen");
             next_game_state.set(GameState::LoadingScreen);
         },
-    }
-}
-
-pub fn game_state_logic(
-    game_state: Res<State<GameState>>,
-) {
-    match game_state.get() {
-        GameState::LoadingScreen => {},
-        GameState::MenuMain => {},
-        GameState::MenuSettings => {},
-        GameState::MenuOnline => {},
-        GameState::GameInitLocal => {},
-        GameState::GameInitOnline => {},
-        GameState::InGame => {},
-        GameState::InGamePaused => {},
-        GameState::PostGameReview => {},
     }
 }
 
@@ -195,7 +175,12 @@ pub fn ray_release(
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
+    mut game_handler: ResMut<GameHandler>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_level: ResMut<NextState<LevelState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
@@ -243,9 +228,43 @@ pub fn ray_release(
                         "main_menu_interface_tutorial" => {
                             next_menu_state.set(MenuState::Tutorial);
                         },
-                        // Free Options to Build From
+                        /* 
+                            // Free Options to Build From
                         "main_menu_interface_minigolf" => {},
                         "main_menu_interface_sign_body" => {},
+                        */
+
+                        // --- Leader Board Menu Interface Mapping --- //
+                        "leaderboard_menu_play_again_text" => {
+                            todo!();
+                        },
+                        "leaderboard_menu_play_again_board.0" => {
+                            todo!();
+                        },
+                        "leaderboard_menu_main_menu_text" => {
+                            game_handler.init_main_menu();
+                            next_game_state.set(GameState::Menus);
+                            next_level.set(LevelState::MainMenu);
+                            next_camera_state.set(CameraOrbitEntityState::MainMenu);
+                            for mut state in pan_orbit_camera_query.iter_mut() {
+                                info!("{:?}", state);
+                                state.radius = 38.0;
+                                state.pitch = -12.0f32.to_radians();
+                                state.yaw = -17.0f32.to_radians();
+                            }
+                        },
+                        "leaderboard_menu_main_menu_board.0" => {
+                            game_handler.init_main_menu();
+                            next_game_state.set(GameState::Menus);
+                            next_level.set(LevelState::MainMenu);
+                            next_camera_state.set(CameraOrbitEntityState::MainMenu);
+                            for mut state in pan_orbit_camera_query.iter_mut() {
+                                info!("{:?}", state);
+                                state.radius = 38.0;
+                                state.pitch = -12.0f32.to_radians();
+                                state.yaw = -17.0f32.to_radians();
+                            }
+                        },
                         _ => {},
                     }
                 };

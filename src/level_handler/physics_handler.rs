@@ -8,7 +8,7 @@ use crate::{
     BonkHandler,
     BonkMouseXY,
     CameraWorld,
-    GameStateHandler,
+    GameHandler,
     Ground,
     LevelState,
 };
@@ -40,7 +40,7 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
                 .insert(Damping {
-                    angular_damping: 1.5,
+                    angular_damping: 1.65,
                     ..default()
                 })
                 // .insert(Friction {
@@ -174,7 +174,7 @@ pub fn bonk(
 pub fn bonk_step_start( // set's bonk start xy
     windows: Query<&Window>,
     mut bonk: ResMut<BonkHandler>,
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
     mut arrow_state: ResMut<State<ArrowState>>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
 ) {
@@ -237,7 +237,7 @@ pub fn bonk_step_mid( // Determines bonks power by measuring the difference betw
 
 pub fn bonk_step_end( // Fires bonk 
     mut arrow_state: ResMut<State<ArrowState>>,
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
     mut impulses: Query<&mut ExternalImpulse>,
     bonk_res: Res<BonkHandler>,
@@ -324,7 +324,7 @@ pub fn golf_ball_is_asleep(
 }
 
 fn toggle_arrow_state(
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
     mut state: ResMut<State<ArrowState>>,
     mut next_state: ResMut<NextState<ArrowState>>,
 ) {

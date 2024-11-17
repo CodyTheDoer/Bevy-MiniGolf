@@ -27,9 +27,8 @@ use minigolf::{
 use minigolf::{
     BonkHandler,
     CameraCoordTracker,
-    CameraOrbitEntityStateHandler,
     Fonts, 
-    GameStateHandler, 
+    GameHandler, 
     GLBStorageID, 
     LevelHandler,
     PanOrbitState,
@@ -57,7 +56,6 @@ use minigolf::user_interface::user_interface::{
 // --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
     init_hole_n, 
-    level_state_logic, 
     level_state_update, 
     map_set_state_update, 
     setup_ground, 
@@ -119,10 +117,9 @@ fn main() {
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
-        .insert_resource(CameraOrbitEntityStateHandler::new())
         .insert_resource(CameraCoordTracker::new())
         .insert_resource(Fonts::new())
-        .insert_resource(GameStateHandler::new())
+        .insert_resource(GameHandler::new())
         .insert_resource(GLBStorageID::new())
         .insert_resource(LevelHandler::new())
         .insert_resource(Party::new())
@@ -145,7 +142,6 @@ fn main() {
         .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
-        // .add_systems(Update, level_state_logic) // uncomment for level based logic every frame
         
         // Camera //
         .add_systems(Update, camera_orbit_entity_state_logic)
@@ -180,6 +176,10 @@ fn main() {
         .add_systems(OnEnter(LevelState::Hole17), init_hole_n)
         .add_systems(OnEnter(LevelState::Hole18), init_hole_n)
         .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
+        .add_systems(OnEnter(LevelState::MenuLeaderBoard), init_hole_n)
+        .add_systems(OnEnter(LevelState::MenuLocal), init_hole_n)
+        .add_systems(OnEnter(LevelState::MenuOnline), init_hole_n)
+        .add_systems(OnEnter(LevelState::MenuPreferences), init_hole_n)
 
         // --- OnExit State Reaction Initialization --- //
         .add_systems(OnExit(LevelState::MainMenu), purge_glb)
@@ -202,6 +202,10 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole17), purge_glb)
         .add_systems(OnExit(LevelState::Hole18), purge_glb)
         .add_systems(OnExit(LevelState::HoleTutorial), purge_glb)
+        .add_systems(OnExit(LevelState::MenuLeaderBoard), purge_glb)
+        .add_systems(OnExit(LevelState::MenuLocal), purge_glb)
+        .add_systems(OnExit(LevelState::MenuOnline), purge_glb)
+        .add_systems(OnExit(LevelState::MenuPreferences), purge_glb)
         
         .add_systems(OnExit(LevelState::Hole1), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole2), purge_rigid_bodies)
@@ -252,10 +256,11 @@ fn asset_event_listener(
 }
 
 fn menu_state_response_tutorial(
-    mut gsh: ResMut<GameStateHandler>,
+    mut gsh: ResMut<GameHandler>,
     mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
     mut next_player_completion_state: ResMut<NextState<PlayerCompletionState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
@@ -263,6 +268,7 @@ fn menu_state_response_tutorial(
 ) {
     info!("menu_state_response: tutorial");
     gsh.set_current_level(19);
+    next_menu_state.set(MenuState::NoSelection);
     next_map_set_state.set(MapSetState::Tutorial);
     next_level_state.set(LevelState::HoleTutorial);
     next_camera_state.set(CameraOrbitEntityState::Ball);
@@ -284,10 +290,15 @@ fn menu_state_response_tutorial(
 fn turn_state_response_hole_complete(
     mut party: ResMut<Party>,
     map_set: Res<State<MapSetState>>,
-    level_handler: Res<LevelHandler>,
     level: ResMut<State<LevelState>>,
+    level_handler: Res<LevelHandler>,
+    mut game_handler: ResMut<GameHandler>,
+    mut leader_board_state: ResMut<NextState<LeaderBoardState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
     mut next_level: ResMut<NextState<LevelState>>,
     mut next_turn: ResMut<NextState<TurnState>>,
+    mut camera_query: Query<&mut PanOrbitState>,
 ) {
     info!("Map Set: {:?}\n\n", map_set.get());
     party.active_player_finished_hole(); // Reads active player index and updates target Player's state
@@ -298,15 +309,28 @@ fn turn_state_response_hole_complete(
     if party_size == 1 {
         let maps = match map_set.get() {
             MapSetState::Tutorial => {
-                todo!(); // End Game Leaderboard
+                party.end_game(); // Sets players to NotInGame
+                next_game_state.set(GameState::PostGameReview);
+                next_turn.set(TurnState::Idle);
+                game_handler.init_postgame_leaderboard(party); // Set's target for level handling
+                leader_board_state.set(LeaderBoardState::PostGame);
+                next_level.set(LevelState::MenuLeaderBoard);
+                next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
+                for mut state in camera_query.iter_mut() {
+                    info!("{:?}", state);
+                    state.radius = 38.0;
+                    state.pitch = -12.0f32.to_radians();
+                    state.yaw = -17.0f32.to_radians();
+                }
             },
             MapSetState::WholeCorse => {
                 if current_level == 18 {
                     todo!(); // End Game Leaderboard
                 } else {
-                    party.next_level();
                     let set_next_level = level_handler.next_level(current_level);
                     next_level.set(set_next_level);
+                    game_handler.next_level();
+                    party.next_level();
                     next_turn.set(TurnState::Turn);
                 }
             },
@@ -314,9 +338,10 @@ fn turn_state_response_hole_complete(
                 if current_level == 9 {
                     todo!(); // End Game Leaderboard
                 } else {
-                    party.next_level();
                     let set_next_level = level_handler.next_level(current_level);
                     next_level.set(set_next_level);
+                    game_handler.next_level();
+                    party.next_level();
                     next_turn.set(TurnState::Turn);
                 }
             },
@@ -324,9 +349,10 @@ fn turn_state_response_hole_complete(
                 if current_level == 18 {
                     todo!(); // End Game Leaderboard
                 } else {
-                    party.next_level();
                     let set_next_level = level_handler.next_level(current_level);
                     next_level.set(set_next_level);
+                    game_handler.next_level();
+                    party.next_level();
                     next_turn.set(TurnState::Turn);
                 }
             },
@@ -352,9 +378,9 @@ fn turn_state_response_turn_reset(
 GameState                   MenuState                   PlayerCompletionState               LevelState
     #[default]                  #[default]                  #[default]                          #[default]
     LoadingScreen,              NoSelection,                NotInGame,                          MainMenu,
-    MenuMain,                   Online,                     HoleIncomplete,                     Hole1,
-    MenuSettings,               Local,                      HoleCompleted,                      Hole2,
-    MenuOnline,                 Tutorial,                                                       Hole3,
+    Menus,                      Online,                     HoleIncomplete,                     Hole1,
+    _MenuSettings,              Local,                      HoleCompleted,                      Hole2,
+    _MenuOnline,                Tutorial,                                                       Hole3,
     GameInitLocal,              LeaderBoard,                                                    Hole4,
     GameInitOnline,             Preferences,                                                    Hole5,
     InGame,                                                                                     Hole6,
@@ -371,10 +397,10 @@ TurnState                   MapSetState                 PlayThroughStyleState   
     HoleComplete,                                                                               Hole17,
     GameComplete,                                                                               Hole18,
                                                                                                 HoleTutorial
-
-LeaderBoardState            PartyConnectionState        Party {
-    #[default]                  #[default]                  players: Arc<[Player]>,
-    Mixed,                      Local,                      active_player: Arc<i32>,
+                                                                                                MenuLeaderBoard
+LeaderBoardState            PartyConnectionState        Party {                                 MenuLocal
+    #[default]                  #[default]                  players: Arc<[Player]>,             MenuOnline
+    Mixed,                      Local,                      active_player: Arc<i32>,            MenuPreferences
     Online,                     Online,                     active_level: Arc<i32>,
     Local,                                              }
     PostGame,

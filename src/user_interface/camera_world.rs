@@ -8,7 +8,6 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
     use crate::{
         CameraCoordTracker, 
         CameraOrbitEntityState, 
-        CameraOrbitEntityStateHandler,
         CameraWorld, 
         Ground, 
         PanOrbitAction,
@@ -57,7 +56,7 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
             }
             CameraOrbitEntityState::LeaderBoard => {
                 for (entity, name, transform) in scene_meshes.iter() {
-                    if name.as_str() == "leader_board" {
+                    if name.as_str() == "cam_target" {
                         camera_coord_tracker.current_coords = transform.translation;
                         break;
                     }
@@ -87,29 +86,26 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
     pub fn camera_orbit_entity_state_update(    
         camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
         mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
-        mut camera_orbit_entity_state_handler: ResMut<CameraOrbitEntityStateHandler>,
     ) {
         match camera_orbit_entity_state.get() {
             CameraOrbitEntityState::FreePan => {
-                info!("CameraOrbitEntityState::MainMenu");
-                camera_orbit_entity_state_handler.current_state = 0;
+                info!("CameraOrbitEntityState::LeaderBoard");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::LeaderBoard => {
+                info!("CameraOrbitEntityState::MainMenu");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::MainMenu => {
                 info!("CameraOrbitEntityState::Ball");
-                camera_orbit_entity_state_handler.current_state = 1;
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
             },
             CameraOrbitEntityState::Ball => {
                 info!("CameraOrbitEntityState::Cup");
-                camera_orbit_entity_state_handler.current_state = 2;
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
             },
             CameraOrbitEntityState::Cup => {
                 info!("CameraOrbitEntityState::FreePan");
-                camera_orbit_entity_state_handler.current_state = 3;
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
             },
         }
