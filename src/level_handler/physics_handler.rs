@@ -278,8 +278,14 @@ pub fn collision_events_listener(
                     }
                     if *entity2 == entity {
                         match owned_name {
-                            "cup_sensor" => {info!("2: Cups baby!!!!")},
-                            "ground_sensor" => {info!("2: Ooof grounded...")},
+                            "cup_sensor" => {
+                                info!("1: Cups baby!!!!");
+                                next_turn_state.set(TurnState::HoleComplete);
+                            },
+                            "ground_sensor" => {
+                                info!("1: Ooof grounded...");
+                                next_turn_state.set(TurnState::TurnReset);
+                            },
                             _ => {},
                         }
                     }
