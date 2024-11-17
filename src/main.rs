@@ -31,6 +31,7 @@ use minigolf::{
     Fonts, 
     GameStateHandler, 
     GLBStorageID, 
+    LevelHandler,
     PanOrbitState,
     PanOrbitSettings,
     Party,
@@ -123,6 +124,7 @@ fn main() {
         .insert_resource(Fonts::new())
         .insert_resource(GameStateHandler::new())
         .insert_resource(GLBStorageID::new())
+        .insert_resource(LevelHandler::new())
         .insert_resource(Party::new())
 
         // --- Startup Systems Initialization --- //
@@ -281,18 +283,64 @@ fn menu_state_response_tutorial(
 
 fn turn_state_response_hole_complete(
     mut party: ResMut<Party>,
-    mut map_set_state: Res<State<MapSetState>>,
-    mut turn_state: Res<State<TurnState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_turn_state: ResMut<NextState<TurnState>>,
+    map_set: Res<State<MapSetState>>,
+    level_handler: Res<LevelHandler>,
+    level: ResMut<State<LevelState>>,
+    mut next_level: ResMut<NextState<LevelState>>,
+    mut next_turn: ResMut<NextState<TurnState>>,
 ) {
+    info!("Map Set: {:?}\n\n", map_set.get());
+    party.active_player_finished_hole(); // Reads active player index and updates target Player's state
+    
+    let current_level = party.get_active_level();
+    let party_size = party.get_party_size();
+    
+    if party_size == 1 {
+        let maps = match map_set.get() {
+            MapSetState::Tutorial => {
+                todo!(); // End Game Leaderboard
+            },
+            MapSetState::WholeCorse => {
+                if current_level == 18 {
+                    todo!(); // End Game Leaderboard
+                } else {
+                    party.next_level();
+                    let set_next_level = level_handler.next_level(current_level);
+                    next_level.set(set_next_level);
+                    next_turn.set(TurnState::Turn);
+                }
+            },
+            MapSetState::FrontNine => {
+                if current_level == 9 {
+                    todo!(); // End Game Leaderboard
+                } else {
+                    party.next_level();
+                    let set_next_level = level_handler.next_level(current_level);
+                    next_level.set(set_next_level);
+                    next_turn.set(TurnState::Turn);
+                }
+            },
+            MapSetState::BackNine => {
+                if current_level == 18 {
+                    todo!(); // End Game Leaderboard
+                } else {
+                    party.next_level();
+                    let set_next_level = level_handler.next_level(current_level);
+                    next_level.set(set_next_level);
+                    next_turn.set(TurnState::Turn);
+                }
+            },
+            MapSetState::SelectAHole => {
+                    todo!(); // End Game Leaderboard
+            },
+        };
+    }
+    
+    // next_turn_state.set(TurnState::)
 }
 
 fn turn_state_response_turn_reset(
     mut party: ResMut<Party>,
-    mut map_set_state: Res<State<MapSetState>>,
-    mut turn_state: Res<State<TurnState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
 ) {
 }
@@ -327,8 +375,8 @@ TurnState                   MapSetState                 PlayThroughStyleState   
 LeaderBoardState            PartyConnectionState        Party {
     #[default]                  #[default]                  players: Arc<[Player]>,
     Mixed,                      Local,                      active_player: Arc<i32>,
-    Online,                     Online,                 }
-    Local,
+    Online,                     Online,                     active_level: Arc<i32>,
+    Local,                                              }
     PostGame,
     InGame,
     InGameOnline, 

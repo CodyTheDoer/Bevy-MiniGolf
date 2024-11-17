@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::RigidBody;
 
+use std::fmt;
 use std::sync::Arc;
 
 pub mod leaderboard_handler;
@@ -238,22 +239,45 @@ impl Player {
 pub struct Party {
     players: Arc<[Player]>,
     active_player: Arc<i32>,
+    active_level: Arc<i32>,
 }
 
 impl Party {
     pub fn new() -> Self {
         let players: Arc<[Player]> = Arc::new([Player::new()]);
         let active_player: Arc<i32> = 0.into();
+        let active_level: Arc<i32> = 0.into();
         Party {
             players,
             active_player,
+            active_level,
         } 
     }
 
-    pub fn next_proximity_player() {
+    pub fn active_player_finished_hole(&self, ) {
+        todo!(); 
     }
 
-    pub fn next_set_order_player() {
+    pub fn next_proximity_player(&self, ) {
+        todo!(); 
+    }
+
+    pub fn next_set_order_player(&self, ) {
+        todo!(); 
+    }
+
+    pub fn get_active_level(&self, ) -> i32 {
+        todo!(); 
+        0
+    }
+
+    pub fn get_party_size(&self, ) -> i32 {
+        todo!(); 
+        0
+    }
+
+    pub fn next_level(&mut self, ) {
+        todo!(); 
     }
 }
 
@@ -343,24 +367,73 @@ impl BonkHandler {
 
 // --- Level Handler --- //
 
+#[derive(Clone, Debug)]
+pub struct LevelStateID {
+    level: Arc<LevelState>,
+}
+
+#[derive(Clone, Debug, Resource)]
+pub struct LevelHandler {
+    level_states: Arc<[LevelStateID]>,
+}
+
+impl LevelHandler {
+    pub fn new() -> LevelHandler {
+        let level_state_names = [
+            LevelState::MainMenu,
+            LevelState::Hole1,
+            LevelState::Hole2,
+            LevelState::Hole3,
+            LevelState::Hole4,
+            LevelState::Hole5,
+            LevelState::Hole6,
+            LevelState::Hole7,
+            LevelState::Hole8,
+            LevelState::Hole9,
+            LevelState::Hole10,
+            LevelState::Hole11,
+            LevelState::Hole12,
+            LevelState::Hole13,
+            LevelState::Hole14,
+            LevelState::Hole15,
+            LevelState::Hole16,
+            LevelState::Hole17,
+            LevelState::Hole18,
+            LevelState::HoleTutorial,
+        ];
+        let level_state_ids: Vec<LevelStateID> = level_state_names
+            .iter()
+            .map(|level_state| LevelStateID { level: Arc::new(level_state.clone()) })
+            .collect();
+        LevelHandler {
+            level_states: level_state_ids.into_boxed_slice().into(), // Vec -> Box -> Arc
+        }
+    }
+
+    pub fn get_level(&self, level: i32) -> LevelState {
+        let level_state_id = self.level_states.get(level as usize).unwrap();
+        level_state_id.level.as_ref().clone()
+    }
+
+    pub fn next_level(&self, current_level: i32) -> LevelState {
+        self.get_level(current_level + 1)
+    }
+}
+
 #[derive(Component)]
 pub struct Ground;
 
 #[derive(Asset, Component, Debug, TypePath)]
 pub struct Interactable; 
 
-#[derive(Clone, Debug, Resource)]
-pub struct GLBStorageID {
-    glb: Arc<[MapID]>,
-}
-
 #[derive(Debug)]
 pub struct MapID {
     map: &'static str,
 }
 
-pub struct SceneLoadedEvent {
-    pub entity: Entity,
+#[derive(Clone, Debug, Resource)]
+pub struct GLBStorageID {
+    glb: Arc<[MapID]>,
 }
 
 impl GLBStorageID {
@@ -395,6 +468,10 @@ impl GLBStorageID {
             glb: map_ids.into_boxed_slice().into(), // Vec -> Box -> Arc
         }
     }
+}
+
+pub struct SceneLoadedEvent {
+    pub entity: Entity,
 }
 
 // --- User Interface --- //
