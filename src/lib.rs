@@ -3,6 +3,7 @@ use bevy_rapier3d::prelude::RigidBody;
 
 use std::fmt;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 pub mod leaderboard_handler;
 pub mod level_handler;
@@ -229,6 +230,10 @@ impl Player {
         self.puts_hole_18 = 0;
     }
 
+    pub fn hole_completed(&mut self) {
+        self.hole_completion_state = PlayerCompletionState::HoleCompleted;
+    }
+
     pub fn add_put(&mut self, hole: i32) {
     }
 }
@@ -237,16 +242,16 @@ impl Player {
 
 #[derive(Resource)]
 pub struct Party {
-    players: Arc<[Player]>,
-    active_player: Arc<i32>,
-    active_level: Arc<i32>,
+    players: Arc<[Arc<Mutex<Player>>]>,
+    active_player: Arc<Mutex<i32>>,
+    active_level: Arc<Mutex<i32>>,
 }
 
 impl Party {
     pub fn new() -> Self {
-        let players: Arc<[Player]> = Arc::new([Player::new()]);
-        let active_player: Arc<i32> = 0.into();
-        let active_level: Arc<i32> = 0.into();
+        let players: Arc<[Arc<Mutex<Player>>]> = Arc::new([Arc::new(Mutex::new(Player::new()))]);
+        let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
+        let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         Party {
             players,
             active_player,
@@ -254,8 +259,16 @@ impl Party {
         } 
     }
 
-    pub fn active_player_finished_hole(&self, ) {
-        todo!(); 
+    pub fn active_player_finished_hole(&self) {
+        // Get the active player index
+        let active_player_index = *self.active_player.lock().unwrap();
+        
+        // Get the active player (Arc<Mutex<Player>>)
+        let player_arc = &self.players[active_player_index as usize];
+        
+        // Lock the player mutex to get a mutable reference to the player
+        let mut player = player_arc.lock().unwrap();
+        player.hole_completed();
     }
 
     pub fn next_proximity_player(&self, ) {
@@ -266,14 +279,15 @@ impl Party {
         todo!(); 
     }
 
-    pub fn get_active_level(&self, ) -> i32 {
-        todo!(); 
-        0
+    pub fn get_active_level(&self) -> i32 {
+        let active_level = *self.active_level.lock().unwrap();
+        active_level
     }
 
     pub fn get_party_size(&self, ) -> i32 {
-        todo!(); 
-        0
+        // let party = *self.players.lock().unwrap();
+        let party_size = self.players.len();
+        party_size.try_into().unwrap()
     }
 
     pub fn next_level(&mut self, ) {
