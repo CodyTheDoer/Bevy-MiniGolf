@@ -11,6 +11,7 @@ use crate::{
     GameHandler,
     Ground,
     LevelState,
+    TurnState,
 };
 
 use std::f32::consts::PI;
@@ -43,10 +44,6 @@ pub fn add_physics_query_and_update_scene(
                     angular_damping: 1.65,
                     ..default()
                 })
-                // .insert(Friction {
-                //     coefficient: 0.2,   // Lower friction to reduce edge catching
-                //     combine_rule: CoefficientCombineRule::Min, // Use minimum friction between surfaces
-                // })
                 .insert(ExternalImpulse::default())
                 .insert(ColliderMassProperties::Density(1.0))
                 .insert(GravityScale(1.0))
@@ -252,8 +249,6 @@ pub fn bonk_step_end( // Fires bonk
         toggle_arrow_state(gsh, arrow_state, next_arrow_state);
     }
 }
-
-use crate::TurnState;
 
 pub fn collision_events_listener(
     mut collision_events: EventReader<CollisionEvent>,

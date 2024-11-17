@@ -49,8 +49,9 @@ use minigolf::user_interface::user_interface::{
     game_state_update, 
     ray_fire, 
     ray_release, 
-    draw_cursor, 
-    setup_ui
+    draw_cursor,
+    setup_ui,
+    update_ui,
 };
 
 // --- Level Handler Import --- //
@@ -111,7 +112,6 @@ fn main() {
         .insert_state(MapSetState::Tutorial)
         .insert_state(MenuState::NoSelection)
         .insert_state(PartyConnectionState::Local)
-        .insert_state(PlayerCompletionState::NotInGame)
         .insert_state(PlayThroughStyleState::Proximity)
         .insert_state(TurnState::Idle)
 
@@ -234,11 +234,13 @@ fn main() {
         
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
-        .add_systems(OnEnter(MenuState::Local), menu_state_response_tutorial)
+        // .add_systems(OnEnter(MenuState::Local), menu_state_response_local)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
 
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
-        .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
+        .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset)
+
+        .add_systems(Update, update_ui);
         // .add_systems(Update, );
 
         app.run();
@@ -256,24 +258,28 @@ fn asset_event_listener(
 }
 
 fn menu_state_response_tutorial(
-    mut gsh: ResMut<GameHandler>,
+    mut party: ResMut<Party>,
+    mut game_handler: ResMut<GameHandler>,
     mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut next_player_completion_state: ResMut<NextState<PlayerCompletionState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
     mut camera_query: Query<&mut PanOrbitState>,
 ) {
-    info!("menu_state_response: tutorial");
-    gsh.set_current_level(19);
+    info!("\n\n");
+    info!("OnEnter -> MenuState::Tutorial");
+    info!("\n\n");
+    party.start_game();
+    game_handler.set_current_level(19);
     next_menu_state.set(MenuState::NoSelection);
+    next_leader_board_state.set(LeaderBoardState::InGame);
     next_map_set_state.set(MapSetState::Tutorial);
     next_level_state.set(LevelState::HoleTutorial);
     next_camera_state.set(CameraOrbitEntityState::Ball);
     next_game_state.set(GameState::InGame);
-    next_player_completion_state.set(PlayerCompletionState::HoleIncomplete);
     next_turn_state.set(TurnState::Turn);
     for mut state in camera_query.iter_mut() {
         info!("{:?}", state);
@@ -289,31 +295,34 @@ fn menu_state_response_tutorial(
 
 fn turn_state_response_hole_complete(
     mut party: ResMut<Party>,
-    map_set: Res<State<MapSetState>>,
+    map_set_state: Res<State<MapSetState>>,
     level: ResMut<State<LevelState>>,
     level_handler: Res<LevelHandler>,
     mut game_handler: ResMut<GameHandler>,
-    mut leader_board_state: ResMut<NextState<LeaderBoardState>>,
+    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_level: ResMut<NextState<LevelState>>,
     mut next_turn: ResMut<NextState<TurnState>>,
     mut camera_query: Query<&mut PanOrbitState>,
 ) {
-    info!("Map Set: {:?}\n\n", map_set.get());
+    info!("\n\n");
+    info!("OnEnter -> TurnState::HoleComplete");
+    info!("Map Set: {:?}", map_set_state.get());
+    info!("\n\n");
     party.active_player_finished_hole(); // Reads active player index and updates target Player's state
     
     let current_level = party.get_active_level();
     let party_size = party.get_party_size();
     
     if party_size == 1 {
-        let maps = match map_set.get() {
+        let maps = match map_set_state.get() {
             MapSetState::Tutorial => {
                 party.end_game(); // Sets players to NotInGame
                 next_game_state.set(GameState::PostGameReview);
                 next_turn.set(TurnState::Idle);
                 game_handler.init_postgame_leaderboard(party); // Set's target for level handling
-                leader_board_state.set(LeaderBoardState::PostGame);
+                next_leader_board_state.set(LeaderBoardState::PostGame);
                 next_level.set(LevelState::MenuLeaderBoard);
                 next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
                 for mut state in camera_query.iter_mut() {
@@ -379,13 +388,13 @@ GameState                   MenuState                   PlayerCompletionState   
     #[default]                  #[default]                  #[default]                          #[default]
     LoadingScreen,              NoSelection,                NotInGame,                          MainMenu,
     Menus,                      Online,                     HoleIncomplete,                     Hole1,
-    _MenuSettings,              Local,                      HoleCompleted,                      Hole2,
-    _MenuOnline,                Tutorial,                                                       Hole3,
-    GameInitLocal,              LeaderBoard,                                                    Hole4,
-    GameInitOnline,             Preferences,                                                    Hole5,
-    InGame,                                                                                     Hole6,
-    InGamePaused,                                                                               Hole7,
-    PostGameReview,                                                                             Hole8,
+    GameInitLocal,              Local,                      HoleCompleted,                      Hole2,
+    GameInitOnline,             Tutorial,                                                       Hole3,
+    InGame,                     LeaderBoard,                                                    Hole4,
+    InGamePaused,               Preferences,                                                    Hole5,
+    PostGameReview,                                                                             Hole6,
+                                                                                                Hole7,
+                                                                                                Hole8,
                                                                                                 Hole9,
 TurnState                   MapSetState                 PlayThroughStyleState                   Hole10,
     #[default]                  #[default]                  #[default]                          Hole11,

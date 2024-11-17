@@ -249,6 +249,7 @@ impl Player {
 #[derive(Resource)]
 pub struct Party {
     players: Arc<[Arc<Mutex<Player>>]>,
+    players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
     active_level: Arc<Mutex<i32>>,
 }
@@ -256,16 +257,35 @@ pub struct Party {
 impl Party {
     pub fn new() -> Self {
         let players: Arc<[Arc<Mutex<Player>>]> = Arc::new([Arc::new(Mutex::new(Player::new()))]);
+        let players_finished: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         Party {
             players,
+            players_finished,
             active_player,
             active_level,
         } 
     }
 
-    pub fn active_player_finished_hole(&self) {
+    pub fn get_players_finished(&self) -> i32 {
+        let count = self.players_finished.lock().unwrap();
+        *count
+    }
+
+    pub fn log_player_finished(&mut self) {
+        let mut count = self.players_finished.lock().unwrap();
+        *count += 1;
+    }
+
+    pub fn reset_players_finished(&mut self) {
+        let mut count = *self.players_finished.lock().unwrap();
+        count = 0;
+    }
+
+    pub fn active_player_finished_hole(&mut self) {
+        self.log_player_finished();
+
         // Get the active player index
         let active_player_index = *self.active_player.lock().unwrap();
         
@@ -275,6 +295,11 @@ impl Party {
         // Lock the player mutex to get a mutable reference to the player
         let mut player = player_arc.lock().unwrap();
         player.hole_completed();
+    }
+
+    pub fn all_finished(&self) -> bool {
+        // Verify if all players have completed
+        self.get_players_finished() == self.get_party_size()   
     }
 
     pub fn next_proximity_player(&self, ) {
@@ -297,6 +322,17 @@ impl Party {
 
     pub fn next_level(&mut self, ) {
         todo!(); 
+    }
+
+    pub fn start_game(&mut self) {
+        for player in 0..self.players.len() {
+            // Get the active player (Arc<Mutex<Player>>)
+            let player_arc = &self.players[player];
+            
+            // Lock the player mutex to get a mutable reference to the player
+            let mut player = player_arc.lock().unwrap();
+            player.start_game();
+        }
     }
 
     pub fn end_game(&mut self) {
@@ -523,6 +559,13 @@ impl UserInterface {
         target
     }
 }
+
+// Define marker components to find the entities later
+#[derive(Component)]
+pub struct StateText;
+
+#[derive(Component)]
+pub struct TitleText;
 
 #[derive(Resource)]
 pub struct GameHandler {
