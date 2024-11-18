@@ -62,6 +62,14 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                     }
                 }        
             }
+            CameraOrbitEntityState::MenuLocal => {
+                for (entity, name, transform) in scene_meshes.iter() {
+                    if name.as_str() == "cam_target" {
+                        camera_coord_tracker.current_coords = transform.translation;
+                        break;
+                    }
+                }        
+            }
             CameraOrbitEntityState::MainMenu => {
                 for (entity, name, transform) in scene_meshes.iter() {
                     if name.as_str() == "cam_target" {
@@ -93,6 +101,10 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::LeaderBoard => {
+                info!("CameraOrbitEntityState::MenuLocal");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuLocal);
+            },
+            CameraOrbitEntityState::MenuLocal => {
                 info!("CameraOrbitEntityState::MainMenu");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
@@ -141,7 +153,7 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
         for (settings, mut state, mut transform) in &mut q_camera {
             // Determine the target based on the current camera state
             let target = match camera_orbit_entity_state.get() {
-                CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
+                CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
                     camera_coord_tracker.current_coords
                 }
                 CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
@@ -149,6 +161,7 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
     
             let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
                 CameraOrbitEntityState::MainMenu => false,
+                CameraOrbitEntityState::MenuLocal => false,
                 CameraOrbitEntityState::LeaderBoard => false,
                 _ => true, // Enable interactions in all other states
             };

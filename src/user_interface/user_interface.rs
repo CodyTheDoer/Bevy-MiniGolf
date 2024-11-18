@@ -226,11 +226,8 @@ pub fn ray_release(
                     info!("Name: {:?}", name);
                     let owned_name = name.as_str();
                     match owned_name {
-                        // --- Main Menu Interface Mapping --- //
-                        "main_menu_interface_leaderboard" => {
-                            next_menu_state.set(MenuState::LeaderBoard);
-                        },
-                        "main_menu_interface_leaderboard_board.0" => {
+                        // --- Menu: Main Interface Mapping --- //
+                        "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
                             next_menu_state.set(MenuState::LeaderBoard);
                         },
                         "main_menu_interface_local" => {
@@ -251,7 +248,14 @@ pub fn ray_release(
                         "main_menu_interface_sign_body" => {},
                         */
 
-                        // --- Leader Board Menu Interface Mapping --- //
+                        // --- Menu: Common Interactions --- //
+                        "main_menu_text" | "main_menu_board.0" => {
+                            game_handler.init_menu_main();
+                            next_game_state.set(GameState::Menus);
+                            next_level_state.set(LevelState::MainMenu);
+                        },
+
+                        // --- Menu: Leader Board Interface Mapping --- //
                         "leaderboard_menu_play_again_text" | "leaderboard_menu_play_again_board.0" => {
                             party.start_game();
                             next_leader_board_state.set(LeaderBoardState::InGame);
@@ -285,17 +289,19 @@ pub fn ray_release(
                                 state.yaw = 22.0f32.to_radians();
                             }
                         },
-                        "leaderboard_menu_main_menu_text" | "leaderboard_menu_main_menu_board.0" => {
-                            game_handler.init_main_menu();
-                            next_game_state.set(GameState::Menus);
-                            next_level_state.set(LevelState::MainMenu);
-                            next_camera_state.set(CameraOrbitEntityState::MainMenu);
-                            for mut state in pan_orbit_camera_query.iter_mut() {
-                                info!("{:?}", state);
-                                state.radius = 38.0;
-                                state.pitch = -12.0f32.to_radians();
-                                state.yaw = -17.0f32.to_radians();
-                            }
+                        
+                        // --- Menu: Local Interface Mapping --- //
+                        "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
+                            // next_menu_state.set(MenuState::LeaderBoard);
+                        },
+                        "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
+                            // next_menu_state.set(MenuState::LeaderBoard);
+                        },
+                        "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
+                            // next_menu_state.set(MenuState::LeaderBoard);
+                        },
+                        "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
+                            // next_menu_state.set(MenuState::LeaderBoard);
                         },
                         _ => {},
                     }

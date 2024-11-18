@@ -41,6 +41,7 @@ pub enum CameraOrbitEntityState {
     Cup,
     FreePan,
     LeaderBoard,
+    MenuLocal,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -142,7 +143,6 @@ pub enum PlayThroughStyleState {
 pub enum TurnState {
     #[default]
     Idle,
-    NewGame,
     Turn,
     TurnReset,
     NextTurn,
@@ -511,25 +511,25 @@ impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
             "glb/menu/main_menu.glb",
-            "glb/boilerplate_level_1.glb",
-            "glb/boilerplate_level_2.glb",
-            "glb/boilerplate_level_3.glb",
-            "glb/boilerplate_level_4.glb",
-            "glb/boilerplate_level_5.glb",
-            "glb/boilerplate_level_6.glb",
-            "glb/boilerplate_level_7.glb",
-            "glb/boilerplate_level_8.glb",
-            "glb/boilerplate_level_9.glb",
-            "glb/boilerplate_level_10.glb",
-            "glb/boilerplate_level_11.glb",
-            "glb/boilerplate_level_12.glb",
-            "glb/boilerplate_level_13.glb",
-            "glb/boilerplate_level_14.glb",
-            "glb/boilerplate_level_15.glb",
-            "glb/boilerplate_level_16.glb",
-            "glb/boilerplate_level_17.glb",
-            "glb/boilerplate_level_18.glb",
-            "glb/boilerplate_level_tutorial.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
+            "glb/map/level_1.glb",
             "glb/menu/menu_leader_board.glb",
             "glb/menu/menu_local.glb",
             "glb/menu/menu_online.glb",
@@ -604,9 +604,19 @@ impl GameHandler {
         self.set_current_level(20);
     }
 
-    pub fn init_main_menu(&mut self) {
+    pub fn init_tutorial(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(19);
+    }
+
+    pub fn init_menu_main(&mut self) {
         // Eventually submit party info to leaderboard system
         self.set_current_level(0);
+    }
+
+    pub fn init_menu_local(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(21);
     }
 
     // Bonk UI Logic

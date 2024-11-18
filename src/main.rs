@@ -56,7 +56,7 @@ use minigolf::user_interface::user_interface::{
 
 // --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
-    init_hole_n, 
+    init_level_glb, 
     level_state_update, 
     map_set_state_update, 
     setup_ground, 
@@ -133,9 +133,9 @@ fn main() {
 
         // --- Update Systems Initialization --- //
         // states //
-        .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
-        .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
-        .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
+        // .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
+        // .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
+        // .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
 
         // User Interface //
         .add_systems(Update, draw_cursor)
@@ -156,30 +156,30 @@ fn main() {
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
 
         // --- OnEnter State Reaction Initialization --- //        
-        .add_systems(OnEnter(LevelState::MainMenu), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole1), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole2), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole3), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole4), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole5), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole6), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole7), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole8), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole9), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole10), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole11), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole12), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole13), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole14), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole15), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole16), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole17), init_hole_n)
-        .add_systems(OnEnter(LevelState::Hole18), init_hole_n)
-        .add_systems(OnEnter(LevelState::HoleTutorial), init_hole_n)
-        .add_systems(OnEnter(LevelState::MenuLeaderBoard), init_hole_n)
-        .add_systems(OnEnter(LevelState::MenuLocal), init_hole_n)
-        .add_systems(OnEnter(LevelState::MenuOnline), init_hole_n)
-        .add_systems(OnEnter(LevelState::MenuPreferences), init_hole_n)
+        .add_systems(OnEnter(LevelState::MainMenu), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole1), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole2), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole3), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole4), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole5), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole6), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole7), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole8), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole9), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole10), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole11), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole12), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole13), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole14), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole15), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole16), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole17), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole18), init_level_glb)
+        .add_systems(OnEnter(LevelState::HoleTutorial), init_level_glb)
+        .add_systems(OnEnter(LevelState::MenuLeaderBoard), init_level_glb)
+        .add_systems(OnEnter(LevelState::MenuLocal), init_level_glb)
+        .add_systems(OnEnter(LevelState::MenuOnline), init_level_glb)
+        .add_systems(OnEnter(LevelState::MenuPreferences), init_level_glb)
 
         // --- OnExit State Reaction Initialization --- //
         .add_systems(OnExit(LevelState::MainMenu), purge_glb)
@@ -228,13 +228,14 @@ fn main() {
         .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
 
         // .add_systems(OnEnter(MenuState::LeaderBoard), _______)
-        // .add_systems(OnEnter(MenuState::Local), _______)
         // .add_systems(OnEnter(MenuState::Online), _______)
         // .add_systems(OnEnter(MenuState::Preferences), _______)
         
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
-        // .add_systems(OnEnter(MenuState::Local), menu_state_response_local)
+        .add_systems(OnEnter(GameState::Menus), game_state_response_menus)
+
+        .add_systems(OnEnter(MenuState::Local), menu_state_response_local)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
 
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
@@ -257,6 +258,47 @@ fn asset_event_listener(
     event_occurred
 }
 
+pub fn game_state_response_menus(
+    mut party: ResMut<Party>,
+    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
+    mut next_level: ResMut<NextState<LevelState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
+    mut next_turn: ResMut<NextState<TurnState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+){
+    next_menu_state.set(MenuState::NoSelection);
+    next_turn.set(TurnState::Idle);
+    next_leader_board_state.set(LeaderBoardState::Mixed);
+    next_level.set(LevelState::MainMenu);
+    next_camera_state.set(CameraOrbitEntityState::MainMenu);
+    for mut state in pan_orbit_camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 38.0;
+        state.pitch = -12.0f32.to_radians();
+        state.yaw = -17.0f32.to_radians();
+    }
+}
+
+fn menu_state_response_local(
+    mut game_handler: ResMut<GameHandler>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+) {
+    game_handler.init_menu_local();
+    next_game_state.set(GameState::GameInitLocal);
+    next_level_state.set(LevelState::MenuLocal);    
+    next_camera_state.set(CameraOrbitEntityState::MenuLocal);
+    for mut state in pan_orbit_camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 38.0;
+        state.pitch = -12.0f32.to_radians();
+        state.yaw = 17.0f32.to_radians();
+    }
+}
+
 fn menu_state_response_tutorial(
     mut party: ResMut<Party>,
     mut game_handler: ResMut<GameHandler>,
@@ -267,29 +309,24 @@ fn menu_state_response_tutorial(
     mut next_menu_state: ResMut<NextState<MenuState>>,
     mut next_map_set_state: ResMut<NextState<MapSetState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
-    mut camera_query: Query<&mut PanOrbitState>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {
-    info!("\n\n");
-    info!("OnEnter -> MenuState::Tutorial");
-    info!("\n\n");
     party.start_game();
-    game_handler.set_current_level(19);
+    game_handler.init_tutorial();
+    next_level_state.set(LevelState::HoleTutorial);
     next_menu_state.set(MenuState::NoSelection);
     next_leader_board_state.set(LeaderBoardState::InGame);
     next_map_set_state.set(MapSetState::Tutorial);
-    next_level_state.set(LevelState::HoleTutorial);
     next_camera_state.set(CameraOrbitEntityState::Ball);
     next_game_state.set(GameState::InGame);
     next_turn_state.set(TurnState::Turn);
-    for mut state in camera_query.iter_mut() {
-        info!("{:?}", state);
+    for mut state in pan_orbit_camera_query.iter_mut() {
         state.radius = 2.0;
         state.pitch = -8.0f32.to_radians();
         state.yaw = 22.0f32.to_radians();
     }
 }
 // fn menu_state_response_leader_board() {}
-// fn menu_state_response_local() {}
 // fn menu_state_response_online() {}
 // fn menu_state_response_preferences() {}
 
@@ -304,12 +341,8 @@ fn turn_state_response_hole_complete(
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_level: ResMut<NextState<LevelState>>,
     mut next_turn: ResMut<NextState<TurnState>>,
-    mut camera_query: Query<&mut PanOrbitState>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {
-    info!("\n\n");
-    info!("OnEnter -> TurnState::HoleComplete");
-    info!("Map Set: {:?}", map_set_state.get());
-    info!("\n\n");
     party.active_player_finished_hole(); // Reads active player index and updates target Player's state
     
     let current_level = party.get_active_level();
@@ -325,7 +358,7 @@ fn turn_state_response_hole_complete(
                 next_leader_board_state.set(LeaderBoardState::PostGame);
                 next_level.set(LevelState::MenuLeaderBoard);
                 next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
-                for mut state in camera_query.iter_mut() {
+                for mut state in pan_orbit_camera_query.iter_mut() {
                     info!("{:?}", state);
                     state.radius = 38.0;
                     state.pitch = -12.0f32.to_radians();
@@ -399,12 +432,12 @@ GameState                   MenuState                   PlayerCompletionState   
 TurnState                   MapSetState                 PlayThroughStyleState                   Hole10,
     #[default]                  #[default]                  #[default]                          Hole11,
     Idle,                       Tutorial,                   Proximity,                          Hole12,
-    NewGame,                    WholeCorse,                 RandomSetOrder,                     Hole13,
-    Turn,                       FrontNine,                                                      Hole14,
-    TurnReset,                  BackNine,                                                       Hole15,
-    NextTurn,                   SelectAHole,                                                    Hole16,
-    HoleComplete,                                                                               Hole17,
-    GameComplete,                                                                               Hole18,
+    Turn,                       WholeCorse,                 RandomSetOrder,                     Hole13,
+    TurnReset,                  FrontNine,                                                      Hole14,
+    NextTurn,                   BackNine,                                                       Hole15,
+    HoleComplete,               SelectAHole,                                                    Hole16,
+    GameComplete,                                                                               Hole17,
+                                                                                                Hole18,
                                                                                                 HoleTutorial
                                                                                                 MenuLeaderBoard
 LeaderBoardState            PartyConnectionState        Party {                                 MenuLocal

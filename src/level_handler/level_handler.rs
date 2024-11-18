@@ -163,50 +163,35 @@ pub fn level_state_update(
 }
 
 // When entering state 
-pub fn init_hole_n(
+pub fn init_level_glb(
     asset_server: Res<AssetServer>,
     commands: Commands,
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameHandler>,
 ) {
     info!("Init Hole: Hole {}", gsh.current_level);
-    gltf_handler_init_hole_n(asset_server, commands, glb_storage, gsh.current_level);
+    gltf_handler_init_level_glb(asset_server, commands, glb_storage, gsh.current_level);
 }
 
-pub fn gltf_handler_init_hole_n(
+pub fn gltf_handler_init_level_glb(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     hole: i32,
 ) {
     if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
-        let map_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset("glb/scaled/level_1.glb"),
-        );
         let scene_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(glb_file.map),
         );
 
-        if hole == 19 {
-            let root_entity_map = commands
-                .spawn(SceneBundle {
-                    scene: map_handle.clone(),
-                    ..default()
-                })
-                .insert(Interactable)
-                .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
-                .id();
-            
-        } else {
-            let root_entity = commands
-                .spawn(SceneBundle {
-                    scene: scene_handle.clone(),
-                    ..default()
-                })
-                .insert(Interactable)
-                .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
-                .id(); 
-        }
+        let root_entity = commands
+            .spawn(SceneBundle {
+                scene: scene_handle.clone(),
+                ..default()
+            })
+            .insert(Interactable)
+            .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
+            .id(); 
     } else {
         warn!("Target map was not valid. Hole was out of bounds, 0 for the main menu, 1-18 for the holes, 19 for the tutorial.");    };
 }
