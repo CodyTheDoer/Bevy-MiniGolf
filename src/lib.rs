@@ -45,6 +45,7 @@ pub enum CameraOrbitEntityState {
     MenuLocal,
     MenuOnline,
     MenuPreferences,
+    MenuPlayer,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]

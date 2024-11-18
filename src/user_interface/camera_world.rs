@@ -64,7 +64,8 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
             }
             CameraOrbitEntityState::GameInit | CameraOrbitEntityState::LeaderBoard |
             CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::MenuOnline |
-            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuPreferences => {
+            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuPreferences |
+            CameraOrbitEntityState::MenuPlayer => {
                 for (entity, name, transform) in scene_meshes.iter() {
                     if name.as_str() == "cam_target" {
                         camera_coord_tracker.current_coords = transform.translation;
@@ -103,6 +104,10 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::MainMenu => {
+                info!("CameraOrbitEntityState::MenuPlayer");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuPlayer);
+            },
+            CameraOrbitEntityState::MenuPlayer => {
                 info!("CameraOrbitEntityState::MenuPreferences");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuPreferences);
             },
@@ -154,16 +159,15 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                 CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuPreferences | 
                 CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::MenuOnline | 
                 CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::GameInit |
-                CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => {
-                    camera_coord_tracker.current_coords
-                }
+                CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup |
+                CameraOrbitEntityState::MenuPlayer => camera_coord_tracker.current_coords,
                 CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
             };
     
             let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
                 CameraOrbitEntityState::MainMenu => false,
                 CameraOrbitEntityState::MenuLocal => false,
-                // CameraOrbitEntityState::LeaderBoard => false,
+                CameraOrbitEntityState::LeaderBoard => false,
                 _ => true, // Enable interactions in all other states
             };
     

@@ -173,6 +173,7 @@ fn main() {
         .add_systems(OnEnter(LevelState::MenuLocal), init_level_glb)
         .add_systems(OnEnter(LevelState::MenuOnline), init_level_glb)
         .add_systems(OnEnter(LevelState::MenuPreferences), init_level_glb)
+        .add_systems(OnEnter(LevelState::MenuPlayer), init_level_glb)
 
         // --- OnExit State Reaction Initialization --- //
         .add_systems(OnExit(LevelState::MainMenu), purge_glb)
@@ -199,6 +200,7 @@ fn main() {
         .add_systems(OnExit(LevelState::MenuLocal), purge_glb)
         .add_systems(OnExit(LevelState::MenuOnline), purge_glb)
         .add_systems(OnExit(LevelState::MenuPreferences), purge_glb)
+        .add_systems(OnExit(LevelState::MenuPlayer), purge_glb)
         
         .add_systems(OnExit(LevelState::Hole1), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole2), purge_rigid_bodies)
@@ -219,11 +221,10 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole17), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
-
-        // .add_systems(OnEnter(MenuState::LeaderBoard), _______)
-        // .add_systems(OnEnter(MenuState::Online), _______)
-        // .add_systems(OnEnter(MenuState::Preferences), _______)
         
+
+
+
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
         .add_systems(OnEnter(GameState::Menus), game_state_response_menus)
@@ -370,15 +371,15 @@ fn menu_state_response_player(
     mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {
     game_handler.init_menu_player();
+    next_level_state.set(LevelState::MenuPlayer);
     next_menu_state.set(MenuState::Player);
     next_game_state.set(GameState::MenuPlayer);
-    next_level_state.set(LevelState::MenuPlayer);
-    next_camera_state.set(CameraOrbitEntityState::MenuPreferences);
+    next_camera_state.set(CameraOrbitEntityState::MenuPlayer);
     for mut state in pan_orbit_camera_query.iter_mut() {
         info!("{:?}", state);
         state.radius = 38.0;
         state.pitch = -12.0f32.to_radians();
-        state.yaw = -15.0f32.to_radians();
+        state.yaw = -10.0f32.to_radians();
     }
 }
 
@@ -397,9 +398,9 @@ fn menu_state_response_preferences(
     next_camera_state.set(CameraOrbitEntityState::MenuPreferences);
     for mut state in pan_orbit_camera_query.iter_mut() {
         info!("{:?}", state);
-        state.radius = 35.0;
+        state.radius = 38.0;
         state.pitch = -12.0f32.to_radians();
-        state.yaw = -7.0f32.to_radians();
+        state.yaw = -12.0f32.to_radians();
     }
 }
 
@@ -535,7 +536,7 @@ CameraOrbitEntityState      Player {
     MenuLocal,                  pub puts_hole_3: u32,
     MenuOnline,                 pub puts_hole_4: u32,
     MenuPreferences,            pub puts_hole_5: u32,
-                                pub puts_hole_6: u32,
+    MenuPlayer,                 pub puts_hole_6: u32,
                                 pub puts_hole_7: u32,
                                 pub puts_hole_8: u32,
                                 pub puts_hole_9: u32,
