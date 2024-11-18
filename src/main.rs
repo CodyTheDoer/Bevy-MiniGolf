@@ -131,6 +131,7 @@ fn main() {
         // --- Update Systems Initialization --- //
         
         // User Interface //
+        .add_systems(Update, update_ui) // Driving HUD Features with State info
         .add_systems(Update, draw_cursor)
         .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
@@ -147,8 +148,9 @@ fn main() {
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
         .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Right)))
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
-        // --- OnEnter State Reaction Initialization --- //        
+        // --- OnEnter State Reaction Level Initialization --- //        
         .add_systems(OnEnter(LevelState::MainMenu), init_level_glb)
         .add_systems(OnEnter(LevelState::Hole1), init_level_glb)
         .add_systems(OnEnter(LevelState::Hole2), init_level_glb)
@@ -175,7 +177,7 @@ fn main() {
         .add_systems(OnEnter(LevelState::MenuPreferences), init_level_glb)
         .add_systems(OnEnter(LevelState::MenuPlayer), init_level_glb)
 
-        // --- OnExit State Reaction Initialization --- //
+        // --- OnExit State Reaction Level Purge --- //
         .add_systems(OnExit(LevelState::MainMenu), purge_glb)
         .add_systems(OnExit(LevelState::Hole1), purge_glb)
         .add_systems(OnExit(LevelState::Hole2), purge_glb)
@@ -222,25 +224,20 @@ fn main() {
         .add_systems(OnExit(LevelState::Hole18), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::HoleTutorial), purge_rigid_bodies)
         
-
-
-
-        .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
-
+        // --- OnEnter State Reaction Game State --- //
         .add_systems(OnEnter(GameState::Menus), game_state_response_menus)
-
+        
+        // --- OnEnter State Reaction Menu State --- //
         .add_systems(OnEnter(MenuState::Local), menu_state_response_local)
         .add_systems(OnEnter(MenuState::Online), menu_state_response_online)
         .add_systems(OnEnter(MenuState::LeaderBoard), menu_state_response_leader_board)
         .add_systems(OnEnter(MenuState::Player), menu_state_response_player)
         .add_systems(OnEnter(MenuState::Preferences), menu_state_response_preferences)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
-
+        
+        // --- OnEnter State Reaction Turn State --- //
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
-        .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset)
-
-        .add_systems(Update, update_ui);
-        // .add_systems(Update, );
+        .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
 
         app.run();
 }
