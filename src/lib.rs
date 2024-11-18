@@ -50,13 +50,16 @@ pub enum CameraOrbitEntityState {
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum GameState {
     #[default]
-    LoadingScreen,
-    Menus,
     GameInitLocal,
     GameInitOnline,
+    LeaderBoard,
+    LoadingScreen,
     InGame,
     InGamePaused,
+    Menus,
     PostGameReview,
+    Preferences,
+    MenuPlayer,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -97,6 +100,7 @@ pub enum LevelState {
     MenuLocal,
     MenuOnline,
     MenuPreferences,
+    MenuPlayer,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -118,6 +122,7 @@ pub enum MenuState {
     Tutorial,
     LeaderBoard,
     Preferences,
+    Player,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -474,6 +479,7 @@ impl LevelHandler {
             LevelState::MenuLocal,
             LevelState::MenuOnline,
             LevelState::MenuPreferences,
+            LevelState::MenuPlayer,
         ];
         let level_state_ids: Vec<LevelStateID> = level_state_names
             .iter()
@@ -513,30 +519,31 @@ pub struct GLBStorageID {
 impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
-            "glb/menu/main_menu.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/map/level_1.glb",
-            "glb/menu/menu_leader_board.glb",
-            "glb/menu/menu_local.glb",
-            "glb/menu/menu_online.glb",
-            "glb/menu/menu_preferences.glb",
+            "glb/menu/main_menu.glb",           // 0
+            "glb/map/level_1.glb",              // 1
+            "glb/map/level_1.glb",              // 2
+            "glb/map/level_1.glb",              // 3
+            "glb/map/level_1.glb",              // 4
+            "glb/map/level_1.glb",              // 5
+            "glb/map/level_1.glb",              // 6
+            "glb/map/level_1.glb",              // 7
+            "glb/map/level_1.glb",              // 8
+            "glb/map/level_1.glb",              // 9
+            "glb/map/level_1.glb",              // 10
+            "glb/map/level_1.glb",              // 11
+            "glb/map/level_1.glb",              // 12
+            "glb/map/level_1.glb",              // 13
+            "glb/map/level_1.glb",              // 14
+            "glb/map/level_1.glb",              // 15
+            "glb/map/level_1.glb",              // 16
+            "glb/map/level_1.glb",              // 17
+            "glb/map/level_1.glb",              // 18
+            "glb/map/level_1.glb",              // 19
+            "glb/menu/menu_leader_board.glb",   // 20
+            "glb/menu/menu_local.glb",          // 21
+            "glb/menu/menu_online.glb",         // 22
+            "glb/menu/menu_preferences.glb",    // 23
+            "glb/menu/menu_player.glb",         // 24
         ];
         let map_ids: Vec<MapID> = map_paths
             .iter()
@@ -633,8 +640,11 @@ impl GameHandler {
     }
 
     pub fn init_menu_preferences(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(23);
+    }
+
+    pub fn init_menu_player(&mut self) {
+        self.set_current_level(24);
     }
 
     // Bonk UI Logic

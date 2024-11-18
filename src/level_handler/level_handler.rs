@@ -56,7 +56,7 @@ pub fn init_level_glb(
     glb_storage: Res<GLBStorageID>,
     gsh: Res<GameHandler>,
 ) {
-    info!("Init Hole: Hole {}", gsh.current_level);
+    info!("Init Level: {}", gsh.current_level);
     gltf_handler_init_level_glb(asset_server, commands, glb_storage, gsh.current_level);
 }
 

@@ -210,6 +210,9 @@ pub fn ray_release(
                         "main_menu_interface_tutorial" => {
                             next_menu_state.set(MenuState::Tutorial);
                         },
+                        "main_menu_player_text" | "main_menu_player_board.0" => {
+                            next_menu_state.set(MenuState::Player);
+                        }
                         /* 
                             // Free Options to Build From
                         "main_menu_interface_minigolf" => {},
@@ -221,6 +224,13 @@ pub fn ray_release(
                             game_handler.init_menu_main();
                             next_game_state.set(GameState::Menus);
                             next_level_state.set(LevelState::MainMenu);
+                            next_camera_state.set(CameraOrbitEntityState::MainMenu);
+                            for mut state in pan_orbit_camera_query.iter_mut() {
+                                info!("{:?}", state);
+                                state.radius = 38.0;
+                                state.pitch = -12.0f32.to_radians();
+                                state.yaw = -17.0f32.to_radians();
+                            }
                         },
 
                         // --- Menu: Leader Board Interface Mapping --- //

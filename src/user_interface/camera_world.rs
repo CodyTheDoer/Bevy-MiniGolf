@@ -163,7 +163,7 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
             let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
                 CameraOrbitEntityState::MainMenu => false,
                 CameraOrbitEntityState::MenuLocal => false,
-                CameraOrbitEntityState::LeaderBoard => false,
+                // CameraOrbitEntityState::LeaderBoard => false,
                 _ => true, // Enable interactions in all other states
             };
     
