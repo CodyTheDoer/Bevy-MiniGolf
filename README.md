@@ -51,3 +51,5 @@ IDE:
 Sound: 
     Audacity
 ```
+
+![Screenshot of local menu scene and state monitoring during development](images/Minigolf%20004.png)

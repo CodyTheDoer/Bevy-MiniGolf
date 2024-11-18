@@ -118,38 +118,6 @@ pub fn draw_cursor(
     }
 }
 
-pub fn game_state_update(
-    game_state: Res<State<GameState>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-) {
-    match game_state.get() {
-        GameState::LoadingScreen => {
-            info!("GameState::MenuMain");
-            next_game_state.set(GameState::Menus);
-        },
-        GameState::Menus => {
-            info!("GameState::InGame");
-            next_game_state.set(GameState::InGame);
-        },
-        GameState::GameInitLocal => {
-        },
-        GameState::GameInitOnline => {
-        },
-        GameState::InGame => {
-            info!("GameState::InGamePaused");
-            next_game_state.set(GameState::InGamePaused);
-        },
-        GameState::InGamePaused => {
-            info!("GameState::PostGameReview");
-            next_game_state.set(GameState::PostGameReview);
-        },
-        GameState::PostGameReview => {
-            info!("GameState::LoadingScreen");
-            next_game_state.set(GameState::LoadingScreen);
-        },
-    }
-}
-
 pub fn ray_fire(
     mut raycast: Raycast,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    

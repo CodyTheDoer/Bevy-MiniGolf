@@ -54,30 +54,6 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                     }
                 }        
             }
-            CameraOrbitEntityState::LeaderBoard => {
-                for (entity, name, transform) in scene_meshes.iter() {
-                    if name.as_str() == "cam_target" {
-                        camera_coord_tracker.current_coords = transform.translation;
-                        break;
-                    }
-                }        
-            }
-            CameraOrbitEntityState::MenuLocal => {
-                for (entity, name, transform) in scene_meshes.iter() {
-                    if name.as_str() == "cam_target" {
-                        camera_coord_tracker.current_coords = transform.translation;
-                        break;
-                    }
-                }        
-            }
-            CameraOrbitEntityState::MainMenu => {
-                for (entity, name, transform) in scene_meshes.iter() {
-                    if name.as_str() == "cam_target" {
-                        camera_coord_tracker.current_coords = transform.translation;
-                        break;
-                    }
-                }        
-            }
             CameraOrbitEntityState::Cup => {
                 for (entity, name, transform) in scene_meshes.iter() {
                     if name.as_str() == "cup" {
@@ -86,6 +62,16 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                     }
                 }        
             }
+            CameraOrbitEntityState::GameInit | CameraOrbitEntityState::LeaderBoard |
+            CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::MenuOnline |
+            CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuPreferences => {
+                for (entity, name, transform) in scene_meshes.iter() {
+                    if name.as_str() == "cam_target" {
+                        camera_coord_tracker.current_coords = transform.translation;
+                        break;
+                    }
+                }  
+            }      
             CameraOrbitEntityState::FreePan => {    
             }
         }
@@ -101,14 +87,26 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::LeaderBoard => {
+                info!("CameraOrbitEntityState::GameInit");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::GameInit);
+            },
+            CameraOrbitEntityState::GameInit => {
                 info!("CameraOrbitEntityState::MenuLocal");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuLocal);
             },
             CameraOrbitEntityState::MenuLocal => {
+                info!("CameraOrbitEntityState::MenuOnline");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuOnline);
+            },
+            CameraOrbitEntityState::MenuOnline => {
                 info!("CameraOrbitEntityState::MainMenu");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::MainMenu);
             },
             CameraOrbitEntityState::MainMenu => {
+                info!("CameraOrbitEntityState::MenuPreferences");
+                next_camera_orbit_entity_state.set(CameraOrbitEntityState::MenuPreferences);
+            },
+            CameraOrbitEntityState::MenuPreferences => {
                 info!("CameraOrbitEntityState::Ball");
                 next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
             },
@@ -153,7 +151,10 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
         for (settings, mut state, mut transform) in &mut q_camera {
             // Determine the target based on the current camera state
             let target = match camera_orbit_entity_state.get() {
-                CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::Cup | CameraOrbitEntityState::Ball => {
+                CameraOrbitEntityState::MainMenu | CameraOrbitEntityState::MenuPreferences | 
+                CameraOrbitEntityState::MenuLocal | CameraOrbitEntityState::MenuOnline | 
+                CameraOrbitEntityState::LeaderBoard | CameraOrbitEntityState::GameInit |
+                CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => {
                     camera_coord_tracker.current_coords
                 }
                 CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center

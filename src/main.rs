@@ -46,7 +46,6 @@ use minigolf::user_interface::camera_world::{
 };
 use minigolf::user_interface::user_interface::{
     bonk_gizmo,
-    game_state_update, 
     ray_fire, 
     ray_release, 
     draw_cursor,
@@ -57,8 +56,6 @@ use minigolf::user_interface::user_interface::{
 // --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
     init_level_glb, 
-    level_state_update, 
-    map_set_state_update, 
     setup_ground, 
     setup_light, 
     purge_glb,
@@ -132,11 +129,7 @@ fn main() {
         .add_systems(Startup, performance_physics_setup)
 
         // --- Update Systems Initialization --- //
-        // states //
-        // .add_systems(Update, game_state_update.run_if(input_just_released(KeyCode::ArrowLeft)))
-        // .add_systems(Update, level_state_update.run_if(input_just_released(KeyCode::ArrowUp)))
-        // .add_systems(Update, map_set_state_update.run_if(input_just_released(KeyCode::ArrowRight)))
-
+        
         // User Interface //
         .add_systems(Update, draw_cursor)
         .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
@@ -236,6 +229,9 @@ fn main() {
         .add_systems(OnEnter(GameState::Menus), game_state_response_menus)
 
         .add_systems(OnEnter(MenuState::Local), menu_state_response_local)
+        .add_systems(OnEnter(MenuState::Online), menu_state_response_online)
+        .add_systems(OnEnter(MenuState::LeaderBoard), menu_state_response_leader_board)
+        .add_systems(OnEnter(MenuState::Preferences), menu_state_response_preferences)
         .add_systems(OnEnter(MenuState::Tutorial), menu_state_response_tutorial)
 
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
@@ -257,6 +253,8 @@ fn asset_event_listener(
     };
     event_occurred
 }
+
+// --- OnEnter: Game State --- //
 
 pub fn game_state_response_menus(
     mut party: ResMut<Party>,
@@ -280,6 +278,8 @@ pub fn game_state_response_menus(
     }
 }
 
+// --- OnEnter: Menu State --- //
+
 fn menu_state_response_local(
     mut game_handler: ResMut<GameHandler>,
     mut next_game_state: ResMut<NextState<GameState>>,
@@ -296,6 +296,42 @@ fn menu_state_response_local(
         state.radius = 38.0;
         state.pitch = -12.0f32.to_radians();
         state.yaw = 17.0f32.to_radians();
+    }
+}
+
+fn menu_state_response_online(
+    mut game_handler: ResMut<GameHandler>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+) {
+    game_handler.init_menu_online();
+    next_game_state.set(GameState::GameInitOnline);
+    next_level_state.set(LevelState::MenuOnline);    
+    next_camera_state.set(CameraOrbitEntityState::GameInit);
+    for mut state in pan_orbit_camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 38.0;
+        state.pitch = -12.0f32.to_radians();
+        state.yaw = 17.0f32.to_radians();
+    }
+}
+
+fn menu_state_response_leader_board(
+    mut game_handler: ResMut<GameHandler>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+) {
+    game_handler.init_menu_leader_board();
+    next_level_state.set(LevelState::MenuLeaderBoard);    
+    next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
+    for mut state in pan_orbit_camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 38.0;
+        state.pitch = -12.0f32.to_radians();
+        state.yaw = -17.0f32.to_radians();
     }
 }
 
@@ -326,9 +362,25 @@ fn menu_state_response_tutorial(
         state.yaw = 22.0f32.to_radians();
     }
 }
-// fn menu_state_response_leader_board() {}
-// fn menu_state_response_online() {}
-// fn menu_state_response_preferences() {}
+
+fn menu_state_response_preferences(
+    mut game_handler: ResMut<GameHandler>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
+    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
+    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+) {
+    game_handler.init_menu_preferences();
+    next_level_state.set(LevelState::MenuPreferences);    
+    next_camera_state.set(CameraOrbitEntityState::MenuPreferences);
+    for mut state in pan_orbit_camera_query.iter_mut() {
+        info!("{:?}", state);
+        state.radius = 38.0;
+        state.pitch = -12.0f32.to_radians();
+        state.yaw = 17.0f32.to_radians();
+    }
+}
+
+// --- OnEnter: Turn State --- //
 
 fn turn_state_response_hole_complete(
     mut party: ResMut<Party>,
@@ -456,10 +508,10 @@ CameraOrbitEntityState      Player {
     Cup,                        pub ball_location: Vec3,
     FreePan,                    pub puts_count_total: u32,
     LeaderBoard,                pub puts_hole_1: u32,
-                                pub puts_hole_2: u32,
-                                pub puts_hole_3: u32,
-                                pub puts_hole_4: u32,
-                                pub puts_hole_5: u32,
+    GameInit.                   pub puts_hole_2: u32,
+    MenuLocal,                  pub puts_hole_3: u32,
+    MenuOnline,                 pub puts_hole_4: u32,
+    MenuPreferences,            pub puts_hole_5: u32,
                                 pub puts_hole_6: u32,
                                 pub puts_hole_7: u32,
                                 pub puts_hole_8: u32,

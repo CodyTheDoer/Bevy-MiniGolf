@@ -41,7 +41,10 @@ pub enum CameraOrbitEntityState {
     Cup,
     FreePan,
     LeaderBoard,
+    GameInit,
     MenuLocal,
+    MenuOnline,
+    MenuPreferences,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -614,9 +617,24 @@ impl GameHandler {
         self.set_current_level(0);
     }
 
+    pub fn init_menu_leader_board(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(20);
+    }
+
     pub fn init_menu_local(&mut self) {
         // Eventually submit party info to leaderboard system
         self.set_current_level(21);
+    }
+
+    pub fn init_menu_online(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(22);
+    }
+
+    pub fn init_menu_preferences(&mut self) {
+        // Eventually submit party info to leaderboard system
+        self.set_current_level(23);
     }
 
     // Bonk UI Logic
