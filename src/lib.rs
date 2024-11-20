@@ -578,19 +578,32 @@ pub struct StateText;
 #[derive(Component)]
 pub struct TitleText;
 
+
+
+
+
+#[derive(Clone, Debug)]
+pub enum StateUpdateRef {
+    GameState(GameState),
+    LevelState(LevelState),
+}
+
 #[derive(Resource)]
 pub struct GameHandler {
     current_level: i32,
     arrow_state: bool,
+    remotely_pushed_state: Option<StateUpdateRef>,
 }
 
 impl GameHandler {
     pub fn new() -> Self {
         let current_level = 0;
         let arrow_state = false;
+        let remotely_pushed_state = None;
         GameHandler {
             current_level,
             arrow_state,
+            remotely_pushed_state,
         }
     }
 
@@ -659,6 +672,18 @@ impl GameHandler {
 
     pub fn set_arrow_state_false(&mut self) {
         self.arrow_state = false;
+    }
+    
+    // Remote Auth Server Logic
+    pub fn auth_server_update_received(
+        &mut self, 
+        parsed_state: Option<StateUpdateRef>,
+    ) {
+        self.remotely_pushed_state = Some(parsed_state.unwrap());
+    }
+
+    pub fn get_pushed_state(&self) -> StateUpdateRef {
+        self.remotely_pushed_state.clone().expect("Push State get failed.")
     }
 }
 
