@@ -20,7 +20,7 @@ use minigolf::{
     LevelState,
     MapSetState,
     MenuState,
-    PartyConnectionState,
+    ConnectionState,
     PlayerCompletionState,
     PlayThroughStyleState,
     TurnState,
@@ -61,6 +61,27 @@ use minigolf::user_interface::user_interface::{
     update_ui,
 };
 
+// --- User Interface - Game State Handler Import --- //
+use minigolf::user_interface::game_state_handler::{
+    game_state_response_menus,
+};
+
+// --- User Interface - Turn Handler Import --- //
+use minigolf::user_interface::turn_state_handler::{
+    turn_state_response_hole_complete,
+    turn_state_response_turn_reset,
+};
+
+// --- User Interface - Menu Handler Import --- //
+use minigolf::user_interface::menu_state_handler::{
+    menu_state_response_local,
+    menu_state_response_online,
+    menu_state_response_leader_board,
+    menu_state_response_tutorial,
+    menu_state_response_player,
+    menu_state_response_preferences,
+};
+
 // --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
     init_level_glb, 
@@ -73,6 +94,7 @@ use minigolf::level_handler::level_handler::{
 // --- Physics Handler Import --- //
 use minigolf::level_handler::physics_handler::{
     add_physics_query_and_update_scene,
+    asset_event_listener,
     bonk_step_start,
     bonk_step_mid,
     bonk_step_end,
@@ -116,7 +138,7 @@ fn main() {
         .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
         .insert_state(MenuState::NoSelection)
-        .insert_state(PartyConnectionState::Local)
+        .insert_state(ConnectionState::Local)
         .insert_state(PlayThroughStyleState::Proximity)
         .insert_state(TurnState::Idle)
 
@@ -258,252 +280,6 @@ fn main() {
     app.run();
 }
 
-fn asset_event_listener(
-    mut ev_asset: EventReader<AssetEvent<Mesh>>,
-    // mut assets: ResMut<Assets<Mesh>>,
-) -> bool {
-    let mut event_occurred = false;
-    for event in ev_asset.read() {
-        event_occurred = true;
-    };
-    event_occurred
-}
-
-// --- OnEnter: Game State --- //
-
-pub fn game_state_response_menus(
-    mut party: ResMut<Party>,
-    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
-    mut next_level: ResMut<NextState<LevelState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_turn: ResMut<NextState<TurnState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-){
-    next_menu_state.set(MenuState::NoSelection);
-    next_turn.set(TurnState::Idle);
-    next_leader_board_state.set(LeaderBoardState::Mixed);
-    next_level.set(LevelState::MainMenu);
-}
-
-// --- OnEnter: Menu State --- //
-
-fn menu_state_response_local(
-    mut game_handler: ResMut<GameHandler>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    game_handler.init_menu_local();
-    next_game_state.set(GameState::GameInitLocal);
-    next_level_state.set(LevelState::MenuLocal);    
-    next_camera_state.set(CameraOrbitEntityState::MenuLocal);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        info!("{:?}", state);
-        state.radius = 38.0;
-        state.pitch = -12.0f32.to_radians();
-        state.yaw = 17.0f32.to_radians();
-    }
-}
-
-fn menu_state_response_online(
-    mut game_handler: ResMut<GameHandler>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    game_handler.init_menu_online();
-    next_game_state.set(GameState::GameInitOnline);
-    next_level_state.set(LevelState::MenuOnline);    
-    next_camera_state.set(CameraOrbitEntityState::GameInit);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        info!("{:?}", state);
-        state.radius = 38.0;
-        state.pitch = -12.0f32.to_radians();
-        state.yaw = 17.0f32.to_radians();
-    }
-}
-
-fn menu_state_response_leader_board(
-    mut game_handler: ResMut<GameHandler>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    game_handler.init_menu_leader_board();
-    next_menu_state.set(MenuState::LeaderBoard);
-    next_game_state.set(GameState::LeaderBoard);
-    next_level_state.set(LevelState::MenuLeaderBoard);
-    next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        info!("{:?}", state);
-        state.radius = 38.0;
-        state.pitch = -12.0f32.to_radians();
-        state.yaw = -7.0f32.to_radians();
-    }
-}
-
-fn menu_state_response_tutorial(
-    mut party: ResMut<Party>,
-    mut game_handler: ResMut<GameHandler>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut next_turn_state: ResMut<NextState<TurnState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    party.start_game();
-    game_handler.init_tutorial();
-    next_level_state.set(LevelState::HoleTutorial);
-    next_menu_state.set(MenuState::NoSelection);
-    next_leader_board_state.set(LeaderBoardState::InGame);
-    next_map_set_state.set(MapSetState::Tutorial);
-    next_game_state.set(GameState::InGame);
-    next_turn_state.set(TurnState::Turn);
-    next_camera_state.set(CameraOrbitEntityState::Ball);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        state.radius = 2.0;
-        state.pitch = -8.0f32.to_radians();
-        state.yaw = 22.0f32.to_radians();
-    }
-}
-
-fn menu_state_response_player(
-    mut game_handler: ResMut<GameHandler>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    game_handler.init_menu_player();
-    next_level_state.set(LevelState::MenuPlayer);
-    next_menu_state.set(MenuState::Player);
-    next_game_state.set(GameState::MenuPlayer);
-    next_camera_state.set(CameraOrbitEntityState::MenuPlayer);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        info!("{:?}", state);
-        state.radius = 38.0;
-        state.pitch = -12.0f32.to_radians();
-        state.yaw = -10.0f32.to_radians();
-    }
-}
-
-fn menu_state_response_preferences(
-    mut game_handler: ResMut<GameHandler>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    game_handler.init_menu_preferences();
-    next_menu_state.set(MenuState::Preferences);
-    next_game_state.set(GameState::Preferences);
-    next_level_state.set(LevelState::MenuPreferences);
-    next_camera_state.set(CameraOrbitEntityState::MenuPreferences);
-    for mut state in pan_orbit_camera_query.iter_mut() {
-        info!("{:?}", state);
-        state.radius = 38.0;
-        state.pitch = -12.0f32.to_radians();
-        state.yaw = -12.0f32.to_radians();
-    }
-}
-
-// --- OnEnter: Turn State --- //
-
-fn turn_state_response_hole_complete(
-    mut party: ResMut<Party>,
-    map_set_state: Res<State<MapSetState>>,
-    level: ResMut<State<LevelState>>,
-    level_handler: Res<LevelHandler>,
-    mut game_handler: ResMut<GameHandler>,
-    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level: ResMut<NextState<LevelState>>,
-    mut next_turn: ResMut<NextState<TurnState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
-) {
-    party.active_player_finished_hole(); // Reads active player index and updates target Player's state
-    
-    let current_level = party.get_active_level();
-    let party_size = party.get_party_size();
-    
-    if party_size == 1 {
-        let maps = match map_set_state.get() {
-            MapSetState::Tutorial => {
-                party.end_game(); // Sets players to NotInGame
-                next_game_state.set(GameState::PostGameReview);
-                next_turn.set(TurnState::Idle);
-                game_handler.init_postgame_leaderboard(party); // Set's target for level handling
-                next_leader_board_state.set(LeaderBoardState::PostGame);
-                next_level.set(LevelState::MenuLeaderBoard);
-                next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
-                for mut state in pan_orbit_camera_query.iter_mut() {
-                    info!("{:?}", state);
-                    state.radius = 38.0;
-                    state.pitch = -12.0f32.to_radians();
-                    state.yaw = -17.0f32.to_radians();
-                }
-            },
-            MapSetState::WholeCorse => {
-                if current_level == 18 {
-                    todo!(); // End Game Leaderboard
-                } else {
-                    let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
-                    game_handler.next_level();
-                    party.next_level();
-                    next_turn.set(TurnState::Turn);
-                }
-            },
-            MapSetState::FrontNine => {
-                if current_level == 9 {
-                    todo!(); // End Game Leaderboard
-                } else {
-                    let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
-                    game_handler.next_level();
-                    party.next_level();
-                    next_turn.set(TurnState::Turn);
-                }
-            },
-            MapSetState::BackNine => {
-                if current_level == 18 {
-                    todo!(); // End Game Leaderboard
-                } else {
-                    let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
-                    game_handler.next_level();
-                    party.next_level();
-                    next_turn.set(TurnState::Turn);
-                }
-            },
-            MapSetState::SelectAHole => {
-                    todo!(); // End Game Leaderboard
-            },
-        };
-    }
-    
-    // next_turn_state.set(TurnState::)
-}
-
-fn turn_state_response_turn_reset(
-    mut party: ResMut<Party>,
-    mut next_turn_state: ResMut<NextState<TurnState>>,
-) {
-}
-// fn turn_state_response_new_game() {}
-// fn turn_state_response_next_turn() {}
-// fn turn_state_response_game_complete() {}
 
 
 
@@ -517,10 +293,40 @@ fn turn_state_response_turn_reset(
 
 
 // Matchbox Network integration
+#[derive(Clone, Debug)]
+enum NetworkInterface {
+    InitHandshake,
+    ConfirmHandshake,
+
+    RequestLeaderBoard,
+    UpdateLeaderBoard,
+    
+    FriendsGet,
+    FriendAdd,
+    FriendRemove,
+
+    PartyGet,
+    PartyAdd,
+    
+    InGameBonk,
+    InGameHoleCompletePlayer,
+}
 
 fn start_socket(mut commands: Commands) {
     let socket = MatchboxSocket::new_reliable("ws://localhost:3536/minigolf");
     commands.insert_resource(socket);
+}
+
+fn auth_server_handshake(
+    mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+) {
+    let peers: Vec<_> = socket.connected_peers().collect();
+
+    for peer in peers {
+        let message = "Hello";
+        info!("Sending message: {message:?} to {peer}");
+        socket.send(message.as_bytes().into(), peer);
+    }
 }
 
 fn send_message(mut socket: ResMut<MatchboxSocket<SingleChannel>>) {
@@ -548,6 +354,10 @@ fn server_parse_message(
     }
 
     let parsed_state = match split[0] {
+        "ConnectionState" => match split[1] {
+            "Online" => Some(StateUpdateRef::ConnectionState(ConnectionState::Online)),
+            _ => None,
+        }
         "GameState" => match split[1] {
             "GameInitLocal" => Some(StateUpdateRef::GameState(GameState::GameInitLocal)),
             "GameInitOnline" => Some(StateUpdateRef::GameState(GameState::GameInitOnline)),
@@ -599,12 +409,16 @@ fn server_parse_message(
 fn remote_state_change_monitor(
     mut online_event_listener: EventReader<OnlineStateChange>,
     mut game_handler: ResMut<GameHandler>,
+    mut next_connection_state: ResMut<NextState<ConnectionState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     for ev in online_event_listener.read() {
         info!("State: {:?}", game_handler.get_pushed_state());
 
         match game_handler.get_pushed_state() {
+            StateUpdateRef::ConnectionState(connection_state) => {
+                next_connection_state.set(connection_state); // This sets the connection state to connected if ran.
+            },
             StateUpdateRef::GameState(game_state) => {
                 next_game_state.set(game_state); // This sets the next game state
             },
@@ -663,7 +477,7 @@ TurnState                   MapSetState                 PlayThroughStyleState   
                                                                                                 Hole18,
                                                                                                 HoleTutorial
                                                                                                 MenuLeaderBoard
-LeaderBoardState            PartyConnectionState        Party {                                 MenuLocal
+LeaderBoardState            ConnectionState        Party {                                 MenuLocal
     #[default]                  #[default]                  players: Arc<[Player]>,             MenuOnline
     Mixed,                      Local,                      active_player: Arc<i32>,            MenuPreferences
     Online,                     Online,                     active_level: Arc<i32>,

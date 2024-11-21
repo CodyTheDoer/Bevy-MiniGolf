@@ -14,7 +14,7 @@ use crate::{
     MapSetState,
     MenuState,
     PanOrbitState,
-    PartyConnectionState,
+    ConnectionState,
     PlayThroughStyleState,
     TurnState,
 };
@@ -567,11 +567,12 @@ pub fn update_ui(
     state_play_through_style: Res<State<PlayThroughStyleState>>,
     state_leader_board: Res<State<LeaderBoardState>>,
     state_level: Res<State<LevelState>>,
-    state_party_connection: Res<State<PartyConnectionState>>,
+    state_party_connection: Res<State<ConnectionState>>,
     state_pan_orbit_camera: Res<State<CameraOrbitEntityState>>,
     mut query: Query<&mut Text, With<StateText>>,
 ) {
     let state_texts = vec![
+        format!("Server Connection: {:?}", *state_party_connection),
         format!("Game: {:?}", *state_game),
         format!("Menu: {:?}", *state_menu),
         format!("Turn: {:?}", *state_turn),
@@ -579,7 +580,6 @@ pub fn update_ui(
         format!("Play Through Style: {:?}", *state_play_through_style),
         format!("Leader Board: {:?}", *state_leader_board),
         format!("Level: {:?}", *state_level),
-        format!("Party Connection: {:?}", *state_party_connection),
         format!("Camera Orbit Entity: {:?}", *state_pan_orbit_camera),
     ];
     // Update the text for the state information

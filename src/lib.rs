@@ -127,7 +127,7 @@ pub enum MenuState {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum PartyConnectionState {
+pub enum ConnectionState {
     #[default]
     Local,
     Online,
@@ -584,6 +584,7 @@ pub struct TitleText;
 
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {
+    ConnectionState(ConnectionState),
     GameState(GameState),
     LevelState(LevelState),
 }
@@ -684,15 +685,6 @@ impl GameHandler {
 
     pub fn get_pushed_state(&self) -> StateUpdateRef {
         self.remotely_pushed_state.clone().expect("Push State get failed.")
-    }
-}
-
-// --- Rapier Integration --- //
-pub fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
-    for mut transform in positions.iter_mut() {
-        // dbg!(transform.rotation.to_axis_angle());
-        transform.rotation = Quat::from_rotation_z(270_f32.to_radians());
-        println!("Ball altitude: {}", transform.translation.y);
     }
 }
 

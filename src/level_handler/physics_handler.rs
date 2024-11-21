@@ -99,7 +99,8 @@ pub fn add_physics_query_and_update_scene(
     }
 }
 
-fn extract_mesh_vertices_indices( // Helper function for ^add_physics_query_and_update_scene^
+// Helper function for ^^^add_physics_query_and_update_scene^^^
+fn extract_mesh_vertices_indices( 
     mesh: &Mesh,
 ) -> Option<(
     Vec<bevy_rapier3d::na::Point3<bevy_rapier3d::prelude::Real>>,
@@ -154,6 +155,17 @@ pub fn apply_rotation_matrix_camera_yaw(
         x: rotated_x,
         y: rotated_y,
     }
+}
+
+pub fn asset_event_listener(
+    mut ev_asset: EventReader<AssetEvent<Mesh>>,
+    // mut assets: ResMut<Assets<Mesh>>,
+) -> bool {
+    let mut event_occurred = false;
+    for event in ev_asset.read() {
+        event_occurred = true;
+    };
+    event_occurred
 }
 
 pub fn bonk(
