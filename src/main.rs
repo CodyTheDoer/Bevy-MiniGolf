@@ -278,35 +278,247 @@ fn main() {
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
             .run_if(on_timer(Duration::from_secs(5))))
-        .add_systems(Update, entity_toggle_visbility
-            .run_if(on_timer(Duration::from_secs(5)))
-        );
+        .add_systems(Update, local_party_interface_visibliity_toggle)
+        .add_systems(Update, party_size_increase
+            .run_if(input_just_released(KeyCode::Space)))
+        .add_systems(Update, party_remove_ai
+            .run_if(input_just_released(KeyCode::ArrowDown)))
+        .add_systems(Update, party_add_ai
+            .run_if(input_just_released(KeyCode::ArrowUp)));
 
 
     app.run();
 }
 
+fn party_size_increase(party: Res<Party>) {
+    party.add_player();
+}
 
+fn party_add_ai(party: Res<Party>) {
+    party.add_ai();
+    info!("Added AI");
+}
+
+fn party_remove_ai(party: Res<Party>) {
+    party.remove_ai();
+    info!("Removed AI");
+}
 
 // Control Entity Visbility
-pub fn entity_toggle_visbility(
+pub fn local_party_interface_visibliity_toggle(
     mut commands: Commands,
     mut scene_meshes: Query<(Entity, &Name, &mut Visibility)>,
     party: Res<Party>,
 ) {
-    info!("{:?}", party.get_party_size());
+    let party_size = party.get_party_size();
+    let ai_count = party.get_ai_count();
     for (entity, name, mut visibility) in &mut scene_meshes {
         let name_owned = name.as_str();
-        match name_owned {
-            "local_menu_ai_golfball_1" => {
-                info!(
-                    "Entity: {:?} Visibility: {:?}",
-                    name,
-                    visibility,
-                );
-                *visibility = Visibility::Hidden;
+        match party_size {
+            1 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
             },
-            _ => {},
+            2 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            3 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" | "local_menu_players_golfball_3" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            4 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            5 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            6 => {
+                match name_owned {
+                    "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            _ => {}
+        }
+        match ai_count {
+            0 => {
+                match name_owned {
+                    "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_5" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            1 => {
+                match name_owned {
+                    "local_menu_ai_golfball_5" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_4" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            2 => {
+                match name_owned {
+                    "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            3 => {
+                match name_owned {
+                    "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            4 => {
+                match name_owned {
+                    "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_2" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    "local_menu_ai_golfball_1" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Hidden},
+                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            5 => {
+                match name_owned {
+                    "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_1" => {
+                        match *visibility {
+                            Visibility::Inherited => {*visibility = Visibility::Visible},
+                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            },
+            _ => {}
         }
     }
     // if Some(entity).is_some()  {

@@ -266,6 +266,7 @@ pub struct Party {
     players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
     active_level: Arc<Mutex<i32>>,
+    ai_count: Arc<Mutex<i32>>,
 }
 
 impl Party {
@@ -274,11 +275,13 @@ impl Party {
         let players_finished: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
+        let ai_count: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         Party {
             players,
             players_finished,
             active_player,
             active_level,
+            ai_count,
         } 
     }
     
@@ -286,6 +289,39 @@ impl Party {
         let new_player: Arc<Mutex<Player>> = Arc::new(Mutex::new(Player::new()));
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
         players_lock.push(new_player);
+        
+        let owned_party_size: i32 = players_lock.len() as i32;
+        let mut ai_count = self.ai_count.lock().unwrap();
+        let total_party_size = *ai_count + owned_party_size;
+
+        if total_party_size > 6 {
+            *ai_count -= 1;
+        } 
+    }
+    
+    pub fn add_ai(&self) {
+        let owned_party_size: i32 = self.get_party_size() as i32;
+        let mut ai_count = self.ai_count.lock().unwrap();
+
+        let total_party_size = *ai_count + owned_party_size;
+
+        if total_party_size < 6 {
+            if *ai_count < 5 {
+                *ai_count += 1;
+            }
+        } 
+    }
+    
+    pub fn remove_ai(&self) {
+        let mut count = self.ai_count.lock().unwrap();
+        if *count > 0 {
+            *count -= 1;
+        }
+    }
+
+    pub fn get_ai_count(&self) -> i32 {
+        let count = self.ai_count.lock().unwrap();
+        *count
     }
 
     pub fn get_players_finished(&self) -> i32 {
