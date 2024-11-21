@@ -150,6 +150,7 @@ fn main() {
         .insert_resource(GLBStorageID::new())
         .insert_resource(LevelHandler::new())
         .insert_resource(Party::new())
+        .insert_resource(Player::new())
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_ground)
@@ -270,11 +271,14 @@ fn main() {
 
 
     // --- Network Integration --- //
-    app.add_systems(Startup, start_socket)
+    app.add_event::<OnlineStateChange>()
+        .add_systems(Startup, start_socket)
         .add_systems(Update, receive_messages)
         .add_systems(Update, remote_state_change_monitor)
-        .add_systems(Update, send_message.run_if(on_timer(Duration::from_secs(5))))
-        .add_event::<OnlineStateChange>();
+        .add_systems(Update, auth_server_handshake
+            .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
+            .run_if(on_timer(Duration::from_secs(5)))
+        );
 
 
     app.run();
@@ -296,18 +300,31 @@ fn main() {
 #[derive(Clone, Debug)]
 enum NetworkInterface {
     InitHandshake,
-    ConfirmHandshake,
+    HandshakeConfirmed,
+
+    PlayerCheckProfile,
+    PlayerUpload,
+    PlayerUpdate,
 
     RequestLeaderBoard,
     UpdateLeaderBoard,
     
     FriendsGet,
+    FriendSearch,
     FriendAdd,
     FriendRemove,
 
     PartyGet,
-    PartyAdd,
+    PartyAddFriend,
+    PartyAddAI,
+    PartyRemovePlayer,
+    PartyJoin,
+    PartyLeave,
     
+    FindMatchInit,
+    FindMatchCancel,
+
+    InGameQuit,
     InGameBonk,
     InGameHoleCompletePlayer,
 }
@@ -319,21 +336,16 @@ fn start_socket(mut commands: Commands) {
 
 fn auth_server_handshake(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+    player: Res<Player>,
 ) {
     let peers: Vec<_> = socket.connected_peers().collect();
+    let player_id = player.get_id();
 
     for peer in peers {
-        let message = "Hello";
-        info!("Sending message: {message:?} to {peer}");
-        socket.send(message.as_bytes().into(), peer);
-    }
-}
-
-fn send_message(mut socket: ResMut<MatchboxSocket<SingleChannel>>) {
-    let peers: Vec<_> = socket.connected_peers().collect();
-
-    for peer in peers {
-        let message = "Hello";
+        let message = format!{
+            "{}",
+            player_id,
+        };
         info!("Sending message: {message:?} to {peer}");
         socket.send(message.as_bytes().into(), peer);
     }
@@ -353,56 +365,70 @@ fn server_parse_message(
         return;
     }
 
-    let parsed_state = match split[0] {
-        "ConnectionState" => match split[1] {
-            "Online" => Some(StateUpdateRef::ConnectionState(ConnectionState::Online)),
+    if game_handler.is_not_connected() { // handle a new connection.
+        let parsed_state = match split[0] {
+            "ConnectionState" => match split[1] {
+                "Online" => Some(StateUpdateRef::ConnectionState(ConnectionState::Online)),
+                _ => None,
+            }
             _ => None,
+        };
+        
+        if let Some(state) = parsed_state {
+            info!("Updated state valid: {:?}", state);
+            game_handler.auth_server_handshake_received(Some(state));
+            online_event_handler.send(OnlineStateChange);
+        } else {
+            info!("Updated state invalid");
         }
-        "GameState" => match split[1] {
-            "GameInitLocal" => Some(StateUpdateRef::GameState(GameState::GameInitLocal)),
-            "GameInitOnline" => Some(StateUpdateRef::GameState(GameState::GameInitOnline)),
-            "LeaderBoard" => Some(StateUpdateRef::GameState(GameState::LeaderBoard)),
-            "LoadingScreen" => Some(StateUpdateRef::GameState(GameState::LoadingScreen)),
-            "InGame" => Some(StateUpdateRef::GameState(GameState::InGame)),
-            "InGamePaused" => Some(StateUpdateRef::GameState(GameState::InGamePaused)),
-            "Menus" => Some(StateUpdateRef::GameState(GameState::Menus)),
-            "PostGameReview" => Some(StateUpdateRef::GameState(GameState::PostGameReview)),
-            "Preferences" => Some(StateUpdateRef::GameState(GameState::Preferences)),
-            "MenuPlayer" => Some(StateUpdateRef::GameState(GameState::MenuPlayer)),
-            _ => None,
-        },
-        "LevelState" => match split[1] {
-            "MainMenu" => Some(StateUpdateRef::LevelState(LevelState::MainMenu)),
-            "Hole1" => Some(StateUpdateRef::LevelState(LevelState::Hole1)),
-            "Hole2" => Some(StateUpdateRef::LevelState(LevelState::Hole2)),
-            "Hole3" => Some(StateUpdateRef::LevelState(LevelState::Hole3)),
-            "Hole4" => Some(StateUpdateRef::LevelState(LevelState::Hole4)),
-            "Hole5" => Some(StateUpdateRef::LevelState(LevelState::Hole5)),
-            "Hole6" => Some(StateUpdateRef::LevelState(LevelState::Hole6)),
-            "Hole7" => Some(StateUpdateRef::LevelState(LevelState::Hole7)),
-            "Hole8" => Some(StateUpdateRef::LevelState(LevelState::Hole8)),
-            "Hole9" => Some(StateUpdateRef::LevelState(LevelState::Hole9)),
-            "Hole10" => Some(StateUpdateRef::LevelState(LevelState::Hole10)),
-            "Hole11" => Some(StateUpdateRef::LevelState(LevelState::Hole11)),
-            "Hole12" => Some(StateUpdateRef::LevelState(LevelState::Hole12)),
-            "Hole13" => Some(StateUpdateRef::LevelState(LevelState::Hole13)),
-            "Hole14" => Some(StateUpdateRef::LevelState(LevelState::Hole14)),
-            "Hole15" => Some(StateUpdateRef::LevelState(LevelState::Hole15)),
-            "Hole16" => Some(StateUpdateRef::LevelState(LevelState::Hole16)),
-            "Hole17" => Some(StateUpdateRef::LevelState(LevelState::Hole17)),
-            "Hole18" => Some(StateUpdateRef::LevelState(LevelState::Hole18)),
-            "HoleTutorial" => Some(StateUpdateRef::LevelState(LevelState::HoleTutorial)),
-            _ => None,
-        },
-        _ => None,
-    };
-    
-    if let Some(state) = parsed_state {
-        info!("Updated state valid: {:?}", state);
-        game_handler.auth_server_update_received(Some(state));
-        online_event_handler.send(OnlineStateChange);
     } else {
-        info!("Updated state invalid");
+        let parsed_state = match split[0] {
+            "GameState" => match split[1] {
+                "GameInitLocal" => Some(StateUpdateRef::GameState(GameState::GameInitLocal)),
+                "GameInitOnline" => Some(StateUpdateRef::GameState(GameState::GameInitOnline)),
+                "LeaderBoard" => Some(StateUpdateRef::GameState(GameState::LeaderBoard)),
+                "LoadingScreen" => Some(StateUpdateRef::GameState(GameState::LoadingScreen)),
+                "InGame" => Some(StateUpdateRef::GameState(GameState::InGame)),
+                "InGamePaused" => Some(StateUpdateRef::GameState(GameState::InGamePaused)),
+                "Menus" => Some(StateUpdateRef::GameState(GameState::Menus)),
+                "PostGameReview" => Some(StateUpdateRef::GameState(GameState::PostGameReview)),
+                "Preferences" => Some(StateUpdateRef::GameState(GameState::Preferences)),
+                "MenuPlayer" => Some(StateUpdateRef::GameState(GameState::MenuPlayer)),
+                _ => None,
+            },
+            "LevelState" => match split[1] {
+                "MainMenu" => Some(StateUpdateRef::LevelState(LevelState::MainMenu)),
+                "Hole1" => Some(StateUpdateRef::LevelState(LevelState::Hole1)),
+                "Hole2" => Some(StateUpdateRef::LevelState(LevelState::Hole2)),
+                "Hole3" => Some(StateUpdateRef::LevelState(LevelState::Hole3)),
+                "Hole4" => Some(StateUpdateRef::LevelState(LevelState::Hole4)),
+                "Hole5" => Some(StateUpdateRef::LevelState(LevelState::Hole5)),
+                "Hole6" => Some(StateUpdateRef::LevelState(LevelState::Hole6)),
+                "Hole7" => Some(StateUpdateRef::LevelState(LevelState::Hole7)),
+                "Hole8" => Some(StateUpdateRef::LevelState(LevelState::Hole8)),
+                "Hole9" => Some(StateUpdateRef::LevelState(LevelState::Hole9)),
+                "Hole10" => Some(StateUpdateRef::LevelState(LevelState::Hole10)),
+                "Hole11" => Some(StateUpdateRef::LevelState(LevelState::Hole11)),
+                "Hole12" => Some(StateUpdateRef::LevelState(LevelState::Hole12)),
+                "Hole13" => Some(StateUpdateRef::LevelState(LevelState::Hole13)),
+                "Hole14" => Some(StateUpdateRef::LevelState(LevelState::Hole14)),
+                "Hole15" => Some(StateUpdateRef::LevelState(LevelState::Hole15)),
+                "Hole16" => Some(StateUpdateRef::LevelState(LevelState::Hole16)),
+                "Hole17" => Some(StateUpdateRef::LevelState(LevelState::Hole17)),
+                "Hole18" => Some(StateUpdateRef::LevelState(LevelState::Hole18)),
+                "HoleTutorial" => Some(StateUpdateRef::LevelState(LevelState::HoleTutorial)),
+                _ => None,
+            },
+            _ => None,
+        };
+        
+        if let Some(state) = parsed_state {
+            info!("Updated state valid: {:?}", state);
+            game_handler.auth_server_handshake_received(Some(state));
+            online_event_handler.send(OnlineStateChange);
+        } else {
+            info!("Updated state invalid");
+        }
     }
 }
 
@@ -413,14 +439,14 @@ fn remote_state_change_monitor(
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     for ev in online_event_listener.read() {
-        info!("State: {:?}", game_handler.get_pushed_state());
-
-        match game_handler.get_pushed_state() {
+        let pushed_state =  game_handler.get_pushed_state();
+        match pushed_state {
             StateUpdateRef::ConnectionState(connection_state) => {
-                next_connection_state.set(connection_state); // This sets the connection state to connected if ran.
+                next_connection_state.set(connection_state); 
+                game_handler.set_connected_true();
             },
             StateUpdateRef::GameState(game_state) => {
-                next_game_state.set(game_state); // This sets the next game state
+                next_game_state.set(game_state); 
             },
             StateUpdateRef::LevelState(_) => {
                 info!("LevelState received, no state transition set for GameState.");
@@ -428,6 +454,7 @@ fn remote_state_change_monitor(
         }
     }
 }
+
 
 fn receive_messages(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
@@ -477,7 +504,7 @@ TurnState                   MapSetState                 PlayThroughStyleState   
                                                                                                 Hole18,
                                                                                                 HoleTutorial
                                                                                                 MenuLeaderBoard
-LeaderBoardState            ConnectionState        Party {                                 MenuLocal
+LeaderBoardState            ConnectionState             Party {                                 MenuLocal
     #[default]                  #[default]                  players: Arc<[Player]>,             MenuOnline
     Mixed,                      Local,                      active_player: Arc<i32>,            MenuPreferences
     Online,                     Online,                     active_level: Arc<i32>,

@@ -191,7 +191,7 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         Player {
-            player_id: String::from("Player 1"),
+            player_id: String::from("Player@email.com"),
             hole_completion_state: PlayerCompletionState::NotInGame,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
@@ -250,6 +250,10 @@ impl Player {
     }
 
     pub fn add_put(&mut self, hole: i32) {
+    }
+
+    pub fn get_id(&self) -> String {
+        self.player_id.clone()
     }
 }
 
@@ -593,6 +597,7 @@ pub enum StateUpdateRef {
 pub struct GameHandler {
     current_level: i32,
     arrow_state: bool,
+    network_server_connection: bool,
     remotely_pushed_state: Option<StateUpdateRef>,
 }
 
@@ -600,10 +605,12 @@ impl GameHandler {
     pub fn new() -> Self {
         let current_level = 0;
         let arrow_state = false;
+        let network_server_connection = false;
         let remotely_pushed_state = None;
         GameHandler {
             current_level,
             arrow_state,
+            network_server_connection,
             remotely_pushed_state,
         }
     }
@@ -676,7 +683,27 @@ impl GameHandler {
     }
     
     // Remote Auth Server Logic
-    pub fn auth_server_update_received(
+    pub fn is_connected(&self) -> bool {
+        self.network_server_connection
+    }
+    
+    pub fn is_not_connected(&self) -> bool {
+        if self.network_server_connection == false {
+            true
+        } else {
+            false
+        }
+    }
+    
+    pub fn set_connected_false(&mut self) {
+        self.network_server_connection = false;
+    }
+    
+    pub fn set_connected_true(&mut self) {
+        self.network_server_connection = true;
+    }
+
+    pub fn auth_server_handshake_received(
         &mut self, 
         parsed_state: Option<StateUpdateRef>,
     ) {
