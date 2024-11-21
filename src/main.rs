@@ -87,7 +87,7 @@ use minigolf::level_handler::level_handler::{
     init_level_glb, 
     setup_ground, 
     setup_light, 
-    purge_glb,
+    purge_glb_all,
     purge_rigid_bodies,
 };
 
@@ -207,31 +207,31 @@ fn main() {
         .add_systems(OnEnter(LevelState::MenuPlayer), init_level_glb)
 
         // --- OnExit State Reaction Level Purge --- //
-        .add_systems(OnExit(LevelState::MainMenu), purge_glb)
-        .add_systems(OnExit(LevelState::Hole1), purge_glb)
-        .add_systems(OnExit(LevelState::Hole2), purge_glb)
-        .add_systems(OnExit(LevelState::Hole3), purge_glb)
-        .add_systems(OnExit(LevelState::Hole4), purge_glb)
-        .add_systems(OnExit(LevelState::Hole5), purge_glb)
-        .add_systems(OnExit(LevelState::Hole6), purge_glb)
-        .add_systems(OnExit(LevelState::Hole7), purge_glb)
-        .add_systems(OnExit(LevelState::Hole8), purge_glb)
-        .add_systems(OnExit(LevelState::Hole9), purge_glb)
-        .add_systems(OnExit(LevelState::Hole10), purge_glb)
-        .add_systems(OnExit(LevelState::Hole11), purge_glb)
-        .add_systems(OnExit(LevelState::Hole12), purge_glb)
-        .add_systems(OnExit(LevelState::Hole13), purge_glb)
-        .add_systems(OnExit(LevelState::Hole14), purge_glb)
-        .add_systems(OnExit(LevelState::Hole15), purge_glb)
-        .add_systems(OnExit(LevelState::Hole16), purge_glb)
-        .add_systems(OnExit(LevelState::Hole17), purge_glb)
-        .add_systems(OnExit(LevelState::Hole18), purge_glb)
-        .add_systems(OnExit(LevelState::HoleTutorial), purge_glb)
-        .add_systems(OnExit(LevelState::MenuLeaderBoard), purge_glb)
-        .add_systems(OnExit(LevelState::MenuLocal), purge_glb)
-        .add_systems(OnExit(LevelState::MenuOnline), purge_glb)
-        .add_systems(OnExit(LevelState::MenuPreferences), purge_glb)
-        .add_systems(OnExit(LevelState::MenuPlayer), purge_glb)
+        .add_systems(OnExit(LevelState::MainMenu), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole1), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole2), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole3), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole4), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole5), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole6), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole7), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole8), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole9), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole10), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole11), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole12), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole13), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole14), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole15), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole16), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole17), purge_glb_all)
+        .add_systems(OnExit(LevelState::Hole18), purge_glb_all)
+        .add_systems(OnExit(LevelState::HoleTutorial), purge_glb_all)
+        .add_systems(OnExit(LevelState::MenuLeaderBoard), purge_glb_all)
+        .add_systems(OnExit(LevelState::MenuLocal), purge_glb_all)
+        .add_systems(OnExit(LevelState::MenuOnline), purge_glb_all)
+        .add_systems(OnExit(LevelState::MenuPreferences), purge_glb_all)
+        .add_systems(OnExit(LevelState::MenuPlayer), purge_glb_all)
         
         .add_systems(OnExit(LevelState::Hole1), purge_rigid_bodies)
         .add_systems(OnExit(LevelState::Hole2), purge_rigid_bodies)
@@ -277,6 +277,8 @@ fn main() {
         .add_systems(Update, remote_state_change_monitor)
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
+            .run_if(on_timer(Duration::from_secs(5))))
+        .add_systems(Update, entity_toggle_visbility
             .run_if(on_timer(Duration::from_secs(5)))
         );
 
@@ -286,8 +288,32 @@ fn main() {
 
 
 
-
-
+// Control Entity Visbility
+pub fn entity_toggle_visbility(
+    mut commands: Commands,
+    mut scene_meshes: Query<(Entity, &Name, &mut Visibility)>,
+    party: Res<Party>,
+) {
+    info!("{:?}", party.get_party_size());
+    for (entity, name, mut visibility) in &mut scene_meshes {
+        let name_owned = name.as_str();
+        match name_owned {
+            "local_menu_ai_golfball_1" => {
+                info!(
+                    "Entity: {:?} Visibility: {:?}",
+                    name,
+                    visibility,
+                );
+                *visibility = Visibility::Hidden;
+            },
+            _ => {},
+        }
+    }
+    // if Some(entity).is_some()  {
+    //     let mut visibility = visibilities.get_mut(entity).unwrap();
+    //     info!("{:?}", visibility);
+    // };
+}
 
 
 
@@ -336,9 +362,14 @@ fn start_socket(mut commands: Commands) {
 
 fn auth_server_handshake(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
-    player: Res<Player>,
+    party: Res<Party>,
 ) {
     let peers: Vec<_> = socket.connected_peers().collect();
+        
+    // grab the reference to the main player
+    let player = party.get_main_player();
+        
+    // grab the player id
     let player_id = player.get_id();
 
     for peer in peers {

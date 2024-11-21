@@ -269,6 +269,13 @@ pub fn ray_release(
                         },
                         
                         // --- Menu: Local Interface Mapping --- //
+
+                        "local_button_add_player" | "local_button_add_player_symbol" => {}
+                        "local_button_sub_player" | "local_button_sub_player_symbol" => {}
+
+                        "local_button_add_ai" | "local_button_add_ai_symbol" => {}
+                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {}
+
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
                             // next_menu_state.set(MenuState::LeaderBoard);
                         },

@@ -83,8 +83,20 @@ pub fn gltf_handler_init_level_glb(
         warn!("Target map was not valid. Hole was out of bounds, 0 for the main menu, 1-18 for the holes, 19 for the tutorial.");    };
 }
 
+
+
 // When exiting state 
-pub fn purge_glb(
+pub fn purge_entity(
+    mut commands: Commands,
+    entity: Entity,
+) {
+    // Access the rigid body from the physics world using its handle
+    if Some(entity).is_some()  {
+        commands.entity(entity).despawn_recursive()
+    };
+}        
+
+pub fn purge_glb_all(
     mut commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
@@ -96,7 +108,6 @@ pub fn purge_glb(
     }        
 }
 
-// When exiting state 
 pub fn purge_rigid_bodies(
     mut commands: Commands,
     rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
@@ -105,16 +116,4 @@ pub fn purge_rigid_bodies(
         // Access the rigid body from the physics world using its handle
         commands.entity(entity).despawn_recursive();
     }      
-}
-
-pub fn map_set_state_logic(
-    map_set_state: Res<State<MapSetState>>,
-) {
-    match map_set_state.get() {
-        MapSetState::Tutorial => {},
-        MapSetState::WholeCorse => {},
-        MapSetState::FrontNine => {},
-        MapSetState::BackNine => {},
-        MapSetState::SelectAHole => {},
-    }
 }

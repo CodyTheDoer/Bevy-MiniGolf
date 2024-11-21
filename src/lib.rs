@@ -4,6 +4,7 @@ use bevy_rapier3d::prelude::RigidBody;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::MutexGuard;
 
 pub mod leaderboard_handler;
 pub mod level_handler;
@@ -161,7 +162,7 @@ pub enum TurnState {
 
 // --- Player Handler --- //
 
-#[derive(Resource)]
+#[derive(Clone, Resource)]
 pub struct Player {
     pub player_id: String,
 	pub hole_completion_state: PlayerCompletionState,
@@ -261,7 +262,7 @@ impl Player {
 
 #[derive(Resource)]
 pub struct Party {
-    players: Arc<[Arc<Mutex<Player>>]>,
+    players: Arc<Mutex<Vec<Arc<Mutex<Player>>>>>,
     players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
     active_level: Arc<Mutex<i32>>,
@@ -269,7 +270,7 @@ pub struct Party {
 
 impl Party {
     pub fn new() -> Self {
-        let players: Arc<[Arc<Mutex<Player>>]> = Arc::new([Arc::new(Mutex::new(Player::new()))]);
+        let players: Arc<Mutex<Vec<Arc<Mutex<Player>>>>> = Arc::new(Mutex::new(vec![Arc::new(Mutex::new(Player::new()))]));
         let players_finished: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
@@ -279,6 +280,12 @@ impl Party {
             active_player,
             active_level,
         } 
+    }
+    
+    pub fn add_player(&self) {
+        let new_player: Arc<Mutex<Player>> = Arc::new(Mutex::new(Player::new()));
+        let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
+        players_lock.push(new_player);
     }
 
     pub fn get_players_finished(&self) -> i32 {
@@ -296,14 +303,31 @@ impl Party {
         count = 0;
     }
 
+    pub fn get_main_player(&self) -> Player {
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        // Get the active player (Arc<Mutex<Player>>)
+        let player_arc = &players_lock[0];
+
+        // Lock the player mutex to get a mutable reference to the player
+        let player = player_arc.lock().unwrap();
+        
+        // Return the dereferenced player
+        player.clone()
+    }
+
     pub fn active_player_finished_hole(&mut self) {
         self.log_player_finished();
 
         // Get the active player index
         let active_player_index = *self.active_player.lock().unwrap();
         
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
         // Get the active player (Arc<Mutex<Player>>)
-        let player_arc = &self.players[active_player_index as usize];
+        let player_arc = &players_lock[active_player_index as usize];
         
         // Lock the player mutex to get a mutable reference to the player
         let mut player = player_arc.lock().unwrap();
@@ -312,7 +336,8 @@ impl Party {
 
     pub fn all_finished(&self) -> bool {
         // Verify if all players have completed
-        self.get_players_finished() == self.get_party_size()   
+        let player_count: i32 = self.get_party_size().try_into().unwrap();
+        self.get_players_finished() == player_count
     }
 
     pub fn next_proximity_player(&self, ) {
@@ -328,9 +353,13 @@ impl Party {
         active_level
     }
 
-    pub fn get_party_size(&self) -> i32 {
-        let party_size = self.players.len();
-        party_size.try_into().unwrap() // drios usize and presents an i32
+    pub fn get_party_size(&self) -> usize {        
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        // Grab the size of the party
+        let party_size = &players_lock.len();
+        *party_size 
     }
 
     pub fn next_level(&mut self, ) {
@@ -338,9 +367,12 @@ impl Party {
     }
 
     pub fn start_game(&mut self) {
-        for player in 0..self.players.len() {
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        for player in 0..players_lock.len() {
             // Get the active player (Arc<Mutex<Player>>)
-            let player_arc = &self.players[player];
+            let player_arc = &players_lock[player];
             
             // Lock the player mutex to get a mutable reference to the player
             let mut player = player_arc.lock().unwrap();
@@ -349,9 +381,12 @@ impl Party {
     }
 
     pub fn end_game(&mut self) {
-        for player in 0..self.players.len() {
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        for player in 0..players_lock.len() {
             // Get the active player (Arc<Mutex<Player>>)
-            let player_arc = &self.players[player];
+            let player_arc = &players_lock[player];
             
             // Lock the player mutex to get a mutable reference to the player
             let mut player = player_arc.lock().unwrap();
