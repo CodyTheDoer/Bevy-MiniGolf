@@ -286,17 +286,45 @@ impl Party {
     }
     
     pub fn add_player(&self) {
-        let new_player: Arc<Mutex<Player>> = Arc::new(Mutex::new(Player::new()));
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-        players_lock.push(new_player);
-        
-        let owned_party_size: i32 = players_lock.len() as i32;
-        let mut ai_count = self.ai_count.lock().unwrap();
+        let owned_party_size: i32 = players_lock.len() as i32; // Gets the party size not including ai
+        let mut ai_count = self.ai_count.lock().unwrap(); // account for ai
         let total_party_size = *ai_count + owned_party_size;
 
-        if total_party_size > 6 {
-            *ai_count -= 1;
-        } 
+        if owned_party_size < 6 { // Stop making players if the party is full
+            let new_player: Arc<Mutex<Player>> = Arc::new(Mutex::new(Player::new()));
+            players_lock.push(new_player);
+        
+            if total_party_size >= 6 { // purge a single ai player if needed, I am not sure why it triggers properly on >= 6, prior to nesting in owned if it fired on > 6 
+                *ai_count -= 1;
+            } 
+        }
+    }
+
+    pub fn remove_player(&self) {
+        let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
+        let owned_party_size: i32 = players_lock.len() as i32; // Gets the party size not including ai
+        if owned_party_size > 1 {
+            players_lock.pop();
+        };
+    }
+
+    pub fn get_party_size_w_ai(&self) -> usize {
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let owned_party_size: i32 = players_lock.len() as i32; // Gets the party size not including ai
+        let ai_count = self.ai_count.lock().unwrap(); // account for ai
+        let total_party_size = *ai_count + owned_party_size;
+
+        total_party_size as usize
+    }
+
+    pub fn get_party_size(&self) -> usize {        
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        // Grab the size of the party
+        let party_size = &players_lock.len();
+        *party_size 
     }
     
     pub fn add_ai(&self) {
@@ -380,8 +408,15 @@ impl Party {
         todo!(); 
     }
 
-    pub fn next_set_order_player(&self, ) {
-        todo!(); 
+    pub fn next_set_order_player(&mut self) {
+        let mut active_player = *self.active_player.lock().unwrap();
+        let party_size: i32 = self.get_party_size().try_into().unwrap();
+
+        if active_player == party_size {
+            active_player = 0;
+        } else {
+            active_player += 1;
+        }
     }
 
     pub fn get_active_level(&self) -> i32 {
@@ -389,13 +424,9 @@ impl Party {
         active_level
     }
 
-    pub fn get_party_size(&self) -> usize {        
-        // First, lock the players mutex to get access to the Vec
-        let players_lock = self.players.lock().unwrap();
-
-        // Grab the size of the party
-        let party_size = &players_lock.len();
-        *party_size 
+    pub fn get_active_player(&self) -> i32 {
+        let active_player = *self.active_player.lock().unwrap();
+        active_player
     }
 
     pub fn next_level(&mut self, ) {
@@ -788,8 +819,14 @@ impl GameHandler {
 
 // --- User Interface --> CameraUI --- //
 
+#[derive(Component)]
+pub struct MainWindow;
+
 #[derive(Asset, Component, TypePath)]
 pub struct CameraUi;
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraUiInfo;
 
 // --- User Interface --> CameraWorld --- //
 

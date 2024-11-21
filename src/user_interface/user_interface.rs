@@ -270,11 +270,11 @@ pub fn ray_release(
                         
                         // --- Menu: Local Interface Mapping --- //
 
-                        "local_button_add_player" | "local_button_add_player_symbol" => {}
-                        "local_button_sub_player" | "local_button_sub_player_symbol" => {}
+                        "local_button_add_player" | "local_button_add_player_symbol" => {party.add_player()}
+                        "local_button_sub_player" | "local_button_sub_player_symbol" => {party.remove_player()}
 
-                        "local_button_add_ai" | "local_button_add_ai_symbol" => {}
-                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {}
+                        "local_button_add_ai" | "local_button_add_ai_symbol" => {party.add_ai()}
+                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {party.remove_ai()}
 
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
                             // next_menu_state.set(MenuState::LeaderBoard);
@@ -310,7 +310,7 @@ pub fn setup_ui(
     };
     let matrix_display_small = TextStyle {
         font: font.clone(),
-        font_size: 22.0,
+        font_size: 14.0,
         ..default()
     };
     fonts.fonts.push(matrix_display);
@@ -360,7 +360,7 @@ pub fn setup_ui(
         });
 
     // HUD: Create a bottom-left UI node for the state information
-    commands
+    let bottom_left_ui = commands
         .spawn(NodeBundle {
             style: Style {
                 display: Display::Flex,
@@ -374,176 +374,10 @@ pub fn setup_ui(
                 ..default()
             },
             ..default()
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
-            // Spawn each state text entry and tag it for easy lookup later
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(
-                            "Initializing...", // Placeholder text
-                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
-                        )],
-                        ..default()
-                    },
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
-                        ..default()
-                    },
-                    ..default()
-                },
-                StateText, // Tag the state text to easily find and update it later
-            ));
-        })
-        .with_children(|parent| {
+        }).id();
+
+    for _ in 0..13 {
+        commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
                 TextBundle {
@@ -564,6 +398,7 @@ pub fn setup_ui(
                 StateText, // Tag the state text to easily find and update it later
             ));
         });
+    }
 }
 
 pub fn update_ui(
@@ -576,6 +411,7 @@ pub fn update_ui(
     state_level: Res<State<LevelState>>,
     state_party_connection: Res<State<ConnectionState>>,
     state_pan_orbit_camera: Res<State<CameraOrbitEntityState>>,
+    party: Res<Party>,
     mut query: Query<&mut Text, With<StateText>>,
 ) {
     let state_texts = vec![
@@ -588,6 +424,10 @@ pub fn update_ui(
         format!("Leader Board: {:?}", *state_leader_board),
         format!("Level: {:?}", *state_level),
         format!("Camera Orbit Entity: {:?}", *state_pan_orbit_camera),
+        format!("Party Size: {:?}", party.get_party_size()),
+        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),
+        format!("Active Level: {:?}", party.get_active_level()),
+        format!("Active Player: {:?}", party.get_active_player()),
     ];
     // Update the text for the state information
     for (mut text, state_text) in query.iter_mut().zip(state_texts.iter()) {

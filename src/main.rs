@@ -34,6 +34,7 @@ use minigolf::{
     GameHandler, 
     GLBStorageID, 
     LevelHandler,
+    MainWindow,
     PanOrbitState,
     PanOrbitSettings,
     Party,
@@ -105,24 +106,26 @@ use minigolf::level_handler::physics_handler::{
 fn main() {
     let mut app = App::new();
         app.add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Minigolf".into(),
-                    name: Some("bevy.app".into()),
-                    resolution: (1280., 720.).into(),
-                    resizable: true,
-                    enabled_buttons: bevy::window::EnabledButtons {
-                        maximize: true,
-                        ..Default::default()
-                    },
-                    present_mode: PresentMode::AutoVsync,
-                    prevent_default_event_handling: false, // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
-                    window_theme: Some(WindowTheme::Dark),
-                    visible: true,
+            DefaultPlugins.set(
+                WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Minigolf".into(),
+                        name: Some("bevy.app".into()),
+                        resolution: (1280., 720.).into(),
+                        resizable: true,
+                        enabled_buttons: bevy::window::EnabledButtons {
+                            maximize: true,
+                            ..Default::default()
+                        },
+                        present_mode: PresentMode::AutoVsync,
+                        prevent_default_event_handling: false,
+                        window_theme: Some(WindowTheme::Dark),
+                        visible: true,
+                        ..default()
+                    }),
                     ..default()
-                }),
-                ..default()
-            }),
+                }
+            ),
         ))
 
         // --- Additional Plugins --- //
@@ -153,19 +156,20 @@ fn main() {
         .insert_resource(Player::new())
 
         // --- Startup Systems Initialization --- //
+        .add_systems(Startup, tag_main_window)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
-        .add_systems(Startup, setup_ui)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, performance_physics_setup)
+        .add_systems(Startup, setup_ui)
 
         // User Interface //
-        .add_systems(Update, update_ui) // Driving HUD Features with State info
         .add_systems(Update, draw_cursor)
+        .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
         .add_systems(Update, ray_fire.run_if(input_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
-        .add_systems(Update, bonk_gizmo.run_if(in_state(ArrowState::DrawingArrow)))
-        
+        .add_systems(Update, update_ui)
+
         // Camera //
         .add_systems(Update, camera_orbit_entity_state_logic)
         .add_systems(Update, pan_orbit_camera)
@@ -268,40 +272,37 @@ fn main() {
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
         .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
 
-
-
     // --- Network Integration --- //
     app.add_event::<OnlineStateChange>()
         .add_systems(Startup, start_socket)
+
         .add_systems(Update, receive_messages)
         .add_systems(Update, remote_state_change_monitor)
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
             .run_if(on_timer(Duration::from_secs(5))))
-        .add_systems(Update, local_party_interface_visibliity_toggle)
-        .add_systems(Update, party_size_increase
-            .run_if(input_just_released(KeyCode::Space)))
-        .add_systems(Update, party_remove_ai
-            .run_if(input_just_released(KeyCode::ArrowDown)))
-        .add_systems(Update, party_add_ai
-            .run_if(input_just_released(KeyCode::ArrowUp)));
-
+        .add_systems(Update, local_party_interface_visibliity_toggle);
 
     app.run();
 }
 
-fn party_size_increase(party: Res<Party>) {
-    party.add_player();
-}
 
-fn party_add_ai(party: Res<Party>) {
-    party.add_ai();
-    info!("Added AI");
-}
 
-fn party_remove_ai(party: Res<Party>) {
-    party.remove_ai();
-    info!("Removed AI");
+
+
+
+fn tag_main_window(
+    mut commands: Commands,
+    windows: Query<(Entity, &Window), Without<MainWindow>>,
+) {
+    for (entity, window) in windows.iter() {
+        // Here we add the `MainWindow` marker to the primary window based on its name.
+        if let Some(name) = &window.name {
+            if name == "bevy.app" {
+                commands.entity(entity).insert(MainWindow);
+            }
+        }
+    }
 }
 
 // Control Entity Visbility
