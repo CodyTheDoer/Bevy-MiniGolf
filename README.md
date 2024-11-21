@@ -41,7 +41,7 @@ Language:
             bevy_mod_raycast = "0.18.0"
             bevy_editor_pls = "0.9"
             bevy_render = "0.14.2"
-            bevy_renet = "0.0.12"
+            bevy_matchbox = "0.10.0"
             bevy_rapier3d = "0.27.0"
 
 CAD: 
