@@ -246,14 +246,17 @@ pub fn ray_release(
                                 MapSetState::WholeCorse => {
                                     game_handler.set_current_level(1);
                                     next_level_state.set(LevelState::Hole1);
+                                    party.set_starting_level(MapSetState::WholeCorse);
                                 },
                                 MapSetState::FrontNine => {
                                     game_handler.set_current_level(1);
                                     next_level_state.set(LevelState::Hole1);
+                                    party.set_starting_level(MapSetState::FrontNine);
                                 },
                                 MapSetState::BackNine => {
                                     game_handler.set_current_level(10);
                                     next_level_state.set(LevelState::Hole10);
+                                    party.set_starting_level(MapSetState::BackNine);
                                 },
                                 MapSetState::SelectAHole => {},
                             };
@@ -292,15 +295,25 @@ pub fn ray_release(
                         },
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
                             next_map_set_state.set(MapSetState::FrontNine);
+                            party.set_starting_level(MapSetState::FrontNine);
+                            next_game_state.set(GameState::InGame);
                             next_menu_state.set(MenuState::NoSelection);
+                            next_turn_state.set(TurnState::Turn);
+                            game_handler.set_current_level(1);
+                            next_level_state.set(LevelState::Hole1);
+                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
                             next_map_set_state.set(MapSetState::BackNine);
+                            party.set_starting_level(MapSetState::BackNine);
+                            next_game_state.set(GameState::InGame);
                             next_menu_state.set(MenuState::NoSelection);
+                            next_turn_state.set(TurnState::Turn);
+                            game_handler.set_current_level(10);
+                            next_level_state.set(LevelState::Hole10);
+                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
-                            next_map_set_state.set(MapSetState::SelectAHole);
-                            next_menu_state.set(MenuState::NoSelection);
                         },
                         _ => {},
                     }

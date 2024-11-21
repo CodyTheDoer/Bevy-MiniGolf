@@ -58,7 +58,19 @@ pub fn turn_state_response_hole_complete(
 
             MapSetState::WholeCorse => {
                 if current_level == 18 {
-                    todo!(); // End Game Leaderboard
+                    party.end_game(); // Sets players to NotInGame
+                    next_game_state.set(GameState::PostGameReview);
+                    next_turn.set(TurnState::Idle);
+                    game_handler.init_postgame_leaderboard(party); // Set's target for level handling
+                    next_leader_board_state.set(LeaderBoardState::PostGame);
+                    next_level_state.set(LevelState::MenuLeaderBoard);
+                    next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        info!("{:?}", state);
+                        state.radius = 38.0;
+                        state.pitch = -12.0f32.to_radians();
+                        state.yaw = -17.0f32.to_radians();
+                    }
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
                     next_level_state.set(set_next_level);
@@ -75,24 +87,60 @@ pub fn turn_state_response_hole_complete(
             },
             MapSetState::FrontNine => {
                 if current_level == 9 {
-                    todo!(); // End Game Leaderboard
+                    party.end_game(); // Sets players to NotInGame
+                    next_game_state.set(GameState::PostGameReview);
+                    next_turn.set(TurnState::Idle);
+                    game_handler.init_postgame_leaderboard(party); // Set's target for level handling
+                    next_leader_board_state.set(LeaderBoardState::PostGame);
+                    next_level_state.set(LevelState::MenuLeaderBoard);
+                    next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        info!("{:?}", state);
+                        state.radius = 38.0;
+                        state.pitch = -12.0f32.to_radians();
+                        state.yaw = -17.0f32.to_radians();
+                    }
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
                     next_level_state.set(set_next_level);
                     game_handler.next_level();
                     party.next_level();
                     next_turn.set(TurnState::Turn);
+                    next_camera_state.set(CameraOrbitEntityState::Ball);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        state.radius = 2.0;
+                        state.pitch = -8.0f32.to_radians();
+                        state.yaw = 22.0f32.to_radians();
+                    }
                 }
             },
             MapSetState::BackNine => {
                 if current_level == 18 {
-                    todo!(); // End Game Leaderboard
+                    party.end_game(); // Sets players to NotInGame
+                    next_game_state.set(GameState::PostGameReview);
+                    next_turn.set(TurnState::Idle);
+                    game_handler.init_postgame_leaderboard(party); // Set's target for level handling
+                    next_leader_board_state.set(LeaderBoardState::PostGame);
+                    next_level_state.set(LevelState::MenuLeaderBoard);
+                    next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        info!("{:?}", state);
+                        state.radius = 38.0;
+                        state.pitch = -12.0f32.to_radians();
+                        state.yaw = -17.0f32.to_radians();
+                    }
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
                     next_level_state.set(set_next_level);
                     game_handler.next_level();
                     party.next_level();
                     next_turn.set(TurnState::Turn);
+                    next_camera_state.set(CameraOrbitEntityState::Ball);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        state.radius = 2.0;
+                        state.pitch = -8.0f32.to_radians();
+                        state.yaw = 22.0f32.to_radians();
+                    }
                 }
             },
             MapSetState::SelectAHole => {
