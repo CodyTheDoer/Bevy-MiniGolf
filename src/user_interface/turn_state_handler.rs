@@ -29,7 +29,7 @@ pub fn turn_state_response_hole_complete(
     mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
     mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_level: ResMut<NextState<LevelState>>,
+    mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_turn: ResMut<NextState<TurnState>>,
     mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {
@@ -46,7 +46,7 @@ pub fn turn_state_response_hole_complete(
                 next_turn.set(TurnState::Idle);
                 game_handler.init_postgame_leaderboard(party); // Set's target for level handling
                 next_leader_board_state.set(LeaderBoardState::PostGame);
-                next_level.set(LevelState::MenuLeaderBoard);
+                next_level_state.set(LevelState::MenuLeaderBoard);
                 next_camera_state.set(CameraOrbitEntityState::LeaderBoard);
                 for mut state in pan_orbit_camera_query.iter_mut() {
                     info!("{:?}", state);
@@ -55,15 +55,22 @@ pub fn turn_state_response_hole_complete(
                     state.yaw = -17.0f32.to_radians();
                 }
             },
+
             MapSetState::WholeCorse => {
                 if current_level == 18 {
                     todo!(); // End Game Leaderboard
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
+                    next_level_state.set(set_next_level);
                     game_handler.next_level();
                     party.next_level();
                     next_turn.set(TurnState::Turn);
+                    next_camera_state.set(CameraOrbitEntityState::Ball);
+                    for mut state in pan_orbit_camera_query.iter_mut() {
+                        state.radius = 2.0;
+                        state.pitch = -8.0f32.to_radians();
+                        state.yaw = 22.0f32.to_radians();
+                    }
                 }
             },
             MapSetState::FrontNine => {
@@ -71,7 +78,7 @@ pub fn turn_state_response_hole_complete(
                     todo!(); // End Game Leaderboard
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
+                    next_level_state.set(set_next_level);
                     game_handler.next_level();
                     party.next_level();
                     next_turn.set(TurnState::Turn);
@@ -82,7 +89,7 @@ pub fn turn_state_response_hole_complete(
                     todo!(); // End Game Leaderboard
                 } else {
                     let set_next_level = level_handler.next_level(current_level);
-                    next_level.set(set_next_level);
+                    next_level_state.set(set_next_level);
                     game_handler.next_level();
                     party.next_level();
                     next_turn.set(TurnState::Turn);

@@ -165,6 +165,7 @@ pub fn ray_release(
     mut next_level_state: ResMut<NextState<LevelState>>,
     mut next_turn_state: ResMut<NextState<TurnState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
+    mut next_map_set_state: ResMut<NextState<MapSetState>>,
     mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
@@ -270,23 +271,36 @@ pub fn ray_release(
                         
                         // --- Menu: Local Interface Mapping --- //
 
-                        "local_button_add_player" | "local_button_add_player_symbol" => {party.add_player()}
-                        "local_button_sub_player" | "local_button_sub_player_symbol" => {party.remove_player()}
+                        "local_button_add_player" | "local_button_add_player_symbol" => {party.add_player()},
+                        "local_button_sub_player" | "local_button_sub_player_symbol" => {party.remove_player()},
 
-                        "local_button_add_ai" | "local_button_add_ai_symbol" => {party.add_ai()}
-                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {party.remove_ai()}
+                        "local_button_add_ai" | "local_button_add_ai_symbol" => {party.add_ai()},
+                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {party.remove_ai()},
+
+                        // "local_playstyle_toggle_button_ordered.1" => {commands.insert_resource(NextState(PlayThroughStyleState::SetOrder))},
+                        // "local_playstyle_toggle_button_proximity.1" => {commands.insert_resource(NextState(PlayThroughStyleState::Proximity))},
 
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
-                            // next_menu_state.set(MenuState::LeaderBoard);
+                            next_map_set_state.set(MapSetState::WholeCorse);
+                            party.set_starting_level(MapSetState::WholeCorse);
+                            next_game_state.set(GameState::InGame);
+                            next_menu_state.set(MenuState::NoSelection);
+                            next_turn_state.set(TurnState::Turn);
+                            game_handler.set_current_level(1);
+                            next_level_state.set(LevelState::Hole1);
+                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
-                            // next_menu_state.set(MenuState::LeaderBoard);
+                            next_map_set_state.set(MapSetState::FrontNine);
+                            next_menu_state.set(MenuState::NoSelection);
                         },
                         "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
-                            // next_menu_state.set(MenuState::LeaderBoard);
+                            next_map_set_state.set(MapSetState::BackNine);
+                            next_menu_state.set(MenuState::NoSelection);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
-                            // next_menu_state.set(MenuState::LeaderBoard);
+                            next_map_set_state.set(MapSetState::SelectAHole);
+                            next_menu_state.set(MenuState::NoSelection);
                         },
                         _ => {},
                     }

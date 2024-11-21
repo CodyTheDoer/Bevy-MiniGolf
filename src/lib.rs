@@ -146,7 +146,7 @@ pub enum PlayerCompletionState {
 pub enum PlayThroughStyleState {
     #[default]
     Proximity,
-    RandomSetOrder,
+    SetOrder,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -429,8 +429,27 @@ impl Party {
         active_player
     }
 
-    pub fn next_level(&mut self, ) {
-        todo!(); 
+    pub fn next_level(&mut self) {
+        let mut active_level = self.active_level.lock().unwrap();
+        *active_level += 1;
+    }
+
+    pub fn set_starting_level(&mut self, map_set_state: MapSetState) {
+        let mut active_level = self.active_level.lock().unwrap();
+        let owned_map_state = map_set_state.clone();
+        info!("owned_map_state: {:?}", owned_map_state);
+        match map_set_state {
+            MapSetState::Tutorial | MapSetState::SelectAHole => {},
+            MapSetState::WholeCorse => {
+                *active_level = 1;
+            },
+            MapSetState::FrontNine => {
+                *active_level = 1;
+            },
+            MapSetState::BackNine => {
+                *active_level = 10;
+            },
+        }
     }
 
     pub fn start_game(&mut self) {
@@ -626,26 +645,26 @@ pub struct GLBStorageID {
 impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
-            "glb/menu/main_menu.glb",           // 0
-            "glb/map/level_1.glb",              // 1
-            "glb/map/level_1.glb",              // 2
-            "glb/map/level_1.glb",              // 3
-            "glb/map/level_1.glb",              // 4
-            "glb/map/level_1.glb",              // 5
-            "glb/map/level_1.glb",              // 6
-            "glb/map/level_1.glb",              // 7
-            "glb/map/level_1.glb",              // 8
-            "glb/map/level_1.glb",              // 9
-            "glb/map/level_1.glb",              // 10
-            "glb/map/level_1.glb",              // 11
-            "glb/map/level_1.glb",              // 12
-            "glb/map/level_1.glb",              // 13
-            "glb/map/level_1.glb",              // 14
-            "glb/map/level_1.glb",              // 15
-            "glb/map/level_1.glb",              // 16
-            "glb/map/level_1.glb",              // 17
-            "glb/map/level_1.glb",              // 18
-            "glb/map/level_1.glb",              // 19
+            "glb/menu/main_menu.glb",           //  0
+            "glb/map/level_1.glb",              //  1
+            "glb/map/level_2.glb",              //  2
+            "glb/map/level_3.glb",              //  3
+            "glb/map/level_4.glb",              //  4
+            "glb/map/level_5.glb",              //  5
+            "glb/map/level_6.glb",              //  6
+            "glb/map/level_7.glb",              //  7
+            "glb/map/level_8.glb",              //  8
+            "glb/map/level_9.glb",              //  9
+            "glb/map/level_10.glb",             // 10
+            "glb/map/level_11.glb",             // 11
+            "glb/map/level_12.glb",             // 12
+            "glb/map/level_13.glb",             // 13
+            "glb/map/level_14.glb",             // 14
+            "glb/map/level_15.glb",             // 15
+            "glb/map/level_16.glb",             // 16
+            "glb/map/level_17.glb",             // 17
+            "glb/map/level_18.glb",             // 18
+            "glb/map/level_tutorial.glb",       // 19
             "glb/menu/menu_leader_board.glb",   // 20
             "glb/menu/menu_local.glb",          // 21
             "glb/menu/menu_online.glb",         // 22

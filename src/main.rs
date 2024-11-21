@@ -137,12 +137,12 @@ fn main() {
         .insert_state(ArrowState::Idle)
         .insert_state(CameraOrbitEntityState::MainMenu)
         .insert_state(GameState::LoadingScreen)
-        .insert_state(LeaderBoardState::Mixed)
+        .insert_state(LeaderBoardState::Local)
         .insert_state(LevelState::MainMenu)
         .insert_state(MapSetState::Tutorial)
         .insert_state(MenuState::NoSelection)
         .insert_state(ConnectionState::Local)
-        .insert_state(PlayThroughStyleState::Proximity)
+        .insert_state(PlayThroughStyleState::SetOrder)
         .insert_state(TurnState::Idle)
 
         // --- Resource Initialization --- //
@@ -156,7 +156,6 @@ fn main() {
         .insert_resource(Player::new())
 
         // --- Startup Systems Initialization --- //
-        .add_systems(Startup, tag_main_window)
         .add_systems(Startup, setup_ground)
         .add_systems(Startup, setup_light)
         .add_systems(Startup, setup_3d_camera)
@@ -281,7 +280,8 @@ fn main() {
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
             .run_if(on_timer(Duration::from_secs(5))))
-        .add_systems(Update, local_party_interface_visibliity_toggle);
+        .add_systems(Update, local_party_interface_visibliity_toggle)
+        .add_systems(Update, next_party_level.run_if(input_just_released(KeyCode::Space)));
 
     app.run();
 }
@@ -290,19 +290,12 @@ fn main() {
 
 
 
-
-fn tag_main_window(
-    mut commands: Commands,
-    windows: Query<(Entity, &Window), Without<MainWindow>>,
+fn next_party_level(
+    mut party: ResMut<Party>,
 ) {
-    for (entity, window) in windows.iter() {
-        // Here we add the `MainWindow` marker to the primary window based on its name.
-        if let Some(name) = &window.name {
-            if name == "bevy.app" {
-                commands.entity(entity).insert(MainWindow);
-            }
-        }
-    }
+    info!("party level: {:?}", party.get_active_level());
+    party.next_level();
+    info!("party level after: {:?}", party.get_active_level());
 }
 
 // Control Entity Visbility
@@ -320,8 +313,7 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -332,15 +324,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -351,15 +341,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" | "local_menu_players_golfball_3" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -370,15 +358,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -389,15 +375,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -408,8 +392,7 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_players_golfball_2" | "local_menu_players_golfball_3" | "local_menu_players_golfball_4" | "local_menu_players_golfball_5" | "local_menu_players_golfball_6" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
@@ -423,8 +406,7 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_5" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -435,15 +417,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_5" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_4" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -454,15 +434,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_3" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -473,15 +451,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_ai_golfball_1" | "local_menu_ai_golfball_2" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -492,15 +468,13 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_2" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
                     "local_menu_ai_golfball_1" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Hidden},
-                            Visibility::Visible => {*visibility = Visibility::Hidden},
+                            Visibility::Inherited | Visibility::Visible => {*visibility = Visibility::Hidden},
                             _ => {},
                         };
                     },
@@ -511,8 +485,7 @@ pub fn local_party_interface_visibliity_toggle(
                 match name_owned {
                     "local_menu_ai_golfball_5" | "local_menu_ai_golfball_4" | "local_menu_ai_golfball_3" | "local_menu_ai_golfball_2" | "local_menu_ai_golfball_1" => {
                         match *visibility {
-                            Visibility::Inherited => {*visibility = Visibility::Visible},
-                            Visibility::Hidden => {*visibility = Visibility::Visible},
+                            Visibility::Inherited | Visibility::Hidden=> {*visibility = Visibility::Visible},
                             _ => {},
                         };
                     },
@@ -740,7 +713,7 @@ GameState                   MenuState                   PlayerCompletionState   
 TurnState                   MapSetState                 PlayThroughStyleState                   Hole10,
     #[default]                  #[default]                  #[default]                          Hole11,
     Idle,                       Tutorial,                   Proximity,                          Hole12,
-    Turn,                       WholeCorse,                 RandomSetOrder,                     Hole13,
+    Turn,                       WholeCorse,                 SetOrder,                           Hole13,
     TurnReset,                  FrontNine,                                                      Hole14,
     NextTurn,                   BackNine,                                                       Hole15,
     HoleComplete,               SelectAHole,                                                    Hole16,
