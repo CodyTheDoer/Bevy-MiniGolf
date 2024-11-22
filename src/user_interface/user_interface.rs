@@ -192,7 +192,8 @@ pub fn ray_release(
         if Some(interactable_query.get(*entity)).is_some() {
             for (target_entity, name) in scene_meshes.iter() {
                 if *entity == target_entity {
-                    info!("Name: {:?}", name);
+                    info!("Name: {:?} Entity: {:?}", name, &entity);
+                    info!("Entity Index: {}, Generation: {}", entity.index(), entity.generation());
                     let owned_name = name.as_str();
                     match owned_name {
                         // --- Menu: Main Interface Mapping --- //

@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
+use bevy_rapier3d::prelude::RapierRigidBodyHandle;
+
 // States
 use crate::{
+    ArrowState,
     CameraOrbitEntityState,
     GameState,
     LeaderBoardState,
@@ -15,7 +18,20 @@ use crate::{
 use crate::{
     Party,
     GameHandler,
+    GLBStorageID,
+    Ground,
     LevelHandler,
+};
+
+use crate::level_handler::physics_handler::{
+    add_physics_query_and_update_scene,
+};
+
+use crate::level_handler::level_handler::{
+    gltf_handler_init_golf_ball_glb, 
+    init_level_glb,
+    purge_glb_all, 
+    purge_rigid_bodies,
 };
 
 // --- OnEnter: Turn State --- //
@@ -152,10 +168,27 @@ pub fn turn_state_response_hole_complete(
     // next_turn_state.set(TurnState::)
 }
 
+use bevy_rapier3d::prelude::*;
+
 pub fn turn_state_response_turn_reset(
-    mut party: ResMut<Party>,
-    mut next_turn_state: ResMut<NextState<TurnState>>,
+    mut commands: Commands,
+    mut scene_meshes: Query<(Entity, &Name, &mut Transform)>,
 ) {
+    info!("\n\nTurn Reset");
+    for (entity, name, mut transform) in scene_meshes.iter_mut() {
+        info!("Entity: {:?}", name);
+        if name.as_str() == "ball" {
+            let target_location: Vec3 = Vec3::new(0.0, 0.0, 0.0);  
+            transform.translation = target_location;
+            
+            commands.entity(entity)
+                .insert(Velocity {
+                    linvel: Vec3::ZERO,
+                    angvel: Vec3::ZERO,
+                }
+            );
+        }
+    }      
 }
 // fn turn_state_response_new_game() {}
 // fn turn_state_response_next_turn() {}

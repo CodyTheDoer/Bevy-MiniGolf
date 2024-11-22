@@ -12,6 +12,13 @@ pub mod network_handler;
 pub mod player_handler;
 pub mod user_interface;
 
+#[derive(Clone, Debug)]
+pub enum StateUpdateRef {
+    ConnectionState(ConnectionState),
+    GameState(GameState),
+    LevelState(LevelState),
+}
+
 #[derive(Resource)]
 pub struct Fonts {
     pub fonts: Vec<TextStyle>,
@@ -439,7 +446,9 @@ impl Party {
         let owned_map_state = map_set_state.clone();
         info!("owned_map_state: {:?}", owned_map_state);
         match map_set_state {
-            MapSetState::Tutorial | MapSetState::SelectAHole => {},
+            MapSetState::Tutorial => {
+                *active_level = 19;
+            }, 
             MapSetState::WholeCorse => {
                 *active_level = 1;
             },
@@ -449,6 +458,7 @@ impl Party {
             MapSetState::BackNine => {
                 *active_level = 10;
             },
+            MapSetState::SelectAHole => {},
         }
     }
 
@@ -670,6 +680,7 @@ impl GLBStorageID {
             "glb/menu/menu_online.glb",         // 22
             "glb/menu/menu_preferences.glb",    // 23
             "glb/menu/menu_player.glb",         // 24
+            "glb/map/golf_ball.glb",            // 25
         ];
         let map_ids: Vec<MapID> = map_paths
             .iter()
@@ -703,15 +714,13 @@ pub struct StateText;
 #[derive(Component)]
 pub struct TitleText;
 
+// Define a custom component to tag the golf ball entities
+#[derive(Asset, Clone, Component, Debug, TypePath)]
+pub struct GolfBallTag(usize);
 
-
-
-
-#[derive(Clone, Debug)]
-pub enum StateUpdateRef {
-    ConnectionState(ConnectionState),
-    GameState(GameState),
-    LevelState(LevelState),
+#[derive(Event)]
+pub struct SceneInstanceSpawnedEvent {
+    pub entity: Entity,
 }
 
 #[derive(Resource)]

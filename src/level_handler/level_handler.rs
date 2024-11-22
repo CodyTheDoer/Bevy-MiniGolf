@@ -3,19 +3,23 @@ use bevy_rapier3d::prelude::*;
 
 use std::collections::HashMap;
 
+// States
 use crate::{
     ArrowState,
-    GameHandler,
-    GLBStorageID,
-    Ground, 
-    Interactable, 
     LevelState,
     MapSetState,
-    UserInterface,
 };
 
-use crate::level_handler::physics_handler::{
-    add_physics_query_and_update_scene,
+// Resources
+use crate::{
+    GameHandler,
+    GLBStorageID,
+    GolfBallTag,
+    Ground, 
+    Interactable, 
+    Party,
+    SceneInstanceSpawnedEvent,
+    UserInterface,
 };
 
 pub fn setup_ground(
@@ -64,26 +68,67 @@ pub fn gltf_handler_init_level_glb(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
-    hole: i32,
+    level: i32,
 ) {
-    if let Some(glb_file) = glb_storage.glb.get((hole) as usize) {
+    if let Some(scene_glb_file) = glb_storage.glb.get((level) as usize) {
         let scene_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset(glb_file.map),
+            GltfAssetLabel::Scene(0).from_asset(scene_glb_file.map),
         );
-
-        let root_entity = commands
+        let scene_entities = commands
             .spawn(SceneBundle {
                 scene: scene_handle.clone(),
                 ..default()
             })
             .insert(Interactable)
-            .insert(Name::new(format!("Hole{}", hole))) // Add a name to help with debugging
             .id(); 
     } else {
-        warn!("Target map was not valid. Hole was out of bounds, 0 for the main menu, 1-18 for the holes, 19 for the tutorial.");    };
+        warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
+    };
 }
 
+pub fn gltf_handler_init_golf_ball_glb(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
+    gsh: Res<GameHandler>,
+    party: Res<Party>,
+    mut commands_2: Commands,
+    children: Query<&Children>,
+) {
+    if let Some(golf_ball_glb_file) = glb_storage.glb.get((25) as usize) {
 
+        let golf_ball_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset(golf_ball_glb_file.map),
+        );
+
+        let golf_ball_entity = commands
+            .spawn(SceneBundle {
+                scene: golf_ball_handle.clone(),
+                ..default()
+            })
+            .insert(GolfBallTag(party.get_active_player().try_into().unwrap()))
+            .insert(Interactable)
+            .id(); 
+            
+            
+        propagate_to_children(&mut commands_2, golf_ball_entity, &children, GolfBallTag(party.get_active_player().try_into().unwrap()));
+    };
+}
+
+fn propagate_to_children(
+    commands: &mut Commands,
+    entity: Entity,
+    children: &Query<&Children>,
+    golf_ball_tag: GolfBallTag,
+) {
+    if let Ok(child_entities) = children.get(entity) {
+        info!("Children: {:?}", child_entities);
+        for child in child_entities.iter() {
+            commands.entity(*child).insert(golf_ball_tag.clone());
+            propagate_to_children(commands, *child, children, golf_ball_tag.clone());
+        }
+    }
+}
 
 // When exiting state 
 pub fn purge_entity(

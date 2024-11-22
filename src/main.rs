@@ -33,16 +33,14 @@ use minigolf::{
     Fonts, 
     GameHandler, 
     GLBStorageID, 
+    GolfBallTag,
     LevelHandler,
     MainWindow,
     PanOrbitState,
     PanOrbitSettings,
     Party,
     Player,
-};
-
-// --- enums --- //
-use minigolf::{
+    SceneInstanceSpawnedEvent,
     StateUpdateRef,
 };
 
@@ -86,10 +84,11 @@ use minigolf::user_interface::menu_state_handler::{
 // --- Level Handler Import --- //
 use minigolf::level_handler::level_handler::{
     init_level_glb, 
-    setup_ground, 
-    setup_light, 
+    gltf_handler_init_golf_ball_glb,
     purge_glb_all,
     purge_rigid_bodies,
+    setup_light, 
+    setup_ground, 
 };
 
 // --- Physics Handler Import --- //
@@ -182,26 +181,45 @@ fn main() {
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
         .add_systems(Update, add_physics_query_and_update_scene.run_if(asset_event_listener))
 
-        // --- OnEnter State Reaction Level Initialization --- //        
+        // --- OnEnter State Reaction Level Initialization --- //          
         .add_systems(OnEnter(LevelState::MainMenu), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole1), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole1), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole2), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole2), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole3), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole3), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole4), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole4), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole5), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole5), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole6), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole6), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole7), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole7), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole8), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole8), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole9), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole9), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole10), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole10), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole11), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole11), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole12), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole12), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole13), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole13), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole14), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole14), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole15), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole15), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole16), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole16), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole17), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole17), init_level_glb)
+        .add_systems(OnEnter(LevelState::Hole18), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::Hole18), init_level_glb)
+        .add_systems(OnEnter(LevelState::HoleTutorial), gltf_handler_init_golf_ball_glb)
         .add_systems(OnEnter(LevelState::HoleTutorial), init_level_glb)
         .add_systems(OnEnter(LevelState::MenuLeaderBoard), init_level_glb)
         .add_systems(OnEnter(LevelState::MenuLocal), init_level_glb)
@@ -272,7 +290,9 @@ fn main() {
         .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
 
     // --- Network Integration --- //
-    app.add_event::<OnlineStateChange>()
+    app
+        .add_event::<OnlineStateChange>()
+        .add_event::<SceneInstanceSpawnedEvent>()
         .add_systems(Startup, start_socket)
 
         .add_systems(Update, receive_messages)
@@ -285,9 +305,6 @@ fn main() {
 
     app.run();
 }
-
-
-
 
 
 fn next_party_level(

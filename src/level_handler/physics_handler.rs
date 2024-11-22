@@ -9,8 +9,10 @@ use crate::{
     BonkMouseXY,
     CameraWorld,
     GameHandler,
+    GolfBallTag,
     Ground,
     LevelState,
+    Party,
     TurnState,
 };
 
@@ -41,7 +43,7 @@ pub fn add_physics_query_and_update_scene(
                 .insert(collider)
                 .insert(RigidBody::Dynamic)
                 .insert(Damping {
-                    angular_damping: 1.65,
+                    angular_damping: 3.0,
                     ..default()
                 })
                 .insert(ExternalImpulse::default())
@@ -157,6 +159,8 @@ pub fn apply_rotation_matrix_camera_yaw(
     }
 }
 
+use std::time::Duration;
+
 pub fn asset_event_listener(
     mut ev_asset: EventReader<AssetEvent<Mesh>>,
     // mut assets: ResMut<Assets<Mesh>>,
@@ -169,14 +173,24 @@ pub fn asset_event_listener(
 }
 
 pub fn bonk(
-    mut impulses: Query<&mut ExternalImpulse>,
+    mut golf_balls: Query<(Entity, &GolfBallTag)>,
+    mut commands: Commands,
     bonk: Res<BonkHandler>,
+    party: Res<Party>,
 ) {
-    for mut impulse in impulses.iter_mut() {
-        // Reset or set the impulse every frame
-        let scaled_bonk = bonk.power * 0.00025;
-        impulse.impulse = bonk.direction * scaled_bonk;
-        impulse.torque_impulse = Vec3::new(0.0, 0.0, 0.0);
+    let scaled_bonk = bonk.power * 0.00025;
+    for (entity, tag) in golf_balls.iter_mut() {
+        let active_player: usize = party.get_active_player().try_into().unwrap();
+        info!("Entity Index: {}, Generation: {}", entity.index(), entity.generation());
+        if tag.0 == active_player {
+            // Reset or set the impulse every frame
+            commands.entity(entity)
+                .insert(ExternalImpulse {
+                    impulse: bonk.direction * scaled_bonk,
+                    torque_impulse: Vec3::new(0.0, 0.0, 0.0),
+                }
+            );
+        };
     }
 }
 
@@ -248,18 +262,21 @@ pub fn bonk_step_end( // Fires bonk
     mut arrow_state: ResMut<State<ArrowState>>,
     mut gsh: ResMut<GameHandler>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
-    mut impulses: Query<&mut ExternalImpulse>,
     bonk_res: Res<BonkHandler>,
     rapier_context: Res<RapierContext>,
     rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
+    mut golf_balls: Query<(Entity, &GolfBallTag)>,
+    mut commands: Commands,
+    party: Res<Party>,
 ) {
     if gsh.get_arrow_state() {
         toggle_arrow_state(gsh, arrow_state, next_arrow_state);
     }
-    if bonk_res.power != 0.0 {
+    let owned_bonk_power = bonk_res.power.clone();
+    if owned_bonk_power != 0.0 {
         if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes) {
-            bonk(impulses, bonk_res);
+            bonk(golf_balls, commands, bonk_res, party);
         }
     }
 }
