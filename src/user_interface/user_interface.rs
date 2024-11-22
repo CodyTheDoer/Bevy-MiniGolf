@@ -42,6 +42,8 @@ pub fn bonk_gizmo(
     mut gizmos: Gizmos,
     mut raycast: Raycast,
     mut bonk: ResMut<BonkHandler>,
+    party_asleep: Res<Party>,
+    party: Res<Party>,
     scene_meshes: Query<(&Name, &Transform)>,
     windows: Query<&Window>,
     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
@@ -49,7 +51,7 @@ pub fn bonk_gizmo(
     rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes_asleep: Query<(Entity, &Name)>,
 ) {
-    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes_asleep) {
+    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes_asleep, party_asleep) {
         Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
     } else {
         Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
@@ -62,7 +64,8 @@ pub fn bonk_gizmo(
     // Extract the yaw rotation around the y-axis from the camera's quaternion
     let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
     for (name, transform) in scene_meshes.iter() {
-        if name.as_str() == "ball" && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+        let active_player: usize = party.get_active_player().try_into().unwrap();
+        if *name.as_str() == *format!("ball{}", active_player).as_str()  && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
             let ball_position = transform.translation;
             
             // Calculate the direction from the ball to the intersection point.

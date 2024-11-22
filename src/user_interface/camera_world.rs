@@ -48,9 +48,37 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
         match camera_orbit_entity_state.get() {
             CameraOrbitEntityState::Ball => {
                 for (entity, name, transform) in scene_meshes.iter() {
-                    if name.as_str() == "ball" {
-                        camera_coord_tracker.current_coords = ball_rigid_body_coords;
-                        break;
+                    let owned_name = name.as_str();
+                    match owned_name { 
+                        "ball" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball0" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball1" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball2" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball3" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball4" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        "ball5" => {
+                            camera_coord_tracker.current_coords = ball_rigid_body_coords;
+                            break;
+                        },
+                        _ => {},
                     }
                 }        
             }

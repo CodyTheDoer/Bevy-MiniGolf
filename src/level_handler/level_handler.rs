@@ -14,7 +14,6 @@ use crate::{
 use crate::{
     GameHandler,
     GLBStorageID,
-    GolfBallTag,
     Ground, 
     Interactable, 
     Party,
@@ -90,10 +89,7 @@ pub fn gltf_handler_init_golf_ball_glb(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
-    gsh: Res<GameHandler>,
-    party: Res<Party>,
-    mut commands_2: Commands,
-    children: Query<&Children>,
+    // mut asset_event_writer: EventWriter<AssetEvent<Mesh>>,
 ) {
     if let Some(golf_ball_glb_file) = glb_storage.glb.get((25) as usize) {
 
@@ -106,28 +102,16 @@ pub fn gltf_handler_init_golf_ball_glb(
                 scene: golf_ball_handle.clone(),
                 ..default()
             })
-            .insert(GolfBallTag(party.get_active_player().try_into().unwrap()))
             .insert(Interactable)
             .id(); 
-            
-            
-        propagate_to_children(&mut commands_2, golf_ball_entity, &children, GolfBallTag(party.get_active_player().try_into().unwrap()));
-    };
-}
 
-fn propagate_to_children(
-    commands: &mut Commands,
-    entity: Entity,
-    children: &Query<&Children>,
-    golf_ball_tag: GolfBallTag,
-) {
-    if let Ok(child_entities) = children.get(entity) {
-        info!("Children: {:?}", child_entities);
-        for child in child_entities.iter() {
-            commands.entity(*child).insert(golf_ball_tag.clone());
-            propagate_to_children(commands, *child, children, golf_ball_tag.clone());
-        }
-    }
+        // // Emit a custom AssetEvent for this asset
+        // asset_event_writer.send(
+        //     AssetEvent::Created {
+        //         handle: golf_ball_handle.typed::<Mesh>(),
+        //     }
+        // );
+    };
 }
 
 // When exiting state 

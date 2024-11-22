@@ -33,11 +33,8 @@ use minigolf::{
     Fonts, 
     GameHandler, 
     GLBStorageID, 
-    GolfBallTag,
+    Ground,
     LevelHandler,
-    MainWindow,
-    PanOrbitState,
-    PanOrbitSettings,
     Party,
     Player,
     SceneInstanceSpawnedEvent,
@@ -69,6 +66,7 @@ use minigolf::user_interface::game_state_handler::{
 use minigolf::user_interface::turn_state_handler::{
     turn_state_response_hole_complete,
     turn_state_response_turn_reset,
+    turn_state_response_turn_next,
 };
 
 // --- User Interface - Menu Handler Import --- //
@@ -174,7 +172,6 @@ fn main() {
         .add_systems(Update, camera_orbit_entity_state_update.run_if(input_just_released(KeyCode::KeyC)))
 
         // Physics //
-        // .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_released(MouseButton::Right)))
         .add_systems(Update, collision_events_listener)
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
         .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Right)))
@@ -287,6 +284,7 @@ fn main() {
         
         // --- OnEnter State Reaction Turn State --- //
         .add_systems(OnEnter(TurnState::HoleComplete), turn_state_response_hole_complete)
+        .add_systems(OnEnter(TurnState::TurnNext), turn_state_response_turn_next)
         .add_systems(OnEnter(TurnState::TurnReset), turn_state_response_turn_reset);
 
     // --- Network Integration --- //
@@ -294,18 +292,54 @@ fn main() {
         .add_event::<OnlineStateChange>()
         .add_event::<SceneInstanceSpawnedEvent>()
         .add_systems(Startup, start_socket)
-
         .add_systems(Update, receive_messages)
         .add_systems(Update, remote_state_change_monitor)
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
             .run_if(on_timer(Duration::from_secs(5))))
         .add_systems(Update, local_party_interface_visibliity_toggle)
-        .add_systems(Update, next_party_level.run_if(input_just_released(KeyCode::Space)));
+        .add_systems(OnExit(TurnState::TurnNext), setup_exit_timer)
+        .add_systems(Update, check_exit_timer);
 
     app.run();
 }
 
+#[derive(Default, Resource)]
+pub struct ExitTimer(Timer);
+
+pub fn setup_exit_timer(mut commands: Commands) {
+    commands.insert_resource(ExitTimer(Timer::new(Duration::from_secs(1), TimerMode::Once)));
+}
+
+pub fn check_exit_timer(
+    time: Res<Time>,
+    mut timer: Option<ResMut<ExitTimer>>, 
+    mut commands: Commands,
+    
+    party: Res<Party>,
+    mut arrow_state: ResMut<State<ArrowState>>,
+    mut next_arrow_state: ResMut<NextState<ArrowState>>,
+    mut commands_2: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
+    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
+) {
+    if let Some(mut timer) = timer {
+        if timer.0.tick(time.delta()).finished() {
+            info!("Triggering add_physics_query_and_update_scene()");
+            add_physics_query_and_update_scene(
+                party,
+                arrow_state,
+                next_arrow_state,
+                commands_2,
+                meshes,
+                scene_meshes,
+                ground_query,
+            );
+            commands.remove_resource::<ExitTimer>();
+        }
+    }
+}
 
 fn next_party_level(
     mut party: ResMut<Party>,

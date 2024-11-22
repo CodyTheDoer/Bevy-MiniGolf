@@ -19,6 +19,7 @@ use crate::{
 use std::f32::consts::PI;
 
 pub fn add_physics_query_and_update_scene(
+    party: Res<Party>,
     mut arrow_state: ResMut<State<ArrowState>>,
     mut next_arrow_state: ResMut<NextState<ArrowState>>,
     mut commands: Commands,
@@ -49,7 +50,9 @@ pub fn add_physics_query_and_update_scene(
                 .insert(ExternalImpulse::default())
                 .insert(ColliderMassProperties::Density(1.0))
                 .insert(GravityScale(1.0))
-                .insert(Ccd::enabled());
+                .insert(Ccd::enabled())
+                .insert(GolfBallTag(party.get_active_player().try_into().unwrap()))
+                .insert(Name::new(format!("ball{}", party.get_active_player())));
         }
         if name.as_str() == "cup" {
             // Create the collider from the mesh.
@@ -163,7 +166,6 @@ use std::time::Duration;
 
 pub fn asset_event_listener(
     mut ev_asset: EventReader<AssetEvent<Mesh>>,
-    // mut assets: ResMut<Assets<Mesh>>,
 ) -> bool {
     let mut event_occurred = false;
     for event in ev_asset.read() {
@@ -173,16 +175,16 @@ pub fn asset_event_listener(
 }
 
 pub fn bonk(
-    mut golf_balls: Query<(Entity, &GolfBallTag)>,
+    mut golf_balls: Query<(Entity, &Name)>,
     mut commands: Commands,
     bonk: Res<BonkHandler>,
     party: Res<Party>,
 ) {
     let scaled_bonk = bonk.power * 0.00025;
-    for (entity, tag) in golf_balls.iter_mut() {
+    for (entity, name) in golf_balls.iter_mut() {
         let active_player: usize = party.get_active_player().try_into().unwrap();
-        info!("Entity Index: {}, Generation: {}", entity.index(), entity.generation());
-        if tag.0 == active_player {
+        // info!("Entity Index: {}, Active Player: {:?}", entity.index(), active_player.clone());
+        if **name == *format!("ball{}", active_player).as_str() {
             // Reset or set the impulse every frame
             commands.entity(entity)
                 .insert(ExternalImpulse {
@@ -266,8 +268,9 @@ pub fn bonk_step_end( // Fires bonk
     rapier_context: Res<RapierContext>,
     rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
-    mut golf_balls: Query<(Entity, &GolfBallTag)>,
+    mut golf_balls: Query<(Entity, &Name)>,
     mut commands: Commands,
+    party_sleeping: Res<Party>,
     party: Res<Party>,
 ) {
     if gsh.get_arrow_state() {
@@ -275,7 +278,7 @@ pub fn bonk_step_end( // Fires bonk
     }
     let owned_bonk_power = bonk_res.power.clone();
     if owned_bonk_power != 0.0 {
-        if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes) {
+        if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes, party_sleeping) {
             bonk(golf_balls, commands, bonk_res, party);
         }
     }
@@ -332,11 +335,13 @@ pub fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
     query: Query<(Entity, &RapierRigidBodyHandle)>,
     scene_meshes: Query<(Entity, &Name)>,
+    party: Res<Party>,
 ) -> bool {
     let mut results = false;
     // iterate over all meshes in the scene and match them by their name.
     for (entity, name) in scene_meshes.iter() {
-        if name.as_str() == "ball" {
+        let active_player: usize = party.get_active_player().try_into().unwrap();
+        if *name.as_str() == *format!("ball{}", active_player).as_str() {
             let active_entity = entity;
             for (entity, rb_handle) in query.iter() {
                 // Access the rigid body from the physics world using its handle
