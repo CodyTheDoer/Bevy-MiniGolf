@@ -33,61 +33,80 @@ use crate::{
     TitleText,
 };
 
-use crate::level_handler::physics_handler::{
-    apply_rotation_matrix_camera_yaw,
-    golf_ball_is_asleep,
-};
+// pub fn bonk_gizmo(
+//     mut gizmos: Gizmos,
+//     mut raycast: Raycast,
+//     mut bonk: ResMut<BonkHandler>,
+//     party_asleep: Res<Party>,
+//     party: Res<Party>,
+//     scene_meshes: Query<(&Name, &Transform)>,
+//     windows: Query<&Window>,
+//     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
+//     rapier_context: Res<RapierContext>,
+//     rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+//     scene_meshes_asleep: Query<(Entity, &Name)>,
+// ) {
+//     let arrow_color = if golf_ball_is_asleep() {
+//         Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
+//     } else {
+//         Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
+//     };
 
-pub fn bonk_gizmo(
-    mut gizmos: Gizmos,
-    mut raycast: Raycast,
-    mut bonk: ResMut<BonkHandler>,
-    party_asleep: Res<Party>,
-    party: Res<Party>,
-    scene_meshes: Query<(&Name, &Transform)>,
-    windows: Query<&Window>,
-    camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
-    rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
-    scene_meshes_asleep: Query<(Entity, &Name)>,
-) {
-    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, scene_meshes_asleep, party_asleep) {
-        Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
-    } else {
-        Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-    let camera = camera_query.get_single();
-    // Extract the yaw rotation around the y-axis from the camera's quaternion
-    let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
-    for (name, transform) in scene_meshes.iter() {
-        let active_player: usize = party.get_active_player().try_into().unwrap();
-        if *name.as_str() == *format!("ball{}", active_player).as_str()  && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
-            let ball_position = transform.translation;
+//     let Some(cursor_position) = windows.single().cursor_position() else {
+//         return;
+//     };
+//     let camera = camera_query.get_single();
+//     // Extract the yaw rotation around the y-axis from the camera's quaternion
+//     let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
+//     for (name, transform) in scene_meshes.iter() {
+//         let active_player: usize = party.get_active_player().try_into().unwrap();
+//         if *name.as_str() == *format!("ball{}", active_player).as_str()  && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+//             let ball_position = transform.translation;
             
-            // Calculate the direction from the ball to the intersection point.
-            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
-            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
+//             // Calculate the direction from the ball to the intersection point.
+//             let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
+//             let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
 
-            let bonk_magnitude: f32 = 2.5;
-            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
+//             let bonk_magnitude: f32 = 2.5;
+//             let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
 
-            // Localize arrow to a flat xz plane 
-            let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
-            bonk.update_direction(&direction_xyz);
+//             // Localize arrow to a flat xz plane 
+//             let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
+//             bonk.update_direction(&direction_xyz);
 
-            // Draw an arrow from the ball in the direction toward the cursor.
-            gizmos.arrow(
-                ball_position,            // Start position of the arrow (at the ball)
-                ball_position + direction_xyz, // End position, 12 units away from the cursor
-                arrow_color.clone(),
-            );
-        }
-    } 
-}
+//             // Draw an arrow from the ball in the direction toward the cursor.
+//             gizmos.arrow(
+//                 ball_position,            // Start position of the arrow (at the ball)
+//                 ball_position + direction_xyz, // End position, 12 units away from the cursor
+//                 arrow_color.clone(),
+//             );
+//         }
+//     } 
+// }
+
+// fn golf_ball_is_asleep() {
+//     todo!();
+// }
+
+// fn apply_rotation_matrix_camera_yaw(
+//     camera_yaw: &f32, // Query only for CameraWorld's Transform
+//     direction_x: f32,
+//     direction_y: f32,
+// ) -> BonkMouseXY {
+//     // 2D rotation matrix
+//     let rotation_matrix = vec![
+//         [camera_yaw.cos(), camera_yaw.sin()],
+//         [-camera_yaw.sin(), camera_yaw.cos()],
+//     ];
+
+//     let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
+//     let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
+
+//     BonkMouseXY {
+//         x: rotated_x,
+//         y: rotated_y,
+//     }
+// }
 
 pub fn draw_cursor(
     mut raycast: Raycast,
@@ -201,22 +220,16 @@ pub fn ray_release(
                     match owned_name {
                         // --- Menu: Main Interface Mapping --- //
                         "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
-                            next_menu_state.set(MenuState::LeaderBoard);
                         },
                         "main_menu_interface_local" => {
-                            next_menu_state.set(MenuState::Local);
                         },
                         "main_menu_interface_online" => {
-                            next_menu_state.set(MenuState::Online);
                         },
                         "main_menu_interface_preferences" => {
-                            next_menu_state.set(MenuState::Preferences);
                         },
                         "main_menu_interface_tutorial" => {
-                            next_menu_state.set(MenuState::Tutorial);
                         },
                         "main_menu_player_text" | "main_menu_player_board.0" => {
-                            next_menu_state.set(MenuState::Player);
                         }
                         /* 
                             // Free Options to Build From
@@ -226,96 +239,32 @@ pub fn ray_release(
 
                         // --- Menu: Common Interactions --- //
                         "main_menu_text" | "main_menu_board.0" => {
-                            game_handler.init_menu_main();
-                            next_game_state.set(GameState::Menus);
-                            next_level_state.set(LevelState::MainMenu);
-                            next_camera_state.set(CameraOrbitEntityState::MainMenu);
-                            for mut state in pan_orbit_camera_query.iter_mut() {
-                                info!("{:?}", state);
-                                state.radius = 38.0;
-                                state.pitch = -12.0f32.to_radians();
-                                state.yaw = -17.0f32.to_radians();
-                            }
                         },
 
                         // --- Menu: Leader Board Interface Mapping --- //
                         "leaderboard_menu_play_again_text" | "leaderboard_menu_play_again_board.0" => {
-                            party.start_game();
-                            next_leader_board_state.set(LeaderBoardState::InGame);
-                            match map_set_state.get() {
-                                MapSetState::Tutorial => {
-                                    game_handler.set_current_level(19);
-                                    next_level_state.set(LevelState::HoleTutorial);
-                                },
-                                MapSetState::WholeCorse => {
-                                    game_handler.set_current_level(1);
-                                    next_level_state.set(LevelState::Hole1);
-                                    party.set_starting_level(MapSetState::WholeCorse);
-                                },
-                                MapSetState::FrontNine => {
-                                    game_handler.set_current_level(1);
-                                    next_level_state.set(LevelState::Hole1);
-                                    party.set_starting_level(MapSetState::FrontNine);
-                                },
-                                MapSetState::BackNine => {
-                                    game_handler.set_current_level(10);
-                                    next_level_state.set(LevelState::Hole10);
-                                    party.set_starting_level(MapSetState::BackNine);
-                                },
-                                MapSetState::SelectAHole => {},
-                            };
-                            next_game_state.set(GameState::InGame);
-                            party.start_game();
-                            next_turn_state.set(TurnState::Turn);
-                            next_camera_state.set(CameraOrbitEntityState::Ball);
-                            for mut state in pan_orbit_camera_query.iter_mut() {
-                                info!("{:?}", state);
-                                state.radius = 2.0;
-                                state.pitch = -8.0f32.to_radians();
-                                state.yaw = 22.0f32.to_radians();
-                            }
                         },
                         
                         // --- Menu: Local Interface Mapping --- //
 
-                        "local_button_add_player" | "local_button_add_player_symbol" => {party.add_player()},
-                        "local_button_sub_player" | "local_button_sub_player_symbol" => {party.remove_player()},
+                        "local_button_add_player" | "local_button_add_player_symbol" => {
+                        },
+                        "local_button_sub_player" | "local_button_sub_player_symbol" => {
+                        },
 
-                        "local_button_add_ai" | "local_button_add_ai_symbol" => {party.add_ai()},
-                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {party.remove_ai()},
+                        "local_button_add_ai" | "local_button_add_ai_symbol" => {
+                        },
+                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {
+                        },
 
                         // "local_playstyle_toggle_button_ordered.1" => {commands.insert_resource(NextState(PlayThroughStyleState::SetOrder))},
                         // "local_playstyle_toggle_button_proximity.1" => {commands.insert_resource(NextState(PlayThroughStyleState::Proximity))},
 
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
-                            next_map_set_state.set(MapSetState::WholeCorse);
-                            party.set_starting_level(MapSetState::WholeCorse);
-                            next_game_state.set(GameState::InGame);
-                            next_menu_state.set(MenuState::NoSelection);
-                            next_turn_state.set(TurnState::Turn);
-                            game_handler.set_current_level(1);
-                            next_level_state.set(LevelState::Hole1);
-                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
-                            next_map_set_state.set(MapSetState::FrontNine);
-                            party.set_starting_level(MapSetState::FrontNine);
-                            next_game_state.set(GameState::InGame);
-                            next_menu_state.set(MenuState::NoSelection);
-                            next_turn_state.set(TurnState::Turn);
-                            game_handler.set_current_level(1);
-                            next_level_state.set(LevelState::Hole1);
-                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
-                            next_map_set_state.set(MapSetState::BackNine);
-                            party.set_starting_level(MapSetState::BackNine);
-                            next_game_state.set(GameState::InGame);
-                            next_menu_state.set(MenuState::NoSelection);
-                            next_turn_state.set(TurnState::Turn);
-                            game_handler.set_current_level(10);
-                            next_level_state.set(LevelState::Hole10);
-                            next_camera_state.set(CameraOrbitEntityState::Ball);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
                         },
