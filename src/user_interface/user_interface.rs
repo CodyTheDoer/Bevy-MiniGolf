@@ -7,31 +7,38 @@ use std::collections::HashMap;
 
 // --- State Imports --- //
 use crate::{
-    CameraOrbitEntityState,
-    GameState,
-    LeaderBoardState,
-    LevelState,
-    MapSetState,
-    MenuState,
-    PanOrbitState,
-    ConnectionState,
-    PlayThroughStyleState,
-    TurnState,
+    StateArrow,
+    StateCameraOrbitEntity,
+    StateGame,
+    StateGameConnection,
+    StateGamePlayStyle,
+    StateLevel,
+    StateMapSet,
+    StateMenu,
+    StatePanOrbit,
+    StateTurn,
 };
 
 // --- resource Imports --- //
 use crate::{
-    BonkHandler,
-    CameraUi, 
+    CameraUi,
     CameraWorld, 
-    Fonts, 
+    Fonts,
     GameHandler,
-    Ground, 
     Interactable,
     Party,
     StateText,
     TitleText,
 };
+
+impl Fonts {
+    pub fn new() -> Self {
+        let fonts: Vec<TextStyle> = Vec::new();
+        Fonts {
+            fonts,
+        }
+    }
+}
 
 // pub fn bonk_gizmo(
 //     mut gizmos: Gizmos,
@@ -179,16 +186,9 @@ pub fn ray_release(
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
-    map_set_state: Res<State<MapSetState>>,
+    map_set_state: Res<State<StateMapSet>>,
     mut game_handler: ResMut<GameHandler>,
-    mut next_camera_state: ResMut<NextState<CameraOrbitEntityState>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_leader_board_state: ResMut<NextState<LeaderBoardState>>,
-    mut next_level_state: ResMut<NextState<LevelState>>,
-    mut next_turn_state: ResMut<NextState<TurnState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
-    mut next_map_set_state: ResMut<NextState<MapSetState>>,
-    mut pan_orbit_camera_query: Query<&mut PanOrbitState>,
+    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
@@ -356,7 +356,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..13 {
+    for _ in 0..18 {
         commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -382,32 +382,37 @@ pub fn setup_ui(
 }
 
 pub fn update_ui(
-    state_game: Res<State<GameState>>,
-    state_menu: Res<State<MenuState>>,
-    state_turn: Res<State<TurnState>>,
-    state_map_set: Res<State<MapSetState>>,
-    state_play_through_style: Res<State<PlayThroughStyleState>>,
-    state_leader_board: Res<State<LeaderBoardState>>,
-    state_level: Res<State<LevelState>>,
-    state_party_connection: Res<State<ConnectionState>>,
-    state_pan_orbit_camera: Res<State<CameraOrbitEntityState>>,
-    party: Res<Party>,
+    state_arrow: Res<State<StateArrow>>,
+    state_camera: Res<State<StateCameraOrbitEntity>>,
+    state_game: Res<State<StateGame>>,
+    state_game_connection : Res<State<StateGameConnection>>,
+    state_play_style: Res<State<StateGamePlayStyle>>,
+    state_level: Res<State<StateLevel>>,
+    state_map_set: Res<State<StateMapSet>>,
+    state_menu: Res<State<StateMenu>>,
+    state_turn: Res<State<StateTurn>>,
+    mut party: ResMut<Party>,
     mut query: Query<&mut Text, With<StateText>>,
 ) {
     let state_texts = vec![
-        format!("Server Connection: {:?}", *state_party_connection),
-        format!("Game: {:?}", *state_game),
-        format!("Menu: {:?}", *state_menu),
-        format!("Turn: {:?}", *state_turn),
-        format!("Map Set: {:?}", *state_map_set),
-        format!("Play Through Style: {:?}", *state_play_through_style),
-        format!("Leader Board: {:?}", *state_leader_board),
-        format!("Level: {:?}", *state_level),
-        format!("Camera Orbit Entity: {:?}", *state_pan_orbit_camera),
-        format!("Party Size: {:?}", party.get_party_size()),
-        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),
-        format!("Active Level: {:?}", party.get_active_level()),
-        format!("Active Player: {:?}", party.get_active_player()),
+        format!("state_arrow: {:?}", *state_arrow),                                         // 1
+        format!("state_camera: {:?}", *state_camera),                                       // 2
+        format!("state_game: {:?}", *state_game),                                           // 3
+        format!("state_game_connection: {:?}", *state_game_connection),                     // 4
+        format!("state_play_style: {:?}", *state_play_style),                               // 5
+        format!("state_level: {:?}", *state_level),                                         // 6
+        format!("state_map_set: {:?}", *state_map_set),                                     // 7
+        format!("state_menu: {:?}", *state_menu),                                           // 8
+        format!("state_turn: {:?}", *state_turn),                                           // 9
+        format!("Party Size: {:?}", party.get_party_size()),                                // 10
+        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),                      // 11
+        format!("Active Level: {:?}", party.get_active_level()),                            // 12
+        format!("Active Player: {:?}", party.get_active_player()),                          // 13
+        format!("bonk count level: {:?}", party.get_active_player_bonks_level()),           // 14
+        format!("bonk count game: {:?}", party.get_active_player_bonks_game()),             // 15
+        format!("Num7: AddPlayer, Num1: RemovePlayer, Num9: AddAI, Num3: RemoveAi"),        // 16
+        format!("KeyB: party.active_player_add_bonk, Space: toggle.StateGame"),             // 17    
+        format!("KeyC: run_trigger(cycle_camera) if GameState::InGame"),                    // 18                                   // 17
     ];
     // Update the text for the state information
     for (mut text, state_text) in query.iter_mut().zip(state_texts.iter()) {

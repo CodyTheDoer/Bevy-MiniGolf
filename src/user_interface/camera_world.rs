@@ -5,17 +5,59 @@ use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
 use bevy_mod_raycast::prelude::*;
 
+// State
 use crate::{
-    CameraCoordTracker, 
-    CameraOrbitEntityState, 
+    StateCameraOrbitEntity, 
+    StatePanOrbit,
+};
+
+// Resource
+use crate::{
+    CameraHandler, 
     CameraWorld, 
     Ground, 
     PanOrbitAction,
     PanOrbitCameraBundle,
     PanOrbitSettings,
-    PanOrbitState,
     RigidBody,
 };
+
+impl CameraHandler {
+    pub fn new() -> Self {
+        let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        CameraHandler {
+            current_coords,
+        }
+    }
+}
+
+impl Default for StatePanOrbit {
+    fn default() -> Self {
+        StatePanOrbit {
+            center: Vec3::ZERO,
+            radius: 1.0,
+            upside_down: false,
+            pitch: 0.0,
+            yaw: 0.0,
+        }
+    }
+}
+
+impl Default for PanOrbitSettings {
+    fn default() -> Self {
+        PanOrbitSettings {
+            pan_sensitivity: 0.001, // 1000 pixels per world unit
+            orbit_sensitivity: 0.1f32.to_radians(), // 0.1 degree per pixel
+            zoom_sensitivity: 0.01,
+            pan_key: Some(KeyCode::ControlLeft),
+            orbit_key: Some(KeyCode::AltLeft),
+            zoom_key: Some(KeyCode::ShiftLeft),
+            scroll_action: Some(PanOrbitAction::Zoom),
+            scroll_line_sensitivity: 16.0, // 1 "line" == 16 "pixels of motion"
+            scroll_pixel_sensitivity: 1.0,
+        }
+    }
+}
 
 pub fn setup_3d_camera(
     mut commands: Commands,
@@ -33,9 +75,9 @@ pub fn setup_3d_camera(
     ));
 }
 
-pub fn camera_orbit_entity_state_logic(
-    mut camera_orbit_entity_state: ResMut<State<CameraOrbitEntityState>>,
-    mut camera_coord_tracker: ResMut<CameraCoordTracker>,
+pub fn state_camera_orbit_entity_logic(
+    mut camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
+    mut camera_coord_tracker: ResMut<CameraHandler>,
     scene_meshes: Query<(Entity, &Name, &Transform)>,
     mut q_rigid_body: Query<(&RigidBody, &Transform)>,
 ) {
@@ -44,7 +86,7 @@ pub fn camera_orbit_entity_state_logic(
         ball_rigid_body_coords = transform.translation.clone();
     }
     match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Ball => {
+        StateCameraOrbitEntity::Ball => {
             for (entity, name, transform) in scene_meshes.iter() {
                 let owned_name = name.as_str();
                 match owned_name { 
@@ -55,52 +97,24 @@ pub fn camera_orbit_entity_state_logic(
                     _ => {},
                 }
             }        
-        }
-        CameraOrbitEntityState::Cup => {
+        },
+        StateCameraOrbitEntity::Cup => {
             for (entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cup" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
                 }
             }        
-        }
-        CameraOrbitEntityState::Menu | CameraOrbitEntityState::LeaderBoard {
+        },
+        StateCameraOrbitEntity::Menu | StateCameraOrbitEntity::LeaderBoard => {
             for (entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cam_target" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
-                }
+                };
             }  
-        }      
-        CameraOrbitEntityState::FreePan => {    
-        }
-    }
-}
-
-pub fn camera_orbit_entity_state_update(    
-    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
-    mut next_camera_orbit_entity_state: ResMut<NextState<CameraOrbitEntityState>>,
-) {
-    match camera_orbit_entity_state.get() {
-        CameraOrbitEntityState::Menu => {
-            info!("CameraOrbitEntityState::Ball");
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Ball);
         },
-        CameraOrbitEntityState::Ball => {
-            info!("CameraOrbitEntityState::Cup");
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Cup);
-        },
-        CameraOrbitEntityState::Cup => {
-            info!("CameraOrbitEntityState::FreePan");
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::FreePan);
-        },
-        CameraOrbitEntityState::FreePan => {
-            info!("CameraOrbitEntityState::LeaderBoard");
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::LeaderBoard);
-        },
-        CameraOrbitEntityState::LeaderBoard => {
-            info!("CameraOrbitEntityState::Menu");
-            next_camera_orbit_entity_state.set(CameraOrbitEntityState::Menu);
+        StateCameraOrbitEntity::FreePan => {    
         },
     }
 }
@@ -109,9 +123,9 @@ pub fn pan_orbit_camera(
     kbd: Res<ButtonInput<KeyCode>>,
     mut evr_motion: EventReader<MouseMotion>,
     mut evr_scroll: EventReader<MouseWheel>,
-    mut q_camera: Query<(&PanOrbitSettings, &mut PanOrbitState, &mut Transform)>,
-    camera_coord_tracker: Res<CameraCoordTracker>,
-    camera_orbit_entity_state: Res<State<CameraOrbitEntityState>>,
+    mut q_camera: Query<(&PanOrbitSettings, &mut StatePanOrbit, &mut Transform)>,
+    camera_coord_tracker: Res<CameraHandler>,
+    camera_orbit_entity_state: Res<State<StateCameraOrbitEntity>>,
 ) {
     // First, accumulate the total amount of mouse motion and scroll from all pending events:
     let mut total_motion: Vec2 = evr_motion.read().map(|ev| ev.delta).sum();
@@ -135,13 +149,14 @@ pub fn pan_orbit_camera(
     for (settings, mut state, mut transform) in &mut q_camera {
         // Determine the target based on the current camera state
         let target = match camera_orbit_entity_state.get() {
-            CameraOrbitEntityState::Ball | CameraOrbitEntityState::Cup => camera_coord_tracker.current_coords,
-            CameraOrbitEntityState::FreePan => state.center, // Use the original free pan center
+            StateCameraOrbitEntity::Ball | StateCameraOrbitEntity::Cup |
+            StateCameraOrbitEntity::Menu | StateCameraOrbitEntity::LeaderBoard => camera_coord_tracker.current_coords,
+            StateCameraOrbitEntity::FreePan => state.center, // Use the original free pan center
         };
 
         let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
-            CameraOrbitEntityState::Menu => false,
-            CameraOrbitEntityState::LeaderBoard => false,
+            StateCameraOrbitEntity::Menu => false,
+            StateCameraOrbitEntity::LeaderBoard => false,
             _ => true, // Enable interactions in all other states
         };
 
@@ -151,7 +166,7 @@ pub fn pan_orbit_camera(
         let mut total_zoom = Vec2::ZERO;
 
         // Only use manual panning if in FreePan mode and the appropriate key is pressed
-        if let CameraOrbitEntityState::FreePan = camera_orbit_entity_state.get() {
+        if let StateCameraOrbitEntity::FreePan = camera_orbit_entity_state.get() {
             if settings.pan_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
                 total_pan -= total_motion * settings.pan_sensitivity;
             }
@@ -217,7 +232,7 @@ pub fn pan_orbit_camera(
         }
 
         // Apply pan - only in FreePan mode, or for following the target
-        if let CameraOrbitEntityState::FreePan = camera_orbit_entity_state.get() {
+        if let StateCameraOrbitEntity::FreePan = camera_orbit_entity_state.get() {
             if total_pan != Vec2::ZERO {
                 any = true;
                 let radius = state.radius;
