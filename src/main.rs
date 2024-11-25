@@ -11,6 +11,10 @@ use bevy::{prelude::*,
 use bevy_matchbox::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
 // --- States --- //
 use minigolf::{ 
@@ -32,6 +36,10 @@ use minigolf::{
     GameHandler,
     GolfBallTag,
     Party,
+    Player,
+    PlayerLocal,
+    PlayerAi,
+    PlayerRemote,
     RunTrigger,
 };
 
@@ -204,30 +212,12 @@ fn temp_interface(
             },
         };
     };
-    if keys.just_released(KeyCode::Numpad7) {
-        info!("just_released: Numpad7");  
-        match state_game.get() {
-            StateGame::InGame => {},
-            StateGame::NotInGame => {
-                party.add_player();
-            },
-        };
-    };
     if keys.just_released(KeyCode::Numpad1) {
         info!("just_released: Numpad1");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                party.remove_player();
-            },
-        };
-    };
-    if keys.just_released(KeyCode::Numpad9) {
-        info!("just_released: Numpad9");   
-        match state_game.get() {
-            StateGame::InGame => {},
-            StateGame::NotInGame => {
-                party.add_ai();
+                party.remove_last_player();
             },
         };
     };
@@ -237,6 +227,58 @@ fn temp_interface(
             StateGame::InGame => {},
             StateGame::NotInGame => {
                 party.remove_ai();
+            },
+        };
+    };
+    if keys.just_released(KeyCode::Numpad7) {
+        info!("just_released: Numpad7");  
+        match state_game.get() {
+            StateGame::InGame => {},
+            StateGame::NotInGame => {
+                let owned_party_size: i32 = party.get_party_size() as i32;
+                let new_player_local = PlayerLocal {
+                    player_id: String::from(format!("PlayerLocal{}@email.com", owned_party_size + 1)),
+                    hole_completion_state: false,
+                    ball_material: Color::srgb(1.0, 0.0, 1.0),
+                    ball_location: Vec3::new(0.0, 0.0, 0.0),
+                    bonks_level: 0,
+                    bonks_game: 0,
+                };
+
+                let new_player = Arc::new(Mutex::new(new_player_local));
+                party.add_player(new_player);
+            },
+        };
+    };
+    if keys.just_released(KeyCode::Numpad8) {
+        info!("just_released: Numpad7");  
+        match state_game.get() {
+            StateGame::InGame => {},
+            StateGame::NotInGame => {
+                let owned_party_size: i32 = party.get_party_size() as i32;
+                let new_player_remote = PlayerRemote {
+                    player_id: String::from(format!("PlayerRemote{}@email.com", owned_party_size + 1)),
+                    hole_completion_state: false,
+                    ball_material: Color::srgb(1.0, 0.0, 1.0),
+                    ball_location: Vec3::new(0.0, 0.0, 0.0),
+                    bonks_level: 0,
+                    bonks_game: 0,
+                };
+
+                let new_player = Arc::new(Mutex::new(new_player_remote));
+                party.add_player(new_player);
+            },
+        };
+    };
+    if keys.just_released(KeyCode::Numpad9) {
+        info!("just_released: Numpad9");   
+        match state_game.get() {
+            StateGame::InGame => {},
+            StateGame::NotInGame => {
+                let owned_party_size: i32 = party.get_party_size() as i32;
+                let new_player_ai = PlayerAi::new();
+                let new_player = Arc::new(Mutex::new(new_player_ai));
+                party.add_player(new_player);
             },
         };
     };

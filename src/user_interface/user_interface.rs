@@ -449,16 +449,16 @@ pub fn update_ui(
         format!("state_menu: {:?}", *state_menu),                                                                   // 8
         format!("state_turn: {:?}", *state_turn),                                                                   // 9
         format!("Party Size: {:?}", party.get_party_size()),                                                        // 10
-        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),                                              // 11
-        format!("Active Level: {:?}", party.get_active_level()),                                                    // 12
-        format!("Active Player: {:?}", party.get_active_player()),                                                  // 13 
-        format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                             // 14
-        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 15 
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level()),                    // 16
-        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),     // 17
-        format!("Active Player: Bonk Count Game: {:?}", party.active_player_get_bonks_game()),                      // 18  
-        format!("______________________________________________________________________"),                          // 19  
-        format!("Num7: AddPlayer,   Num1: RemovePlayer,   Num9: AddAI,   Num3: RemoveAi"),                          // 20
+        format!("Active Level: {:?}", party.get_active_level()),                                                    // 11
+        format!("Active Player: {:?}", party.get_active_player()),                                                  // 12 
+        format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                             // 13
+        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 14 
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level()),                    // 15
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),     // 16
+        format!("Active Player: Bonk Count Game: {:?}", party.active_player_get_bonks_game()),                      // 17  
+        format!("______________________________________________________________________"),                          // 18  
+        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                       // 19
+        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                        // 20
         format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                  // 21    
         format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                    // 22     
         format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                           // 23   

@@ -217,6 +217,22 @@ pub struct TitleText;
 
 // --- Player Handler --- //
 
+pub trait Player {
+    fn new() -> Self where Self: Sized;
+    fn start_game(&mut self);
+    fn hole_completed(&mut self);
+    fn next_round_prep(&mut self);
+    fn add_bonk(&mut self);
+    fn get_hole_completion_state(&self) -> bool;
+    fn set_hole_completion_state(&mut self, hole_completion_state: bool);
+    fn get_player_id(&self) -> String;
+    fn set_player_id(&mut self, player_id: String);
+    fn get_ball_location(&self) -> Vec3;
+    fn set_ball_location(&mut self, location: Vec3);
+    fn get_bonks_level(&self) -> u32;
+    fn get_bonks_game(&self) -> u32;
+}
+
 #[derive(Clone, Resource)]
 pub struct PlayerLocal {
     pub player_id: String,
@@ -251,10 +267,7 @@ pub struct PlayerRemote {
 
 #[derive(Resource)]
 pub struct Party {
-    // players: Arc<Mutex<Vec<Arc<Mutex<PlayerLocal|PlayerAi|PlayerRemote>>>>>,
-    players_local: Arc<Mutex<Vec<Arc<Mutex<PlayerLocal>>>>>,
-    players_ai: Arc<Mutex<Vec<Arc<Mutex<PlayerAi>>>>>,
-    players_remote: Arc<Mutex<Vec<Arc<Mutex<PlayerRemote>>>>>,
+    players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
     players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
     active_level: Arc<Mutex<i32>>,
