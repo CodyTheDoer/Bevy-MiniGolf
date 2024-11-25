@@ -330,7 +330,7 @@ pub fn setup_ui(
                 TextBundle {
                     text: Text {
                         sections: vec![TextSection::new(
-                            "Minigolf", 
+                            "Minigolf State Refactor", 
                             fonts.fonts[0].clone())],
                         ..default()
                     },
