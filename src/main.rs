@@ -138,6 +138,7 @@ fn main() {
         .add_systems(Update, cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.cycle_camera()))
         .add_systems(Update, cycle_state_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.cycle_state_map_set()))
         .add_systems(Update, game_handler_get_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_get_active_ball_location()))
+        .add_systems(Update, game_handler_reset_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_reset_active_ball_location()))
         .add_systems(Update, game_handler_set_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_set_active_ball_location()))
         .add_systems(Update, set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.set_hole_completion_state_true()))
         .add_systems(Update, state_turn_next_player_turn.run_if(|run_trigger: Res<RunTrigger>|run_trigger.state_turn_next_player_turn()))
@@ -294,8 +295,13 @@ fn active_player_set_ball_location(
     // let owned_match = GolfBallTag(party.get_active_player().try_into().unwrap());
     // for golf_ball in golf_ball_tag_query.iter_mut() {
     //     owned_match => {
-            let current_ball_location = game_handler.get_active_ball_location();
-            party.active_player_set_ball_location(current_ball_location);
+    if let Some(current_ball_location) = game_handler.get_active_ball_location() {
+        info!("Setting active ball location: {:?}", current_ball_location);
+        party.active_player_set_ball_location(current_ball_location);
+    } else {
+        info!("No ball location set for the active player, setting default ZERO");
+        party.active_player_set_ball_location(Vec3::new(0.0, 0.0, 0.0));
+    }
     //     },
     //     _ => {},
     // }
@@ -307,9 +313,9 @@ fn active_player_add_bonk(
     mut party: ResMut<Party>,
 ) {
     info!("function: active_player_add_bonk"); 
-    party.active_player_add_bonk();
-    run_trigger.set_target("game_handler_set_active_ball_location", true);
     run_trigger.set_target("active_player_set_ball_location", true);
+    run_trigger.set_target("game_handler_set_active_ball_location", true);
+    party.active_player_add_bonk();
     run_trigger.set_target("active_player_add_bonk", false);
 }
 
@@ -412,7 +418,7 @@ fn state_turn_next_player_turn(
     info!("function: state_turn_next_player_turn"); 
     match state_game.get() {
         StateGame::InGame => {
-            run_trigger.set_target("active_player_set_ball_location", true);
+            run_trigger.set_target("game_handler_reset_active_ball_location", true);
             next_state_turn.set(StateTurn::NextTurn);
             run_trigger.set_target("cycle_active_player", true);
             run_trigger.set_target("game_handler_get_active_ball_location", true);
@@ -463,6 +469,22 @@ fn game_handler_get_active_ball_location(
     run_trigger.set_target("game_handler_get_active_ball_location", false);
 }
 
+fn game_handler_reset_active_ball_location(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut party: ResMut<Party>,
+    mut game_handler: ResMut<GameHandler>,
+    // scene_meshes: Query<(Entity, &Name, &Transform)>,
+) {
+    info!("function: game_handler_reset_active_ball_location"); 
+    let owned_active_player = party.get_active_player();
+    let owned_golf_ball = format!("ball{}", owned_active_player);
+    if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
+        game_handler.set_active_ball_location(Vec3::new(0.0, 0.0, 0.0));
+        info!("game_handler.get_active_ball_location(): {:?}", game_handler.get_active_ball_location());
+    }
+    run_trigger.set_target("game_handler_reset_active_ball_location", false);
+}
+
 fn game_handler_set_active_ball_location(
     mut run_trigger: ResMut<RunTrigger>,
     mut party: ResMut<Party>,
@@ -472,9 +494,11 @@ fn game_handler_set_active_ball_location(
     info!("function: game_handler_set_active_ball_location"); 
     let owned_active_player = party.get_active_player();
     let owned_golf_ball = format!("ball{}", owned_active_player);
-    let owned_golf_ball_location = game_handler.get_active_ball_location();
-    game_handler.set_active_ball_location(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
-    info!("{:?}", game_handler.get_active_ball_location());
+    if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
+        game_handler.set_active_ball_location(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
+        info!("{:?}", game_handler.get_active_ball_location());
+    }
+
     // for (entity, name, transform) in scene_meshes.iter() {
     //     match name.as_str() {
     //         owned_golf_ball => {

@@ -398,7 +398,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..10 {
+    for _ in 0..11 {
         commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -434,7 +434,7 @@ pub fn update_ui(
     state_menu: Res<State<StateMenu>>,
     state_turn: Res<State<StateTurn>>,
     mut party: ResMut<Party>,
-    game_handler: Res<GameHandler>,
+    mut game_handler: ResMut<GameHandler>,
     mut query: Query<&mut Text, With<StateText>>,
     run_trigger: Res<RunTrigger>,
 ) {
@@ -471,10 +471,11 @@ pub fn update_ui(
         format!("cycle_camera: {:?}", run_trigger.get("cycle_camera")),                                                             // 4
         format!("cycle_state_map_set: {:?}", run_trigger.get("cycle_state_map_set")),                                               // 5
         format!("game_handler_get_active_ball_location: {:?}", run_trigger.get("game_handler_get_active_ball_location")),           // 6
-        format!("game_handler_set_active_ball_location: {:?}", run_trigger.get("game_handler_set_active_ball_location")),           // 7
-        format!("set_hole_completion_state_true: {:?}", run_trigger.get("set_hole_completion_state_true")),                         // 8
-        format!("state_turn_next_player_turn: {:?}", run_trigger.get("state_turn_next_player_turn")),                               // 9
-        format!("toggle_state_game: {:?}", run_trigger.get("toggle_state_game")),                                                   // 10
+        format!("game_handler_reset_active_ball_location: {:?}", run_trigger.get("game_handler_reset_active_ball_location")),       // 7
+        format!("game_handler_set_active_ball_location: {:?}", run_trigger.get("game_handler_set_active_ball_location")),           // 8
+        format!("set_hole_completion_state_true: {:?}", run_trigger.get("set_hole_completion_state_true")),                         // 9
+        format!("state_turn_next_player_turn: {:?}", run_trigger.get("state_turn_next_player_turn")),                               // 10
+        format!("toggle_state_game: {:?}", run_trigger.get("toggle_state_game")),                                                   // 11
     ];
     
     // Collect into a vector of mutable references

@@ -139,6 +139,26 @@ impl Party {
         player.get_ball_location()
     }
 
+    pub fn active_player_set_ball_location(&mut self, location: Vec3) {
+        info!("Locking active_player to get the current active index");
+        let active_player_index: usize = {
+            let active_lock = self.active_player.lock().unwrap();
+            *active_lock as usize - 1
+        };
+        info!("Got active player index: {}", active_player_index);
+        
+        info!("Locking players to get the active player reference");
+        let player_arc = {
+            let players_lock = self.players.lock().unwrap();
+            players_lock[active_player_index].clone()
+        };
+        info!("Locked player successfully, setting ball location to {:?}", location);
+        
+        let mut player = player_arc.lock().unwrap();
+        player.set_ball_location(location);
+        info!("Set ball location successfully for player at index {}", active_player_index);
+    }
+
     pub fn active_player_get_hole_completion_state(&mut self) -> bool {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
@@ -158,7 +178,7 @@ impl Party {
     pub fn active_player_get_player_id(&mut self) -> String {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing  // Get the active player (Arc<Mutex<Player>>)
+        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
         let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_player_id()
     }
@@ -169,24 +189,6 @@ impl Party {
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
         let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.set_player_id(player_id);
-    }
-
-    pub fn active_player_set_ball_location(&mut self, location: Vec3) {
-        // Get the active player index in a separate block to reduce lock scope
-        let active_player_index = {
-            let active_lock = self.active_player.lock().unwrap();
-            *active_lock as usize - 1 // Convert to zero-based index
-        };
-    
-        // Lock the players vector and get the active player
-        let player_arc = {
-            let players_lock = self.players.lock().unwrap();
-            players_lock[active_player_index].clone()
-        };
-    
-        // Now lock the specific player and set its ball location
-        let mut player = player_arc.lock().unwrap();
-        player.set_ball_location(location);
     }
 
     pub fn all_finished(&self) -> bool {
@@ -200,13 +202,9 @@ impl Party {
     }
 
     pub fn next_set_order_player(&mut self) {
-        let mut active_player = self.active_player.lock().unwrap();
-        let party_size: i32 = self.get_party_size() as i32;
-        if *active_player == party_size {
-            *active_player = 1;
-        } else {
-            *active_player += 1;
-        }
+        let mut active_player_index = self.active_player.lock().unwrap();
+        let players_count = self.players.lock().unwrap().len() as i32;
+        *active_player_index = (*active_player_index % players_count) + 1; // Wraps to 1 after reaching the last player
         info!("post function: next_set_order_player"); 
     }
 

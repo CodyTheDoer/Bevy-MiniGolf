@@ -13,6 +13,7 @@ impl RunTrigger {
             cycle_camera: false,
             cycle_state_map_set: false,
             game_handler_get_active_ball_location: false,
+            game_handler_reset_active_ball_location: false,
             game_handler_set_active_ball_location: false,
             set_hole_completion_state_true: false,
             state_turn_next_player_turn: false,
@@ -37,6 +38,15 @@ impl RunTrigger {
             "cycle_state_map_set" => {
                 self.cycle_state_map_set
             },
+            "game_handler_get_active_ball_location" => {
+                self.game_handler_set_active_ball_location
+            },
+            "game_handler_reset_active_ball_location" => {
+                self.game_handler_reset_active_ball_location
+            },
+            "game_handler_set_active_ball_location" => {
+                self.game_handler_set_active_ball_location
+            },
             "set_hole_completion_state_true" => {
                 self.set_hole_completion_state_true
             },
@@ -45,12 +55,6 @@ impl RunTrigger {
             },
             "toggle_state_game" => {
                 self.toggle_state_game
-            },
-            "game_handler_set_active_ball_location" => {
-                self.game_handler_set_active_ball_location
-            },
-            "game_handler_get_active_ball_location" => {
-                self.game_handler_set_active_ball_location
             },
             _ => {false},
         }
@@ -78,6 +82,18 @@ impl RunTrigger {
                 self.cycle_state_map_set = state;
                 info!("response: cycle_state_map_set: {}", self.get("cycle_state_map_set"));
             }
+            "game_handler_get_active_ball_location" => {
+                self.game_handler_get_active_ball_location = state;
+                info!("response: game_handler_get_active_ball_location: {}", self.get("game_handler_get_active_ball_location"));
+            }
+            "game_handler_reset_active_ball_location" => {
+                self.game_handler_reset_active_ball_location = state;
+                info!("response: game_handler_reset_active_ball_location: {}", self.get("game_handler_reset_active_ball_location"));
+            }
+            "game_handler_set_active_ball_location" => {
+                self.game_handler_set_active_ball_location = state;
+                info!("response: game_handler_set_active_ball_location: {}", self.get("game_handler_set_active_ball_location"));
+            }
             "set_hole_completion_state_true" => {
                 self.set_hole_completion_state_true = state;
                 info!("response: set_hole_completion_state_true: {}", self.get("set_hole_completion_state_true"));
@@ -89,14 +105,6 @@ impl RunTrigger {
             "toggle_state_game" => {
                 self.toggle_state_game = state;
                 info!("response: toggle_state_game: {}", self.get("toggle_state_game"));
-            }
-            "game_handler_get_active_ball_location" => {
-                self.game_handler_get_active_ball_location = state;
-                info!("response: game_handler_get_active_ball_location: {}", self.get("game_handler_get_active_ball_location"));
-            }
-            "game_handler_set_active_ball_location" => {
-                self.game_handler_set_active_ball_location = state;
-                info!("response: game_handler_set_active_ball_location: {}", self.get("game_handler_set_active_ball_location"));
             }
             _ => {},
         }
@@ -124,6 +132,10 @@ impl RunTrigger {
 
     pub fn game_handler_get_active_ball_location(&self) -> bool {
         self.game_handler_get_active_ball_location
+    }
+
+    pub fn game_handler_reset_active_ball_location(&self) -> bool {
+        self.game_handler_reset_active_ball_location
     }
 
     pub fn game_handler_set_active_ball_location(&self) -> bool {

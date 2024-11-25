@@ -14,7 +14,7 @@ use crate::{
 impl GameHandler {
     pub fn new() -> Self {
         let current_level = 0;
-        let active_ball_location = Vec3::ZERO;
+        let active_ball_location = None;
         let arrow_state = false;
         let network_server_connection = false;
         let remotely_pushed_state = None;
@@ -40,13 +40,18 @@ impl GameHandler {
         self.current_level = level;
     }
 
-    pub fn get_active_ball_location(&self) -> Vec3 {
-        self.active_ball_location
+    pub fn get_active_ball_location(&mut self) -> Option<Vec3> {
+        if let Some(ball_location) = self.active_ball_location.clone() {
+            Some(ball_location)
+        } else {
+            self.set_active_ball_location(Vec3::ZERO);
+            self.active_ball_location.clone()
+        }
     }
 
     pub fn set_active_ball_location(&mut self, point: Vec3) {
-        info!("function: set_active_ball_location: {}", point.clone()); 
-        self.active_ball_location = point;
+        info!("function: set_active_ball_location: {:?}", point);
+        self.active_ball_location = Some(point);
     }
 
     pub fn init_postgame_leaderboard(
