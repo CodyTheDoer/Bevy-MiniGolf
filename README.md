@@ -11,6 +11,7 @@ Deeply inspired by 3-D Ultra Minigolf from the late nineties.
 
 ## Features
 
+![Screenshot of State Focused development screen](images/Minigolf%20005.png)
 The Daily Bonk is a modern ECS driven Golf Game
 - A Modern Game Engine: Sound, UI, and Animations built with Bevy's ECS (Entity Component System).
 - Multiple camera modes:
