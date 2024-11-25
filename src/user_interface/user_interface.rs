@@ -27,6 +27,7 @@ use crate::{
     GameHandler,
     Interactable,
     Party,
+    RunTrigger,
     StateText,
     TitleText,
 };
@@ -356,8 +357,49 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..18 {
+    for _ in 0..23 {
         commands.entity(bottom_left_ui).with_children(|parent| {
+            // Spawn each state text entry and tag it for easy lookup later
+            parent.spawn((
+                TextBundle {
+                    text: Text {
+                        sections: vec![TextSection::new(
+                            "Initializing...", // Placeholder text
+                            fonts.fonts[1].clone(), // Using the smaller font style for HUD
+                        )],
+                        ..default()
+                    },
+                    style: Style {
+                        position_type: PositionType::Relative,
+                        margin: UiRect::vertical(Val::Px(5.0)), // Space between each state entry
+                        ..default()
+                    },
+                    ..default()
+                },
+                StateText, // Tag the state text to easily find and update it later
+            ));
+        });
+    }
+
+    // HUD: Create a bottom-right UI node for different state information
+    let bottom_right_ui = commands
+        .spawn(NodeBundle {
+            style: Style {
+                display: Display::Flex,
+                align_items: AlignItems::FlexEnd, // Align items from the bottom of the node
+                flex_direction: FlexDirection::Column, // Stack items vertically
+                justify_content: JustifyContent::FlexEnd, // Align from the end (bottom-right)
+                position_type: PositionType::Absolute,
+                bottom: Val::Percent(0.0),  // Position at the bottom of the screen
+                right: Val::Percent(0.0),   // Align it to the right of the screen
+                padding: UiRect::all(Val::Px(10.0)),
+                ..default()
+            },
+            ..default()
+        }).id();
+
+    for _ in 0..10 {
+        commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
                 TextBundle {
@@ -392,30 +434,64 @@ pub fn update_ui(
     state_menu: Res<State<StateMenu>>,
     state_turn: Res<State<StateTurn>>,
     mut party: ResMut<Party>,
+    game_handler: Res<GameHandler>,
     mut query: Query<&mut Text, With<StateText>>,
+    run_trigger: Res<RunTrigger>,
 ) {
-    let state_texts = vec![
-        format!("state_arrow: {:?}", *state_arrow),                                         // 1
-        format!("state_camera: {:?}", *state_camera),                                       // 2
-        format!("state_game: {:?}", *state_game),                                           // 3
-        format!("state_game_connection: {:?}", *state_game_connection),                     // 4
-        format!("state_play_style: {:?}", *state_play_style),                               // 5
-        format!("state_level: {:?}", *state_level),                                         // 6
-        format!("state_map_set: {:?}", *state_map_set),                                     // 7
-        format!("state_menu: {:?}", *state_menu),                                           // 8
-        format!("state_turn: {:?}", *state_turn),                                           // 9
-        format!("Party Size: {:?}", party.get_party_size()),                                // 10
-        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),                      // 11
-        format!("Active Level: {:?}", party.get_active_level()),                            // 12
-        format!("Active Player: {:?}", party.get_active_player()),                          // 13
-        format!("bonk count level: {:?}", party.get_active_player_bonks_level()),           // 14
-        format!("bonk count game: {:?}", party.get_active_player_bonks_game()),             // 15
-        format!("Num7: AddPlayer, Num1: RemovePlayer, Num9: AddAI, Num3: RemoveAi"),        // 16
-        format!("KeyB: party.active_player_add_bonk, Space: toggle.StateGame"),             // 17    
-        format!("KeyC: run_trigger(cycle_camera) if GameState::InGame"),                    // 18                                   // 17
+    let state_texts_left = vec![
+        format!("state_arrow: {:?}", *state_arrow),                                                                 // 1
+        format!("state_camera: {:?}", *state_camera),                                                               // 2
+        format!("state_game: {:?}", *state_game),                                                                   // 3
+        format!("state_game_connection: {:?}", *state_game_connection),                                             // 4
+        format!("state_play_style: {:?}", *state_play_style),                                                       // 5
+        format!("state_level: {:?}", *state_level),                                                                 // 6
+        format!("state_map_set: {:?}", *state_map_set),                                                             // 7
+        format!("state_menu: {:?}", *state_menu),                                                                   // 8
+        format!("state_turn: {:?}", *state_turn),                                                                   // 9
+        format!("Party Size: {:?}", party.get_party_size()),                                                        // 10
+        format!("Party Size w/AI: {:?}", party.get_party_size_w_ai()),                                              // 11
+        format!("Active Level: {:?}", party.get_active_level()),                                                    // 12
+        format!("Active Player: {:?}", party.get_active_player()),                                                  // 13 
+        format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                             // 14
+        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 15 
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level()),                    // 16
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),     // 17
+        format!("Active Player: Bonk Count Game: {:?}", party.active_player_get_bonks_game()),                      // 18  
+        format!("______________________________________________________________________"),                          // 19  
+        format!("Num7: AddPlayer,   Num1: RemovePlayer,   Num9: AddAI,   Num3: RemoveAi"),                          // 20
+        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                  // 21    
+        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                    // 22     
+        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                           // 23   
     ];
-    // Update the text for the state information
-    for (mut text, state_text) in query.iter_mut().zip(state_texts.iter()) {
-        text.sections[0].value = state_text.clone();
+
+    let state_texts_right = vec![        
+        format!("active_player_add_bonk: {:?}", run_trigger.get("active_player_add_bonk")),                                         // 1
+        format!("active_player_set_ball_location: {:?}", run_trigger.get("active_player_set_ball_location")),                       // 2
+        format!("cycle_active_player: {:?}", run_trigger.get("cycle_active_player")),                                               // 3
+        format!("cycle_camera: {:?}", run_trigger.get("cycle_camera")),                                                             // 4
+        format!("cycle_state_map_set: {:?}", run_trigger.get("cycle_state_map_set")),                                               // 5
+        format!("game_handler_get_active_ball_location: {:?}", run_trigger.get("game_handler_get_active_ball_location")),           // 6
+        format!("game_handler_set_active_ball_location: {:?}", run_trigger.get("game_handler_set_active_ball_location")),           // 7
+        format!("set_hole_completion_state_true: {:?}", run_trigger.get("set_hole_completion_state_true")),                         // 8
+        format!("state_turn_next_player_turn: {:?}", run_trigger.get("state_turn_next_player_turn")),                               // 9
+        format!("toggle_state_game: {:?}", run_trigger.get("toggle_state_game")),                                                   // 10
+    ];
+    
+    // Collect into a vector of mutable references
+    let mut text_components: Vec<Mut<Text>> = query.iter_mut().collect();
+    
+    // Update first 21 entities (left column)
+    for (i, state_text) in state_texts_left.iter().enumerate() {
+        if i < text_components.len() {
+            text_components[i].sections[0].value = state_text.clone();
+        }
+    }
+    
+    // Update last 7 entities (right column)
+    for (i, state_text) in state_texts_right.iter().enumerate() {
+        let right_index = i + state_texts_left.len();
+        if right_index < text_components.len() {
+            text_components[right_index].sections[0].value = state_text.clone();
+        }
     }
 }

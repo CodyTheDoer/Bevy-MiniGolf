@@ -6,9 +6,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 
+// Direct Imports
 pub mod leaderboard_handler;
-pub mod level_handler;
 pub mod network_handler;
+
+// Directory Imports
+pub mod level_handler;
 pub mod player_handler;
 pub mod user_interface;
 
@@ -146,8 +149,8 @@ pub enum StateGamePlayStyle {
 pub enum StateTurn {
     #[default]
     NotInGame,
-    Idle,
     Active,
+    NextTurn,
 }
 
 // World //
@@ -170,7 +173,7 @@ pub struct PanOrbitCameraBundle {
 }
 
 // The configuration of the pan-orbit controller
-#[derive(Component)]
+#[derive(Component,)]
 pub struct PanOrbitSettings {
     /// World units per pixel of mouse motion
     pub pan_sensitivity: f32,
@@ -205,6 +208,69 @@ pub struct StatePanOrbit {
 #[derive(Asset, Component, TypePath)]
 pub struct CameraUi;
 
+// Define marker components to find the entities later
+#[derive(Component)]
+pub struct StateText;
+
+#[derive(Component)]
+pub struct TitleText;
+
+// --- Player Handler --- //
+
+#[derive(Clone, Resource)]
+pub struct PlayerLocal {
+    pub player_id: String,
+	pub hole_completion_state: bool,
+	pub ball_material: Color, // For now custom material/shaders planned
+	pub ball_location: Vec3,
+	pub bonks_game: u32,
+	pub bonks_level: u32,
+}
+
+#[derive(Clone, Resource)]
+pub struct PlayerAi {
+    pub player_id: String,
+	pub hole_completion_state: bool,
+	pub ball_material: Color, // For now custom material/shaders planned
+	pub ball_location: Vec3,
+	pub bonks_game: u32,
+	pub bonks_level: u32,
+}
+
+#[derive(Clone, Resource)]
+pub struct PlayerRemote {
+    pub player_id: String,
+	pub hole_completion_state: bool,
+	pub ball_material: Color, // For now custom material/shaders planned
+	pub ball_location: Vec3,
+	pub bonks_game: u32,
+	pub bonks_level: u32,
+}
+
+// --- Party Handler --- //
+
+#[derive(Resource)]
+pub struct Party {
+    // players: Arc<Mutex<Vec<Arc<Mutex<PlayerLocal|PlayerAi|PlayerRemote>>>>>,
+    players_local: Arc<Mutex<Vec<Arc<Mutex<PlayerLocal>>>>>,
+    players_ai: Arc<Mutex<Vec<Arc<Mutex<PlayerAi>>>>>,
+    players_remote: Arc<Mutex<Vec<Arc<Mutex<PlayerRemote>>>>>,
+    players_finished: Arc<Mutex<i32>>,
+    active_player: Arc<Mutex<i32>>,
+    active_level: Arc<Mutex<i32>>,
+    remote_count: Arc<Mutex<i32>>,
+}
+
+// --- Camera --- //
+
+#[derive(Debug, Resource)]
+pub struct CameraHandler {
+    current_coords: Vec3,
+}
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraWorld;
+
 // --- User Interface --- //
 
 #[derive(Asset, Component, Debug, TypePath)]
@@ -218,6 +284,7 @@ pub struct Fonts {
 #[derive(Resource)]
 pub struct GameHandler {
     current_level: i32,
+    active_ball_location: Vec3,
     arrow_state: bool,
     network_server_connection: bool,
     remotely_pushed_state: Option<RemoteStateUpdate>,
@@ -225,88 +292,17 @@ pub struct GameHandler {
 
 #[derive(Resource)]
 pub struct RunTrigger{
-    pub cycle_camera: bool,
-    pub cycle_state_map_set: bool,
-    pub toggle_state_game: bool,
+    active_player_add_bonk: bool,
+    active_player_set_ball_location: bool,
+    cycle_active_player: bool,
+    cycle_camera: bool,
+    cycle_state_map_set: bool,
+    game_handler_get_active_ball_location: bool,
+    game_handler_set_active_ball_location: bool,
+    set_hole_completion_state_true: bool,
+    state_turn_next_player_turn: bool,
+    toggle_state_game: bool,
 }
 
-impl RunTrigger {
-    pub fn new() -> Self {
-        Self{
-            cycle_camera: false,
-            cycle_state_map_set: false,
-            toggle_state_game: false,
-        }
-    }
-
-    pub fn get(&self, target: &str) -> bool {
-        match target {
-            "cycle_camera" => {
-                self.cycle_camera
-            },
-            "cycle_state_map_set" => {
-                self.cycle_state_map_set
-            },
-            "toggle_state_game" => {
-                self.toggle_state_game
-            },
-            _ => {false},
-        }
-    }
-
-    pub fn set_target(&mut self, target: &str, state: bool) {
-        match target {
-            "cycle_camera" => {
-                self.cycle_camera = state;
-            },
-            "cycle_state_map_set" => {
-                self.cycle_state_map_set = state;
-            }
-            "toggle_state_game" => {
-                self.toggle_state_game = state;
-            }
-            _ => {},
-        }
-    }
-}
-
-// Define marker components to find the entities later
-#[derive(Component)]
-pub struct StateText;
-
-#[derive(Component)]
-pub struct TitleText;
-
-// --- Player Handler --- //
-
-#[derive(Clone, Resource)]
-pub struct Player {
-    pub player_id: String,
-	pub hole_completion_state: bool,
-	pub ball_material: Color, // For now custom material/shaders planned
-	pub ball_location: Vec3,
-	pub bonks_game: u32,
-	pub bonks_level: u32,
-}
-
-// --- Party Handler --- //
-
-#[derive(Resource)]
-pub struct Party {
-    players: Arc<Mutex<Vec<Arc<Mutex<Player>>>>>,
-    players_finished: Arc<Mutex<i32>>,
-    active_player: Arc<Mutex<i32>>,
-    active_level: Arc<Mutex<i32>>,
-    ai_count: Arc<Mutex<i32>>,
-    remote_count: Arc<Mutex<i32>>,
-}
-
-// --- Camera --- //
-
-#[derive(Debug, Resource)]
-pub struct CameraHandler {
-    current_coords: Vec3,
-}
-
-#[derive(Asset, Component, TypePath)]
-pub struct CameraWorld;
+#[derive(Asset, Clone, Component, Debug, TypePath)]
+pub struct GolfBallTag(pub usize);

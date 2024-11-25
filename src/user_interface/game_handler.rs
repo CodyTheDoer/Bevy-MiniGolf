@@ -14,11 +14,13 @@ use crate::{
 impl GameHandler {
     pub fn new() -> Self {
         let current_level = 0;
+        let active_ball_location = Vec3::ZERO;
         let arrow_state = false;
         let network_server_connection = false;
         let remotely_pushed_state = None;
         GameHandler {
             current_level,
+            active_ball_location,
             arrow_state,
             network_server_connection,
             remotely_pushed_state,
@@ -38,36 +40,39 @@ impl GameHandler {
         self.current_level = level;
     }
 
+    pub fn get_active_ball_location(&self) -> Vec3 {
+        self.active_ball_location
+    }
+
+    pub fn set_active_ball_location(&mut self, point: Vec3) {
+        info!("function: set_active_ball_location: {}", point.clone()); 
+        self.active_ball_location = point;
+    }
+
     pub fn init_postgame_leaderboard(
         &mut self, 
         mut party: ResMut<Party>,
     ) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(20);
     }
 
     pub fn init_tutorial(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(19);
     }
 
     pub fn init_menu_main(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(0);
     }
 
     pub fn init_menu_leader_board(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(20);
     }
 
     pub fn init_menu_local(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(21);
     }
 
     pub fn init_menu_online(&mut self) {
-        // Eventually submit party info to leaderboard system
         self.set_current_level(22);
     }
 
