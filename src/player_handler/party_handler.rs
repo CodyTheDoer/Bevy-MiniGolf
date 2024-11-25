@@ -226,19 +226,10 @@ impl Party {
 
     pub fn active_player_get_player_id(&mut self) -> String {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
-        let local_players_lock = self.players_local.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        let ai_players_lock = self.players_ai.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        let local_count: i32 = local_players_lock.len() as i32; 
-        info!("\n\nAPI {:?} vs LC {:?}\n\n", active_player_index, local_count);
-        if active_player_index <= local_count {
-            let player_arc = &local_players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing  // Get the active player (Arc<Mutex<Player>>)
-            let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-            player.get_player_id()
-        } else {
-            let ai_player_arc = &ai_players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing  // Get the active player (Arc<Mutex<Player>>)
-            let mut ai_player = ai_player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-            ai_player.get_player_id()
-        }
+        let players_lock = self.players_local.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing  // Get the active player (Arc<Mutex<Player>>)
+        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        player.get_player_id()
     }
 
     pub fn active_player_set_player_id(&mut self, player_id: String) {
