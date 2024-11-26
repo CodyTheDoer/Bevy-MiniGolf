@@ -3,6 +3,7 @@ use bevy::prelude::*;
 // States
 use crate::{
     RemoteStateUpdate,
+    StateMapSet,
 };
 
 // Resources
@@ -30,6 +31,32 @@ impl GameHandler {
     // Level Handling logic
     pub fn next_level(&mut self) {
         self.current_level += 1;
+    }
+
+    pub fn set_starting_level(&mut self, map_set_state: StateMapSet) {
+        let owned_map_state = map_set_state.clone();
+        info!("owned_map_state: {:?}", owned_map_state);
+        match map_set_state {
+            StateMapSet::Tutorial => {
+                self.current_level = 19;
+            }, 
+            StateMapSet::WholeCorse => {
+                self.current_level = 1;
+            },
+            StateMapSet::FrontNine => {
+                self.current_level = 1;
+            },
+            StateMapSet::BackNine => {
+                self.current_level = 10;
+            },
+            StateMapSet::SelectAHole => {},
+        }
+    }
+
+    // Level Handling logic
+    pub fn game_completed(&mut self) {
+        self.set_current_level(0);
+        self.set_active_ball_location(Vec3::ZERO);
     }
 
     pub fn get_current_level(&self) -> i32 {

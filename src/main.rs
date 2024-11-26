@@ -321,11 +321,23 @@ fn active_player_add_bonk(
 
 fn cycle_active_player(
     mut run_trigger: ResMut<RunTrigger>,
+    mut game_handler: ResMut<GameHandler>,
     mut party: ResMut<Party>,
 ) {
     info!("function: cycle_active_player"); 
-    party.next_set_order_player();
-    run_trigger.set_target("game_handler_get_active_ball_location", true);
+    
+    let owned_finished_count = party.all_players_get_finished_count();
+    let owned_party_size = party.get_party_size();
+    info!("\n\n\n{:?} vs {:?}", owned_finished_count, owned_party_size);
+    if owned_finished_count == owned_party_size as i32 {
+        party.next_round_prep();
+        party.set_active_player(1);
+        run_trigger.set_target("game_handler_get_active_ball_location", true);
+        game_handler.next_level();
+    } else {
+        party.next_set_order_player();
+        run_trigger.set_target("game_handler_get_active_ball_location", true);
+    }
     run_trigger.set_target("cycle_active_player", false);
 }
 
@@ -432,6 +444,8 @@ fn state_turn_next_player_turn(
 
 fn toggle_state_game(
     mut run_trigger: ResMut<RunTrigger>,
+    mut game_handler: ResMut<GameHandler>,
+    mut party: ResMut<Party>,
     state_game: Res<State<StateGame>>,
     mut next_state_game: ResMut<NextState<StateGame>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
@@ -446,10 +460,13 @@ fn toggle_state_game(
             next_state_turn.set(StateTurn::Active);
         },
         StateGame::InGame => {
+            party.set_active_player(1);
             info!("StateGame::NotInGame");
             next_state_game.set(StateGame::NotInGame);
             info!("StateTurn::NotInGame");
             next_state_turn.set(StateTurn::NotInGame);
+            game_handler.game_completed();
+            party.game_completed();
         },
     };
     run_trigger.set_target("toggle_state_game", false);

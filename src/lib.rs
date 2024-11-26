@@ -221,6 +221,7 @@ pub trait Player {
     fn new() -> Self where Self: Sized;
     fn start_game(&mut self);
     fn hole_completed(&mut self);
+    fn game_completed(&mut self);
     fn next_round_prep(&mut self);
     fn add_bonk(&mut self);
     fn get_hole_completion_state(&self) -> bool;
@@ -270,7 +271,7 @@ pub struct Party {
     players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
     players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
-    active_level: Arc<Mutex<i32>>,
+    // active_level: Arc<Mutex<i32>>,
     remote_count: Arc<Mutex<i32>>,
 }
 

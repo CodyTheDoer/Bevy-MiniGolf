@@ -449,7 +449,7 @@ pub fn update_ui(
         format!("state_menu: {:?}", *state_menu),                                                                   // 8
         format!("state_turn: {:?}", *state_turn),                                                                   // 9
         format!("Party Size: {:?}", party.get_party_size()),                                                        // 10
-        format!("Active Level: {:?}", party.get_active_level()),                                                    // 11
+        format!("Current Level: {:?}", game_handler.get_current_level()),                                                    // 11
         format!("Active Player: {:?}", party.get_active_player()),                                                  // 12 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                             // 13
         format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 14 

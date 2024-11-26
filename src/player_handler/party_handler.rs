@@ -22,13 +22,13 @@ impl Party {
         let players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>> = Arc::new(Mutex::new(vec![Arc::new(Mutex::new(PlayerLocal::new()))]));
         let players_finished: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
-        let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
+        // let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let remote_count: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         Party {
             players,
             players_finished,
             active_player,
-            active_level,
+            // active_level,
             remote_count,
         } 
     }
@@ -81,19 +81,28 @@ impl Party {
         }
     }
 
-    pub fn get_players_finished(&self) -> i32 {
-        let count: i32 = *self.players_finished.lock().unwrap();
+    pub fn all_players_get_finished_count(&self) -> i32 {
+        let mut count: i32 = 0;
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        for player in 0..players_lock.len() {
+            let player_arc = &players_lock[player];
+            let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            if player.get_hole_completion_state() {
+                count += 1;
+            }
+        }
         count
-    }
-
-    pub fn log_player_finished(&mut self) {
-        let mut count = self.players_finished.lock().unwrap();
-        *count += 1;
     }
 
     pub fn reset_players_finished(&mut self) {
         let mut count = *self.players_finished.lock().unwrap();
         count = 0;
+    }
+
+    pub fn all_finished(&self) -> bool {
+        // Verify if all players have completed
+        let player_count: i32 = self.get_party_size().try_into().unwrap();
+        self.all_players_get_finished_count() == player_count
     }
 
     pub fn active_player_get_bonks_game(&mut self) -> u32 {
@@ -122,7 +131,6 @@ impl Party {
     }
 
     pub fn active_player_finished_hole(&mut self) {
-        self.log_player_finished();
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
@@ -191,12 +199,6 @@ impl Party {
         player.set_player_id(player_id);
     }
 
-    pub fn all_finished(&self) -> bool {
-        // Verify if all players have completed
-        let player_count: i32 = self.get_party_size().try_into().unwrap();
-        self.get_players_finished() == player_count
-    }
-
     pub fn next_proximity_player(&self, ) {
         todo!(); 
     }
@@ -208,39 +210,54 @@ impl Party {
         info!("post function: next_set_order_player"); 
     }
 
-    pub fn get_active_level(&self) -> i32 {
-        let active_level = *self.active_level.lock().unwrap();
-        active_level
-    }
+    // pub fn get_active_level(&self) -> i32 {
+    //     let active_level = *self.active_level.lock().unwrap();
+    //     active_level
+    // }
 
     pub fn get_active_player(&self) -> i32 {
         let active_player = *self.active_player.lock().unwrap();
         active_player
     }
 
-    pub fn next_level(&mut self) {
-        let mut active_level = self.active_level.lock().unwrap();
-        *active_level += 1;
+    pub fn set_active_player(&mut self, target: i32) {
+        let mut active_player = self.active_player.lock().unwrap();
+        *active_player = target;
     }
 
-    pub fn set_starting_level(&mut self, map_set_state: StateMapSet) {
-        let mut active_level = self.active_level.lock().unwrap();
-        let owned_map_state = map_set_state.clone();
-        info!("owned_map_state: {:?}", owned_map_state);
-        match map_set_state {
-            StateMapSet::Tutorial => {
-                *active_level = 19;
-            }, 
-            StateMapSet::WholeCorse => {
-                *active_level = 1;
-            },
-            StateMapSet::FrontNine => {
-                *active_level = 1;
-            },
-            StateMapSet::BackNine => {
-                *active_level = 10;
-            },
-            StateMapSet::SelectAHole => {},
+    // pub fn next_level(&mut self) {
+    //     let mut active_level = self.active_level.lock().unwrap();
+    //     *active_level += 1;
+    // }
+
+    // pub fn set_starting_level(&mut self, map_set_state: StateMapSet) {
+    //     let mut active_level = self.active_level.lock().unwrap();
+    //     let owned_map_state = map_set_state.clone();
+    //     info!("owned_map_state: {:?}", owned_map_state);
+    //     match map_set_state {
+    //         StateMapSet::Tutorial => {
+    //             *active_level = 19;
+    //         }, 
+    //         StateMapSet::WholeCorse => {
+    //             *active_level = 1;
+    //         },
+    //         StateMapSet::FrontNine => {
+    //             *active_level = 1;
+    //         },
+    //         StateMapSet::BackNine => {
+    //             *active_level = 10;
+    //         },
+    //         StateMapSet::SelectAHole => {},
+    //     }
+    // }
+
+    pub fn game_completed(&mut self) {
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+        for player in 0..players_lock.len() {
+            let player_arc = &players_lock[player]; // Get the active player (Arc<Mutex<Player>>)
+            let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            player.game_completed();
         }
     }
 
@@ -258,7 +275,6 @@ impl Party {
     pub fn next_round_prep(&mut self) {
         // First, lock the players mutex to get access to the Vec
         let players_lock = self.players.lock().unwrap();
-
         for player in 0..players_lock.len() {
             let player_arc = &players_lock[player]; // Get the active player (Arc<Mutex<Player>>)
             let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player

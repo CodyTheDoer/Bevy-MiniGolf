@@ -26,6 +26,13 @@ impl Player for PlayerLocal {
         self.bonks_game = 0;
     }
 
+    fn game_completed(&mut self) {
+        self.hole_completion_state = false;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
+        self.bonks_level = 0;
+        self.bonks_game = 0;
+    }
+
     fn hole_completed(&mut self) {
         self.hole_completion_state = true;
     }
@@ -33,6 +40,8 @@ impl Player for PlayerLocal {
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
         self.bonks_game += self.bonks_level;
+        self.bonks_level = 0;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
     fn add_bonk(&mut self) {
@@ -77,7 +86,7 @@ impl Player for PlayerLocal {
 impl Player for PlayerAi {
     fn new() -> Self {
         PlayerAi {
-            player_id: String::from("PlayerAI"),
+            player_id: String::from("PlayerAi"),
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
@@ -93,6 +102,13 @@ impl Player for PlayerAi {
         self.bonks_game = 0;
     }
 
+    fn game_completed(&mut self) {
+        self.hole_completion_state = false;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
+        self.bonks_level = 0;
+        self.bonks_game = 0;
+    }
+
     fn hole_completed(&mut self) {
         self.hole_completion_state = true;
     }
@@ -100,6 +116,8 @@ impl Player for PlayerAi {
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
         self.bonks_game += self.bonks_level;
+        self.bonks_level = 0;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
     fn add_bonk(&mut self) {
@@ -160,6 +178,13 @@ impl Player for PlayerRemote {
         self.bonks_game = 0;
     }
 
+    fn game_completed(&mut self) {
+        self.hole_completion_state = false;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
+        self.bonks_level = 0;
+        self.bonks_game = 0;
+    }
+
     fn hole_completed(&mut self) {
         self.hole_completion_state = true;
     }
@@ -167,6 +192,8 @@ impl Player for PlayerRemote {
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
         self.bonks_game += self.bonks_level;
+        self.bonks_level = 0;
+        self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
     fn add_bonk(&mut self) {
