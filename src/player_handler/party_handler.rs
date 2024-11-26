@@ -35,7 +35,11 @@ impl Party {
     
     pub fn add_player(&self, player: Arc<Mutex<dyn Player + Send>>) {
         let mut players_lock = self.players.lock().unwrap();
-        players_lock.push(player);
+        if players_lock.len() < 6 {
+            players_lock.push(player);
+        } else {
+            info!("Error: Party full!");
+        }
     }
 
     pub fn remove_player(&self, player_id: String) {
@@ -210,11 +214,6 @@ impl Party {
         info!("post function: next_set_order_player"); 
     }
 
-    // pub fn get_active_level(&self) -> i32 {
-    //     let active_level = *self.active_level.lock().unwrap();
-    //     active_level
-    // }
-
     pub fn get_active_player(&self) -> i32 {
         let active_player = *self.active_player.lock().unwrap();
         active_player
@@ -224,32 +223,6 @@ impl Party {
         let mut active_player = self.active_player.lock().unwrap();
         *active_player = target;
     }
-
-    // pub fn next_level(&mut self) {
-    //     let mut active_level = self.active_level.lock().unwrap();
-    //     *active_level += 1;
-    // }
-
-    // pub fn set_starting_level(&mut self, map_set_state: StateMapSet) {
-    //     let mut active_level = self.active_level.lock().unwrap();
-    //     let owned_map_state = map_set_state.clone();
-    //     info!("owned_map_state: {:?}", owned_map_state);
-    //     match map_set_state {
-    //         StateMapSet::Tutorial => {
-    //             *active_level = 19;
-    //         }, 
-    //         StateMapSet::WholeCorse => {
-    //             *active_level = 1;
-    //         },
-    //         StateMapSet::FrontNine => {
-    //             *active_level = 1;
-    //         },
-    //         StateMapSet::BackNine => {
-    //             *active_level = 10;
-    //         },
-    //         StateMapSet::SelectAHole => {},
-    //     }
-    // }
 
     pub fn game_completed(&mut self) {
         // First, lock the players mutex to get access to the Vec
@@ -282,61 +255,3 @@ impl Party {
         }
     }
 }
-
-
-    // pub fn add_player(&self) {
-    //     let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-    //     let mut ai_players_lock = self.players_ai.lock().unwrap(); // Acquire the lock to get mutable access
-    //     let owned_party_size: usize = players_lock.len(); // Gets the party size not including ai
-    //     let mut ai_count = ai_players_lock.len(); // account for ai
-    //     let total_party_size = ai_count + owned_party_size;
-
-    //     if owned_party_size < 6 { // Stop making players if the party is full
-    //         let new_player: Arc<Mutex<Player>> = Arc::new(Mutex::new(PlayerLocal {
-    //                 player_id: String::from(format!("PlayerLocal{}@email.com", owned_party_size + 1)),
-    //                 hole_completion_state: false,
-    //                 ball_material: Color::srgb(1.0, 0.0, 1.0),
-    //                 ball_location: Vec3::new(0.0, 0.0, 0.0),
-    //                 bonks_level: 0,
-    //                 bonks_game: 0,
-    //             }));
-    //         players_lock.push(new_player);
-        
-    //         if total_party_size >= 6 { // purge a single ai player if needed, I am not sure why it triggers properly on >= 6, prior to nesting in owned if it fired on > 6 
-    //             ai_players_lock.pop();
-    //         } 
-    //     }
-    // }
-
-    // pub fn remove_player(&self) {
-    //     let mut players_lock = self.players.lock().unwrap();
-    //     let owned_party_size = players_lock.len() as i32;
-
-    //     if owned_party_size > 1 {
-    //         players_lock.pop();
-    //     };
-    // }
-
-    // pub fn remove_player(&self) {
-    //     let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-    //     let owned_party_size: i32 = players_lock.len() as i32; // Gets the party size not including ai
-    //     if owned_party_size > 1 {
-    //         players_lock.pop();
-    //     };
-    // }
-
-    // pub fn get_party_size_w_ai(&self) -> usize { 
-    //     let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-    //     let owned_party_size: usize = players_lock.len(); // Gets the party size not including ai
-    //     let players_ai_lock = self.players_ai.lock().unwrap();
-    //     let ai_party_size = &players_ai_lock.len();
-    //     let total_party_size = *ai_party_size + owned_party_size;
-
-    //     total_party_size as usize
-    // }
-
-    // pub fn get_ai_count(&self) -> i32 {
-    //     let mut ai_players_lock = self.players_ai.lock().unwrap(); // Acquire the lock to get mutable access
-    //     let mut count: i32 = ai_players_lock.len() as i32;
-    //     count
-    // }

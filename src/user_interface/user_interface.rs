@@ -357,7 +357,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..23 {
+    for _ in 0..24 {
         commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -398,7 +398,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..11 {
+    for _ in 0..12 {
         commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -462,6 +462,7 @@ pub fn update_ui(
         format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                  // 21    
         format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                    // 22     
         format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                           // 23   
+        format!("Keys: start_game_local, "),                                                                        // 24   
     ];
 
     let state_texts_right = vec![        
@@ -475,7 +476,8 @@ pub fn update_ui(
         format!("game_handler_set_active_ball_location: {:?}", run_trigger.get("game_handler_set_active_ball_location")),           // 8
         format!("set_hole_completion_state_true: {:?}", run_trigger.get("set_hole_completion_state_true")),                         // 9
         format!("state_turn_next_player_turn: {:?}", run_trigger.get("state_turn_next_player_turn")),                               // 10
-        format!("toggle_state_game: {:?}", run_trigger.get("toggle_state_game")),                                                   // 11
+        format!("start_game_local: {:?}", run_trigger.get("start_game_local")),                                                     // 11
+        format!("toggle_state_game: {:?}", run_trigger.get("toggle_state_game")),                                                   // 12
     ];
     
     // Collect into a vector of mutable references

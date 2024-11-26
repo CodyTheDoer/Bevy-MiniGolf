@@ -11,12 +11,14 @@ impl RunTrigger {
             active_player_set_ball_location: false,
             cycle_active_player: false,
             cycle_camera: false,
+            cycle_current_level: false,
             cycle_state_map_set: false,
             game_handler_get_active_ball_location: false,
             game_handler_reset_active_ball_location: false,
             game_handler_set_active_ball_location: false,
             set_hole_completion_state_true: false,
             state_turn_next_player_turn: false,
+            start_game_local: false,
             toggle_state_game: false,
         }
     }
@@ -35,6 +37,9 @@ impl RunTrigger {
             "cycle_camera" => {
                 self.cycle_camera
             },
+            "cycle_current_level" => {
+                self.cycle_current_level
+            },
             "cycle_state_map_set" => {
                 self.cycle_state_map_set
             },
@@ -52,6 +57,9 @@ impl RunTrigger {
             },
             "state_turn_next_player_turn" => {
                 self.state_turn_next_player_turn
+            },
+            "start_game_local" => {
+                self.start_game_local
             },
             "toggle_state_game" => {
                 self.toggle_state_game
@@ -78,6 +86,10 @@ impl RunTrigger {
                 self.cycle_camera = state;
                 info!("response: cycle_camera: {}", self.get("cycle_camera"));  
             },
+            "cycle_current_level" => {
+                self.cycle_current_level = state;
+                info!("response: cycle_current_level: {}", self.get("cycle_current_level"));  
+            },
             "cycle_state_map_set" => {
                 self.cycle_state_map_set = state;
                 info!("response: cycle_state_map_set: {}", self.get("cycle_state_map_set"));
@@ -101,6 +113,10 @@ impl RunTrigger {
             "state_turn_next_player_turn" => {
                 self.state_turn_next_player_turn = state;
                 info!("response: state_turn_next_player_turn: {}", self.get("state_turn_next_player_turn"));
+            }
+            "start_game_local" => {
+                self.start_game_local = state;
+                info!("response: start_game_local: {}", self.get("start_game_local"));
             }
             "toggle_state_game" => {
                 self.toggle_state_game = state;
@@ -126,6 +142,10 @@ impl RunTrigger {
         self.cycle_camera
     }
 
+    pub fn cycle_current_level(&self) -> bool {
+        self.cycle_current_level
+    }
+
     pub fn cycle_state_map_set(&self) -> bool {
         self.cycle_state_map_set
     }
@@ -148,6 +168,10 @@ impl RunTrigger {
 
     pub fn state_turn_next_player_turn(&self) -> bool {
         self.state_turn_next_player_turn
+    }
+
+    pub fn start_game_local(&self) -> bool {
+        self.start_game_local
     }
 
     pub fn toggle_state_game(&self) -> bool {

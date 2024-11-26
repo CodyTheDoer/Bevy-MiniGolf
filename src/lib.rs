@@ -310,12 +310,14 @@ pub struct RunTrigger{
     active_player_set_ball_location: bool,
     cycle_active_player: bool,
     cycle_camera: bool,
+    cycle_current_level: bool,
     cycle_state_map_set: bool,
     game_handler_get_active_ball_location: bool,
     game_handler_reset_active_ball_location: bool,
     game_handler_set_active_ball_location: bool,
     set_hole_completion_state_true: bool,
     state_turn_next_player_turn: bool,
+    start_game_local: bool,
     toggle_state_game: bool,
 }
 
