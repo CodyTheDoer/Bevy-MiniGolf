@@ -2,16 +2,21 @@ use bevy::prelude::*;
 
 // States
 use crate::{
+    StateGame,
+    StateLevel,
     StateMapSet,
+    StateMenu,
 };
 
 // Resources
 use crate::{
+    GameHandler,
     Party,
     Player,
     PlayerLocal,
     PlayerAi,
     PlayerRemote,
+    RunTrigger,
 };
 
 use std::sync::Arc;
@@ -255,3 +260,124 @@ impl Party {
         }
     }
 }
+
+pub fn party_handler_active_player_add_bonk(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut party: ResMut<Party>,
+) {
+    info!("function: party_handler_active_player_add_bonk"); 
+    run_trigger.set_target("party_handler_active_player_set_ball_location", true);
+    run_trigger.set_target("game_handler_set_active_ball_location", true);
+    party.active_player_add_bonk();
+    run_trigger.set_target("party_handler_active_player_add_bonk", false);
+}
+
+pub fn party_handler_active_player_set_ball_location(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut party: ResMut<Party>,
+    mut game_handler: ResMut<GameHandler>
+    // golf_ball_tag_query: Query<Entity, With<GolfBallTag>>,
+) {
+    info!("function: party_handler_active_player_set_ball_location"); 
+    // let owned_match = GolfBallTag(party.get_active_player().try_into().unwrap());
+    // for golf_ball in golf_ball_tag_query.iter_mut() {
+    //     owned_match => {
+    if let Some(current_ball_location) = game_handler.get_active_ball_location() {
+        info!("Setting active ball location: {:?}", current_ball_location);
+        party.active_player_set_ball_location(current_ball_location);
+    } else {
+        info!("No ball location set for the active player, setting default ZERO");
+        party.active_player_set_ball_location(Vec3::new(0.0, 0.0, 0.0));
+    }
+    //     },
+    //     _ => {},
+    // }
+    run_trigger.set_target("party_handler_active_player_set_ball_location", false);
+}
+
+pub fn party_handler_active_player_set_hole_completion_state_true(
+    mut run_trigger: ResMut<RunTrigger>,
+    state_game: Res<State<StateGame>>,
+    mut party: ResMut<Party>,
+) {
+    info!("function: party_handler_active_player_set_hole_completion_state_true"); 
+    match state_game.get() {
+        StateGame::InGame => {
+            party.active_player_set_hole_completion_state(true);
+        },
+        StateGame::NotInGame => {},
+    };
+    run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", false);
+}
+
+
+pub fn party_handler_cycle_active_player(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut game_handler: ResMut<GameHandler>,
+    mut party: ResMut<Party>,
+    state_map_set: Res<State<StateMapSet>>,
+    state_level: Res<State<StateLevel>>,
+) {
+    info!("function: party_handler_cycle_active_player"); 
+    
+    let owned_finished_count = party.all_players_get_finished_count();
+    let owned_party_size = party.get_party_size();
+    info!("\n\n\n{:?} vs {:?}", owned_finished_count, owned_party_size);
+    if owned_finished_count == owned_party_size as i32 {
+        match state_map_set.get() {
+            StateMapSet::Tutorial => {
+                run_trigger.set_target("game_handler_toggle_state_game", true);
+            },
+            StateMapSet::WholeCorse => {
+                match state_level.get() {
+                    StateLevel::Hole18 => {
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                    },
+                    _ => {
+                        party.next_round_prep();
+                        party.set_active_player(1);
+                        run_trigger.set_target("game_handler_cycle_current_level", true);
+                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        game_handler.next_level();
+                    },
+                }
+            },
+            StateMapSet::FrontNine => {
+                match state_level.get() {
+                    StateLevel::Hole9 => {
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                    },
+                    _ => {
+                        party.next_round_prep();
+                        party.set_active_player(1);
+                        run_trigger.set_target("game_handler_cycle_current_level", true);
+                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        game_handler.next_level();
+                    },
+                }
+            },
+            StateMapSet::BackNine => {
+                match state_level.get() {
+                    StateLevel::Hole18 => {
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                    },
+                    _ => {
+                        party.next_round_prep();
+                        party.set_active_player(1);
+                        run_trigger.set_target("game_handler_cycle_current_level", true);
+                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        game_handler.next_level();
+                    },
+                }
+            },
+            StateMapSet::SelectAHole => {
+                run_trigger.set_target("game_handler_toggle_state_game", true);
+            },
+        };
+    } else {
+        party.next_set_order_player();
+        run_trigger.set_target("game_handler_get_active_ball_location", true);
+    }
+    run_trigger.set_target("party_handler_cycle_active_player", false);
+}
+

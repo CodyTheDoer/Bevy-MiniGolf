@@ -7,41 +7,44 @@ use crate::{
 impl RunTrigger {
     pub fn new() -> Self {
         Self{
-            active_player_add_bonk: false,
-            active_player_set_ball_location: false,
-            cycle_active_player: false,
-            cycle_camera: false,
-            cycle_current_level: false,
-            cycle_state_map_set: false,
+            party_handler_active_player_add_bonk: false,
+            party_handler_active_player_set_ball_location: false,
+            party_handler_cycle_active_player: false,
+            party_handler_active_player_set_hole_completion_state_true: false,
+            game_handler_cycle_state_camera: false,
+            game_handler_cycle_state_map_set: false,
+            game_handler_cycle_current_level: false,
             game_handler_get_active_ball_location: false,
             game_handler_reset_active_ball_location: false,
             game_handler_set_active_ball_location: false,
-            set_hole_completion_state_true: false,
-            state_turn_next_player_turn: false,
-            start_game_local: false,
-            toggle_state_game: false,
+            game_handler_state_turn_next_player_turn: false,
+            game_handler_start_game_local: false,
+            game_handler_toggle_state_game: false,
         }
     }
 
     pub fn get(&self, target: &str) -> bool {
         match target {
-            "active_player_add_bonk" => {
-                self.active_player_add_bonk
+            "party_handler_active_player_add_bonk" => {
+                self.party_handler_active_player_add_bonk
             },
-            "active_player_set_ball_location" => {
-                self.active_player_set_ball_location
+            "party_handler_active_player_set_ball_location" => {
+                self.party_handler_active_player_set_ball_location
             },
-            "cycle_active_player" => {
-                self.cycle_active_player
+            "party_handler_cycle_active_player" => {
+                self.party_handler_cycle_active_player
             },
-            "cycle_camera" => {
-                self.cycle_camera
+            "party_handler_active_player_set_hole_completion_state_true" => {
+                self.party_handler_active_player_set_hole_completion_state_true
             },
-            "cycle_current_level" => {
-                self.cycle_current_level
+            "game_handler_cycle_state_camera" => {
+                self.game_handler_cycle_state_camera
             },
-            "cycle_state_map_set" => {
-                self.cycle_state_map_set
+            "game_handler_cycle_state_map_set" => {
+                self.game_handler_cycle_state_map_set
+            },
+            "game_handler_cycle_current_level" => {
+                self.game_handler_cycle_current_level
             },
             "game_handler_get_active_ball_location" => {
                 self.game_handler_set_active_ball_location
@@ -52,17 +55,14 @@ impl RunTrigger {
             "game_handler_set_active_ball_location" => {
                 self.game_handler_set_active_ball_location
             },
-            "set_hole_completion_state_true" => {
-                self.set_hole_completion_state_true
+            "game_handler_state_turn_next_player_turn" => {
+                self.game_handler_state_turn_next_player_turn
             },
-            "state_turn_next_player_turn" => {
-                self.state_turn_next_player_turn
+            "game_handler_start_game_local" => {
+                self.game_handler_start_game_local
             },
-            "start_game_local" => {
-                self.start_game_local
-            },
-            "toggle_state_game" => {
-                self.toggle_state_game
+            "game_handler_toggle_state_game" => {
+                self.game_handler_toggle_state_game
             },
             _ => {false},
         }
@@ -70,30 +70,34 @@ impl RunTrigger {
 
     pub fn set_target(&mut self, target: &str, state: bool) {
         match target {
-            "active_player_add_bonk" => {
-                self.active_player_add_bonk = state;
-                info!("response: active_player_add_bonk: {}", self.get("active_player_add_bonk"));  
+            "party_handler_active_player_add_bonk" => {
+                self.party_handler_active_player_add_bonk = state;
+                info!("response: party_handler_active_player_add_bonk: {}", self.get("party_handler_active_player_add_bonk"));  
             },
-            "active_player_set_ball_location" => {
-                self.active_player_set_ball_location = state;
-                info!("response: active_player_set_ball_location: {}", self.get("active_player_set_ball_location"));  
+            "party_handler_active_player_set_ball_location" => {
+                self.party_handler_active_player_set_ball_location = state;
+                info!("response: party_handler_active_player_set_ball_location: {}", self.get("party_handler_active_player_set_ball_location"));  
             },
-            "cycle_active_player" => {
-                self.cycle_active_player = state;
-                info!("response: cycle_active_player: {}", self.get("cycle_active_player"));  
+            "party_handler_cycle_active_player" => {
+                self.party_handler_cycle_active_player = state;
+                info!("response: party_handler_cycle_active_player: {}", self.get("party_handler_cycle_active_player"));  
             },
-            "cycle_camera" => {
-                self.cycle_camera = state;
-                info!("response: cycle_camera: {}", self.get("cycle_camera"));  
-            },
-            "cycle_current_level" => {
-                self.cycle_current_level = state;
-                info!("response: cycle_current_level: {}", self.get("cycle_current_level"));  
-            },
-            "cycle_state_map_set" => {
-                self.cycle_state_map_set = state;
-                info!("response: cycle_state_map_set: {}", self.get("cycle_state_map_set"));
+            "party_handler_active_player_set_hole_completion_state_true" => {
+                self.party_handler_active_player_set_hole_completion_state_true = state;
+                info!("response: party_handler_active_player_set_hole_completion_state_true: {}", self.get("party_handler_active_player_set_hole_completion_state_true"));
             }
+            "game_handler_cycle_state_camera" => {
+                self.game_handler_cycle_state_camera = state;
+                info!("response: game_handler_cycle_state_camera: {}", self.get("game_handler_cycle_state_camera"));  
+            },
+            "game_handler_cycle_state_map_set" => {
+                self.game_handler_cycle_state_map_set = state;
+                info!("response: game_handler_cycle_state_map_set: {}", self.get("game_handler_cycle_state_map_set"));
+            }
+            "game_handler_cycle_current_level" => {
+                self.game_handler_cycle_current_level = state;
+                info!("response: game_handler_cycle_current_level: {}", self.get("game_handler_cycle_current_level"));  
+            },
             "game_handler_get_active_ball_location" => {
                 self.game_handler_get_active_ball_location = state;
                 info!("response: game_handler_get_active_ball_location: {}", self.get("game_handler_get_active_ball_location"));
@@ -106,48 +110,50 @@ impl RunTrigger {
                 self.game_handler_set_active_ball_location = state;
                 info!("response: game_handler_set_active_ball_location: {}", self.get("game_handler_set_active_ball_location"));
             }
-            "set_hole_completion_state_true" => {
-                self.set_hole_completion_state_true = state;
-                info!("response: set_hole_completion_state_true: {}", self.get("set_hole_completion_state_true"));
+            "game_handler_state_turn_next_player_turn" => {
+                self.game_handler_state_turn_next_player_turn = state;
+                info!("response: game_handler_state_turn_next_player_turn: {}", self.get("game_handler_state_turn_next_player_turn"));
             }
-            "state_turn_next_player_turn" => {
-                self.state_turn_next_player_turn = state;
-                info!("response: state_turn_next_player_turn: {}", self.get("state_turn_next_player_turn"));
+            "game_handler_start_game_local" => {
+                self.game_handler_start_game_local = state;
+                info!("response: game_handler_start_game_local: {}", self.get("game_handler_start_game_local"));
             }
-            "start_game_local" => {
-                self.start_game_local = state;
-                info!("response: start_game_local: {}", self.get("start_game_local"));
+            "game_handler_toggle_state_game" => {
+                self.game_handler_toggle_state_game = state;
+                info!("response: game_handler_toggle_state_game: {}", self.get("game_handler_toggle_state_game"));
             }
-            "toggle_state_game" => {
-                self.toggle_state_game = state;
-                info!("response: toggle_state_game: {}", self.get("toggle_state_game"));
-            }
-            _ => {},
+            _ => {
+                info!("Unrecognized Input: RunTrigger: {:?}", target);
+            },
         }
     }
 
-    pub fn active_player_add_bonk(&self) -> bool {
-        self.active_player_add_bonk
+    pub fn party_handler_active_player_add_bonk(&self) -> bool {
+        self.party_handler_active_player_add_bonk
     }
 
-    pub fn active_player_set_ball_location(&self) -> bool {
-        self.active_player_set_ball_location
+    pub fn party_handler_active_player_set_ball_location(&self) -> bool {
+        self.party_handler_active_player_set_ball_location
     }
 
-    pub fn cycle_active_player(&self) -> bool {
-        self.cycle_active_player
+    pub fn party_handler_cycle_active_player(&self) -> bool {
+        self.party_handler_cycle_active_player
     }
 
-    pub fn cycle_camera(&self) -> bool {
-        self.cycle_camera
+    pub fn party_handler_active_player_set_hole_completion_state_true(&self) -> bool {
+        self.party_handler_active_player_set_hole_completion_state_true
     }
 
-    pub fn cycle_current_level(&self) -> bool {
-        self.cycle_current_level
+    pub fn game_handler_cycle_state_camera(&self) -> bool {
+        self.game_handler_cycle_state_camera
     }
 
-    pub fn cycle_state_map_set(&self) -> bool {
-        self.cycle_state_map_set
+    pub fn game_handler_cycle_state_map_set(&self) -> bool {
+        self.game_handler_cycle_state_map_set
+    }
+
+    pub fn game_handler_cycle_current_level(&self) -> bool {
+        self.game_handler_cycle_current_level
     }
 
     pub fn game_handler_get_active_ball_location(&self) -> bool {
@@ -162,19 +168,15 @@ impl RunTrigger {
         self.game_handler_set_active_ball_location
     }
 
-    pub fn set_hole_completion_state_true(&self) -> bool {
-        self.set_hole_completion_state_true
+    pub fn game_handler_state_turn_next_player_turn(&self) -> bool {
+        self.game_handler_state_turn_next_player_turn
     }
 
-    pub fn state_turn_next_player_turn(&self) -> bool {
-        self.state_turn_next_player_turn
+    pub fn game_handler_start_game_local(&self) -> bool {
+        self.game_handler_start_game_local
     }
 
-    pub fn start_game_local(&self) -> bool {
-        self.start_game_local
-    }
-
-    pub fn toggle_state_game(&self) -> bool {
-        self.toggle_state_game
+    pub fn game_handler_toggle_state_game(&self) -> bool {
+        self.game_handler_toggle_state_game
     }
 }

@@ -306,19 +306,19 @@ pub struct GameHandler {
 
 #[derive(Resource)]
 pub struct RunTrigger{
-    active_player_add_bonk: bool,
-    active_player_set_ball_location: bool,
-    cycle_active_player: bool,
-    cycle_camera: bool,
-    cycle_current_level: bool,
-    cycle_state_map_set: bool,
+    party_handler_active_player_add_bonk: bool,
+    party_handler_active_player_set_ball_location: bool,
+    party_handler_cycle_active_player: bool,
+    party_handler_active_player_set_hole_completion_state_true: bool,
+    game_handler_cycle_state_camera: bool,
+    game_handler_cycle_state_map_set: bool,
+    game_handler_cycle_current_level: bool,
     game_handler_get_active_ball_location: bool,
     game_handler_reset_active_ball_location: bool,
     game_handler_set_active_ball_location: bool,
-    set_hole_completion_state_true: bool,
-    state_turn_next_player_turn: bool,
-    start_game_local: bool,
-    toggle_state_game: bool,
+    game_handler_state_turn_next_player_turn: bool,
+    game_handler_start_game_local: bool,
+    game_handler_toggle_state_game: bool,
 }
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
