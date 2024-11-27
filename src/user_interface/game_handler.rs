@@ -87,10 +87,7 @@ impl GameHandler {
         self.active_ball_location = Some(point);
     }
 
-    pub fn init_postgame_leaderboard(
-        &mut self, 
-        mut party: ResMut<Party>,
-    ) {
+    pub fn init_postgame_leaderboard(&mut self) {
         self.set_current_level(20);
     }
 
@@ -299,7 +296,7 @@ pub fn game_handler_cycle_state_map_set(
 
 pub fn game_handler_get_active_ball_location(
     mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
+    party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
@@ -312,29 +309,30 @@ pub fn game_handler_get_active_ball_location(
 
 pub fn game_handler_reset_active_ball_location(
     mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
+    // party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
     info!("function: game_handler_reset_active_ball_location"); 
-    let owned_active_player = party.get_active_player();
-    let owned_golf_ball = format!("ball{}", owned_active_player);
-    if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
-        game_handler.set_active_ball_location(Vec3::new(0.0, 0.0, 0.0));
-        info!("game_handler.get_active_ball_location(): {:?}", game_handler.get_active_ball_location());
-    }
+    // let owned_active_player = party.get_active_player();
+    // // let owned_golf_ball = format!("ball{}", owned_active_player);
+    // if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
+    // }
+    
+    game_handler.set_active_ball_location(Vec3::new(0.0, 0.0, 0.0));
+    info!("game_handler.get_active_ball_location(): {:?}", game_handler.get_active_ball_location());
     run_trigger.set_target("game_handler_reset_active_ball_location", false);
 }
 
 pub fn game_handler_set_active_ball_location(
     mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
+    // party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
     info!("function: game_handler_set_active_ball_location"); 
-    let owned_active_player = party.get_active_player();
-    let owned_golf_ball = format!("ball{}", owned_active_player);
+    // let owned_active_player = party.get_active_player();
+    // let owned_golf_ball = format!("ball{}", owned_active_player);
     if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
         game_handler.set_active_ball_location(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
         info!("{:?}", game_handler.get_active_ball_location());
@@ -355,8 +353,6 @@ pub fn game_handler_state_turn_next_player_turn(
     mut run_trigger: ResMut<RunTrigger>,
     state_game: Res<State<StateGame>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
-    mut game_handler: ResMut<GameHandler>,
-    mut party: ResMut<Party>,
 ) {
     info!("function: game_handler_state_turn_next_player_turn"); 
     match state_game.get() {
@@ -378,9 +374,7 @@ pub fn game_handler_start_game_local(
     state_game: Res<State<StateGame>>,
     state_map_set: Res<State<StateMapSet>>,
     mut next_level: ResMut<NextState<StateLevel>>,
-    mut next_game_state: ResMut<NextState<StateGame>>,
     mut game_handler: ResMut<GameHandler>,
-    mut party: ResMut<Party>,
 ) {
     info!("function: game_handler_start_game_local"); 
     match state_game.get() {

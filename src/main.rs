@@ -1,15 +1,15 @@
 // --- Internal Bevy Plugins --- //
 use bevy::{prelude::*,
-    input::common_conditions::*,
+    window::{PresentMode, WindowTheme},
+    // input::common_conditions::*,
     // time::common_conditions::on_timer, 
     // utils::Duration,
-    window::{PresentMode, WindowTheme},
 };
 
 // --- External Plugins --- //
-// use bevy_editor_pls::prelude::*;
-use bevy_matchbox::prelude::*;
 use bevy_rapier3d::prelude::*;
+// use bevy_editor_pls::prelude::*;
+// use bevy_matchbox::prelude::*;
 
 use std::sync::{
     Arc,
@@ -34,7 +34,7 @@ use minigolf::{
     CameraHandler,
     Fonts,
     GameHandler,
-    GolfBallTag,
+    LeaderBoardHandler,
     Party,
     Player,
     PlayerLocal,
@@ -138,6 +138,8 @@ fn main() {
         .insert_resource(GameHandler::new())
         .insert_resource(Fonts::new())
         .insert_resource(Party::new())
+        .insert_resource(RunTrigger::new())
+        .insert_resource(LeaderBoardHandler::new())     
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_3d_camera)
@@ -149,11 +151,6 @@ fn main() {
         .add_systems(Update, update_ui)
 
         // Dev Systems //        
-        .insert_resource(RunTrigger::new())
-        .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
-        .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
-        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_cycle_active_player()))
-        .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
         .add_systems(Update, game_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_state_camera()))
         .add_systems(Update, game_handler_cycle_current_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_current_level()))
         .add_systems(Update, game_handler_cycle_state_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_state_map_set()))
@@ -163,7 +160,14 @@ fn main() {
         .add_systems(Update, game_handler_start_game_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_game_local()))
         .add_systems(Update, game_handler_state_turn_next_player_turn.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_state_turn_next_player_turn()))
         .add_systems(Update, game_handler_toggle_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_toggle_state_game()))
-            
+
+        // .add_systems(Update, leader_board_.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_()))
+        
+        .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
+        .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
+        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_cycle_active_player()))
+        .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
+        
         .add_systems(Update, temp_interface);
 
     app.run();
@@ -264,36 +268,18 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let owned_party_size: i32 = party.get_party_size() as i32;
-                let new_player_local = PlayerLocal {
-                    player_id: String::from(format!("PlayerLocal{}@email.com", owned_party_size + 1)),
-                    hole_completion_state: false,
-                    ball_material: Color::srgb(1.0, 0.0, 1.0),
-                    ball_location: Vec3::new(0.0, 0.0, 0.0),
-                    bonks_level: 0,
-                    bonks_game: 0,
-                };
-
+                let new_player_local = PlayerLocal::new();
                 let new_player = Arc::new(Mutex::new(new_player_local));
                 party.add_player(new_player);
             },
         };
     };
     if keys.just_released(KeyCode::Numpad8) {
-        info!("just_released: Numpad7");  
+        info!("just_released: Numpad8");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let owned_party_size: i32 = party.get_party_size() as i32;
-                let new_player_remote = PlayerRemote {
-                    player_id: String::from(format!("PlayerRemote{}@email.com", owned_party_size + 1)),
-                    hole_completion_state: false,
-                    ball_material: Color::srgb(1.0, 0.0, 1.0),
-                    ball_location: Vec3::new(0.0, 0.0, 0.0),
-                    bonks_level: 0,
-                    bonks_game: 0,
-                };
-
+                let new_player_remote = PlayerRemote::new();
                 let new_player = Arc::new(Mutex::new(new_player_remote));
                 party.add_player(new_player);
             },
@@ -304,7 +290,6 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let owned_party_size: i32 = party.get_party_size() as i32;
                 let new_player_ai = PlayerAi::new();
                 let new_player = Arc::new(Mutex::new(new_player_ai));
                 party.add_player(new_player);
@@ -402,8 +387,3 @@ pub enum StateTurn {
     NextTurn,
 }
 */
-
-
-
-
-

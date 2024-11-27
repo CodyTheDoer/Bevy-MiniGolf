@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
+use uuid::Uuid;
+
 use crate::{
+    LeaderBoard,
     Player,
     PlayerLocal,
     PlayerAi,
@@ -9,13 +12,15 @@ use crate::{
 
 impl Player for PlayerLocal {
     fn new() -> Self {
+        let player_id = Uuid::now_v7();
+        LeaderBoard::new(player_id.clone());
         PlayerLocal {
-            player_id: String::from("PlayerLocal@email.com"),
+            player_id: player_id,
+            player_type: String::from("PlayerLocal"),
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
             bonks_level: 0,
-            bonks_game: 0,
         }
     }
 
@@ -23,14 +28,12 @@ impl Player for PlayerLocal {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn hole_completed(&mut self) {
@@ -39,7 +42,6 @@ impl Player for PlayerLocal {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_game += self.bonks_level;
         self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
@@ -56,12 +58,12 @@ impl Player for PlayerLocal {
         self.hole_completion_state = hole_completion_state;
     }
 
-    fn get_player_id(&self) -> String {
+    fn get_player_id(&self) -> Uuid {
         self.player_id.clone()
     }
 
-    fn set_player_id(&mut self, player_id: String) {
-        self.player_id = player_id;
+    fn get_player_type(&self) -> String {
+        self.player_type.clone()
     }
 
     fn get_ball_location(&self) -> Vec3 {
@@ -69,15 +71,11 @@ impl Player for PlayerLocal {
     }
 
     fn set_ball_location(&mut self, location: Vec3) {
-        self.ball_location = location
+        self.ball_location = location;
     }
 
     fn get_bonks_level(&self) -> u32 {
         self.bonks_level
-    }
-
-    fn get_bonks_game(&self) -> u32 {
-        self.bonks_game + self.bonks_level
     }
 }
 
@@ -86,12 +84,12 @@ impl Player for PlayerLocal {
 impl Player for PlayerAi {
     fn new() -> Self {
         PlayerAi {
-            player_id: String::from("PlayerAi"),
+            player_id: Uuid::now_v7(),
+            player_type: String::from("PlayerAi"),
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
             bonks_level: 0,
-            bonks_game: 0,
         }
     }
 
@@ -99,14 +97,12 @@ impl Player for PlayerAi {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn hole_completed(&mut self) {
@@ -115,7 +111,6 @@ impl Player for PlayerAi {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_game += self.bonks_level;
         self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
@@ -132,12 +127,12 @@ impl Player for PlayerAi {
         self.hole_completion_state = hole_completion_state;
     }
 
-    fn get_player_id(&self) -> String {
+    fn get_player_id(&self) -> Uuid {
         self.player_id.clone()
     }
 
-    fn set_player_id(&mut self, player_id: String) {
-        self.player_id = player_id;
+    fn get_player_type(&self) -> String {
+        self.player_type.clone()
     }
 
     fn get_ball_location(&self) -> Vec3 {
@@ -145,15 +140,11 @@ impl Player for PlayerAi {
     }
 
     fn set_ball_location(&mut self, location: Vec3) {
-        self.ball_location = location
+        self.ball_location = location;
     }
 
     fn get_bonks_level(&self) -> u32 {
         self.bonks_level
-    }
-
-    fn get_bonks_game(&self) -> u32 {
-        self.bonks_game + self.bonks_level
     }
 }
 
@@ -162,12 +153,12 @@ impl Player for PlayerAi {
 impl Player for PlayerRemote {
     fn new() -> Self {
         PlayerRemote {
-            player_id: String::from("PlayerRemote"),
+            player_id: Uuid::now_v7(),
+            player_type: String::from("PlayerRemote"),
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
             bonks_level: 0,
-            bonks_game: 0,
         }
     }
 
@@ -175,14 +166,12 @@ impl Player for PlayerRemote {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
         self.bonks_level = 0;
-        self.bonks_game = 0;
     }
 
     fn hole_completed(&mut self) {
@@ -191,7 +180,6 @@ impl Player for PlayerRemote {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_game += self.bonks_level;
         self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
@@ -208,12 +196,12 @@ impl Player for PlayerRemote {
         self.hole_completion_state = hole_completion_state;
     }
 
-    fn get_player_id(&self) -> String {
+    fn get_player_id(&self) -> Uuid {
         self.player_id.clone()
     }
 
-    fn set_player_id(&mut self, player_id: String) {
-        self.player_id = player_id;
+    fn get_player_type(&self) -> String {
+        self.player_type.clone()
     }
 
     fn get_ball_location(&self) -> Vec3 {
@@ -221,14 +209,10 @@ impl Player for PlayerRemote {
     }
 
     fn set_ball_location(&mut self, location: Vec3) {
-        self.ball_location = location
+        self.ball_location = location;
     }
 
     fn get_bonks_level(&self) -> u32 {
         self.bonks_level
-    }
-
-    fn get_bonks_game(&self) -> u32 {
-        self.bonks_game + self.bonks_level
     }
 }

@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
+use uuid::Uuid;
+
 // States
 use crate::{
     StateGame,
     StateLevel,
     StateMapSet,
-    StateMenu,
+    // StateMenu,
 };
 
 // Resources
@@ -14,8 +16,6 @@ use crate::{
     Party,
     Player,
     PlayerLocal,
-    PlayerAi,
-    PlayerRemote,
     RunTrigger,
 };
 
@@ -25,16 +25,12 @@ use std::sync::Mutex;
 impl Party {
     pub fn new() -> Self {
         let players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>> = Arc::new(Mutex::new(vec![Arc::new(Mutex::new(PlayerLocal::new()))]));
-        let players_finished: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
         // let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
-        let remote_count: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
+        // let remote_count: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
         Party {
             players,
-            players_finished,
             active_player,
-            // active_level,
-            remote_count,
         } 
     }
     
@@ -47,7 +43,7 @@ impl Party {
         }
     }
 
-    pub fn remove_player(&self, player_id: String) {
+    pub fn remove_player(&self, player_id: Uuid) {
         let mut players_lock = self.players.lock().unwrap();
         
         // Proceed only if we have more than one player in the vector
@@ -58,15 +54,6 @@ impl Party {
             });
         }
     }
-
-    pub fn get_party_size(&self) -> usize {        
-        // First, lock the players mutex to get access to the Vec
-        let players_lock = self.players.lock().unwrap();
-
-        // Grab the size of the party
-        let party_size = &players_lock.len();
-        *party_size 
-    }
     
     pub fn remove_ai(&self) {
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
@@ -74,7 +61,7 @@ impl Party {
         // Iterate through players and find the index of the first occurrence of "PlayerAi".
         if let Some(index) = players_lock.iter().position(|player| {
             let player_lock = player.lock().unwrap();
-            player_lock.get_player_id() == "PlayerAi"
+            player_lock.get_player_type().as_str() == "PlayerAi"
         }) {
             // Remove the player at the found index
             players_lock.remove(index);
@@ -90,22 +77,26 @@ impl Party {
         }
     }
 
+    pub fn get_party_size(&self) -> usize {        
+        // First, lock the players mutex to get access to the Vec
+        let players_lock = self.players.lock().unwrap();
+
+        // Grab the size of the party
+        let party_size = &players_lock.len();
+        *party_size 
+    }
+
     pub fn all_players_get_finished_count(&self) -> i32 {
         let mut count: i32 = 0;
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         for player in 0..players_lock.len() {
             let player_arc = &players_lock[player];
-            let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
             if player.get_hole_completion_state() {
                 count += 1;
             }
         }
         count
-    }
-
-    pub fn reset_players_finished(&mut self) {
-        let mut count = *self.players_finished.lock().unwrap();
-        count = 0;
     }
 
     pub fn all_finished(&self) -> bool {
@@ -114,23 +105,15 @@ impl Party {
         self.all_players_get_finished_count() == player_count
     }
 
-    pub fn active_player_get_bonks_game(&mut self) -> u32 {
+    pub fn active_player_get_bonks_level(&self) -> u32 {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-        player.get_bonks_game()
-    }
-
-    pub fn active_player_get_bonks_level(&mut self) -> u32 {
-        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
-        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_bonks_level()
     }
 
-    pub fn active_player_add_bonk(&mut self) {
+    pub fn active_player_add_bonk(&self) {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
@@ -148,11 +131,11 @@ impl Party {
         info!("post function: active_player_finished_hole"); 
     }   
 
-    pub fn active_player_get_ball_location(&mut self) -> Vec3 {
+    pub fn active_player_get_ball_location(&self) -> Vec3 {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_ball_location()
     }
 
@@ -176,36 +159,36 @@ impl Party {
         info!("Set ball location successfully for player at index {}", active_player_index);
     }
 
-    pub fn active_player_get_hole_completion_state(&mut self) -> bool {
+    pub fn active_player_get_hole_completion_state(&self) -> bool {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_hole_completion_state()
     }
 
-    pub fn active_player_set_hole_completion_state(&mut self, player_id: bool) {
+    pub fn active_player_set_hole_completion_state(&mut self, state: bool) {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
         let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-        player.set_hole_completion_state(true);
+        player.set_hole_completion_state(state);
     }
 
-    pub fn active_player_get_player_id(&mut self) -> String {
+    pub fn active_player_get_player_id(&self) -> Uuid {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_player_id()
     }
 
-    pub fn active_player_set_player_id(&mut self, player_id: String) {
+    pub fn active_player_get_player_type(&self) -> String {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-        player.set_player_id(player_id);
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        player.get_player_type()
     }
 
     pub fn next_proximity_player(&self, ) {
@@ -263,7 +246,7 @@ impl Party {
 
 pub fn party_handler_active_player_add_bonk(
     mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
+    party: Res<Party>,
 ) {
     info!("function: party_handler_active_player_add_bonk"); 
     run_trigger.set_target("party_handler_active_player_set_ball_location", true);

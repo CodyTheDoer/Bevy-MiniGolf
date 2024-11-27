@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use bevy_mod_raycast::prelude::*;
-use bevy_rapier3d::prelude::*; 
+// use bevy_rapier3d::prelude::*; 
 
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
 // --- State Imports --- //
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     StateLevel,
     StateMapSet,
     StateMenu,
-    StatePanOrbit,
+    // StatePanOrbit,
     StateTurn,
 };
 
@@ -181,15 +181,15 @@ pub fn ray_fire(
 }
 
 pub fn ray_release(
-    mut party: ResMut<Party>,
+    // mut party: ResMut<Party>,
     mut raycast: Raycast,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
-    map_set_state: Res<State<StateMapSet>>,
-    mut game_handler: ResMut<GameHandler>,
-    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
+    // map_set_state: Res<State<StateMapSet>>,
+    // mut game_handler: ResMut<GameHandler>,
+    // mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
@@ -433,7 +433,7 @@ pub fn update_ui(
     state_map_set: Res<State<StateMapSet>>,
     state_menu: Res<State<StateMenu>>,
     state_turn: Res<State<StateTurn>>,
-    mut party: ResMut<Party>,
+    party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     mut query: Query<&mut Text, With<StateText>>,
     run_trigger: Res<RunTrigger>,
@@ -449,13 +449,13 @@ pub fn update_ui(
         format!("state_menu: {:?}", *state_menu),                                                                   // 8
         format!("state_turn: {:?}", *state_turn),                                                                   // 9
         format!("Party Size: {:?}", party.get_party_size()),                                                        // 10
-        format!("Current Level: {:?}", game_handler.get_current_level()),                                                    // 11
+        format!("Current Level: {:?}", game_handler.get_current_level()),                                           // 11
         format!("Active Player: {:?}", party.get_active_player()),                                                  // 12 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                             // 13
-        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 14 
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level()),                    // 15
-        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),     // 16
-        format!("Active Player: Bonk Count Game: {:?}", party.active_player_get_bonks_game()),                      // 17  
+        format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                         // 14
+        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                     // 15 
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level()),                    // 16
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),     // 17
         format!("______________________________________________________________________"),                          // 18  
         format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                       // 19
         format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                        // 20

@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::RigidBody;
 
+use uuid::Uuid;
+
 // use std::fmt;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::MutexGuard;
+// use std::sync::MutexGuard;
 
 // Direct Imports
-pub mod leaderboard_handler;
 pub mod network_handler;
 
 // Directory Imports
@@ -15,37 +16,37 @@ pub mod level_handler;
 pub mod player_handler;
 pub mod user_interface;
 
-#[derive(Clone, Debug)]
-enum NetworkInterface {
-    InitHandshake,
-    HandshakeConfirmed,
+// #[derive(Clone, Debug)]
+// enum NetworkInterface {
+//     InitHandshake,
+//     HandshakeConfirmed,
 
-    PlayerCheckProfile,
-    PlayerUpload,
-    PlayerUpdate,
+//     PlayerCheckProfile,
+//     PlayerUpload,
+//     PlayerUpdate,
 
-    RequestLeaderBoard,
-    UpdateLeaderBoard,
+//     RequestLeaderBoard,
+//     UpdateLeaderBoard,
     
-    FriendsGet,
-    FriendSearch,
-    FriendAdd,
-    FriendRemove,
+//     FriendsGet,
+//     FriendSearch,
+//     FriendAdd,
+//     FriendRemove,
 
-    PartyGet,
-    PartyAddFriend,
-    PartyAddAI,
-    PartyRemovePlayer,
-    PartyJoin,
-    PartyLeave,
+//     PartyGet,
+//     PartyAddFriend,
+//     PartyAddAI,
+//     PartyRemovePlayer,
+//     PartyJoin,
+//     PartyLeave,
     
-    FindMatchInit,
-    FindMatchCancel,
+//     FindMatchInit,
+//     FindMatchCancel,
 
-    InGameQuit,
-    InGameBonk,
-    InGameHoleCompletePlayer,
-}
+//     InGameQuit,
+//     InGameBonk,
+//     InGameHoleCompletePlayer,
+// }
 
 #[derive(Clone, Debug)]
 pub enum RemoteStateUpdate {
@@ -226,41 +227,40 @@ pub trait Player {
     fn add_bonk(&mut self);
     fn get_hole_completion_state(&self) -> bool;
     fn set_hole_completion_state(&mut self, hole_completion_state: bool);
-    fn get_player_id(&self) -> String;
-    fn set_player_id(&mut self, player_id: String);
+    fn get_player_id(&self) -> Uuid;
+    fn get_player_type(&self) -> String;
     fn get_ball_location(&self) -> Vec3;
     fn set_ball_location(&mut self, location: Vec3);
     fn get_bonks_level(&self) -> u32;
-    fn get_bonks_game(&self) -> u32;
 }
 
 #[derive(Clone, Resource)]
 pub struct PlayerLocal {
-    pub player_id: String,
+    pub player_id: Uuid,
+    pub player_type: String,
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_game: u32,
 	pub bonks_level: u32,
 }
 
 #[derive(Clone, Resource)]
 pub struct PlayerAi {
-    pub player_id: String,
+    pub player_id: Uuid,
+    pub player_type: String,
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_game: u32,
 	pub bonks_level: u32,
 }
 
 #[derive(Clone, Resource)]
 pub struct PlayerRemote {
-    pub player_id: String,
+    pub player_id: Uuid,
+    pub player_type: String,
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_game: u32,
 	pub bonks_level: u32,
 }
 
@@ -269,10 +269,7 @@ pub struct PlayerRemote {
 #[derive(Resource)]
 pub struct Party {
     players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
-    players_finished: Arc<Mutex<i32>>,
     active_player: Arc<Mutex<i32>>,
-    // active_level: Arc<Mutex<i32>>,
-    remote_count: Arc<Mutex<i32>>,
 }
 
 // --- Camera --- //
@@ -302,6 +299,17 @@ pub struct GameHandler {
     arrow_state: bool,
     network_server_connection: bool,
     remotely_pushed_state: Option<RemoteStateUpdate>,
+}
+
+#[derive(Resource)]
+pub struct LeaderBoard {
+	player_id: Uuid,
+    scores: [i32; 18]
+}
+
+#[derive(Resource)]
+pub struct LeaderBoardHandler {
+    leaderboards: Vec<LeaderBoard>,
 }
 
 #[derive(Resource)]

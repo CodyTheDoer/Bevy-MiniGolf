@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    RunTrigger,
-};
+use crate::RunTrigger;
 
 impl RunTrigger {
     pub fn new() -> Self {

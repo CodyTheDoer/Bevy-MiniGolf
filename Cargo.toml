@@ -10,6 +10,7 @@ bevy_editor_pls = "0.9"
 bevy_render = "0.14.2"
 bevy_rapier3d = "0.27.0"
 bevy_matchbox = "0.10"
+# uuid = "1.11.0" <- Covered below in dependencies.uuid
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -22,3 +23,12 @@ opt-level = 3
 # Add this to your Cargo.toml
 [profile.dev.package.bevy_rapier3d]
 opt-level = 3
+
+[dependencies.uuid]
+version = "1.11.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "v7",                # Lets you generate random UUIDs intended for db generated via Unix timestamp
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]

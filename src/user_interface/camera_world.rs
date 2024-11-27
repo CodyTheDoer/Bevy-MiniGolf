@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
-use bevy_mod_raycast::prelude::*;
+// use bevy_mod_raycast::prelude::*;
 
 // State
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
 use crate::{
     CameraHandler, 
     CameraWorld, 
-    Ground, 
+    // Ground, 
     PanOrbitAction,
     PanOrbitCameraBundle,
     PanOrbitSettings,
@@ -76,10 +76,10 @@ pub fn setup_3d_camera(
 }
 
 pub fn state_camera_orbit_entity_logic(
-    mut camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
+    camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
     mut camera_coord_tracker: ResMut<CameraHandler>,
     scene_meshes: Query<(Entity, &Name, &Transform)>,
-    mut q_rigid_body: Query<(&RigidBody, &Transform)>,
+    q_rigid_body: Query<(&RigidBody, &Transform)>,
 ) {
     let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
     for (_, transform) in q_rigid_body.iter() {
@@ -87,7 +87,7 @@ pub fn state_camera_orbit_entity_logic(
     }
     match camera_orbit_entity_state.get() {
         StateCameraOrbitEntity::Ball => {
-            for (entity, name, transform) in scene_meshes.iter() {
+            for (_entity, name, _transform) in scene_meshes.iter() {
                 let owned_name = name.as_str();
                 match owned_name { 
                     "ball" | "ball1" | "ball2" | "ball3" | "ball4" | "ball5" | "ball6" => {
@@ -99,7 +99,7 @@ pub fn state_camera_orbit_entity_logic(
             }        
         },
         StateCameraOrbitEntity::Cup => {
-            for (entity, name, transform) in scene_meshes.iter() {
+            for (_entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cup" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
@@ -107,7 +107,7 @@ pub fn state_camera_orbit_entity_logic(
             }        
         },
         StateCameraOrbitEntity::Menu | StateCameraOrbitEntity::LeaderBoard => {
-            for (entity, name, transform) in scene_meshes.iter() {
+            for (_entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "cam_target" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
