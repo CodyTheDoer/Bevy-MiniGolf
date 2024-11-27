@@ -72,7 +72,9 @@ pub fn leader_board_review_last_game(
     mut run_trigger: ResMut<RunTrigger>,
     leader_board: Res<LeaderBoard>,
 ) {
-    let record = leader_board.get_last_game();
-    leader_board.review_game(record);
+    if leader_board.get_game_count() > 0 {
+        let record = leader_board.get_last_game();
+        leader_board.review_game(record);
+    }
     run_trigger.set_target("leader_board_review_last_game", false);
 }

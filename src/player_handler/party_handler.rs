@@ -329,9 +329,8 @@ pub fn party_handler_cycle_active_player(
             StateMapSet::WholeCorse => {
                 match state_level.get() {
                     StateLevel::Hole18 => {
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("leader_board_review_last_game", true);
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -345,9 +344,8 @@ pub fn party_handler_cycle_active_player(
             StateMapSet::FrontNine => {
                 match state_level.get() {
                     StateLevel::Hole9 => {
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("leader_board_review_last_game", true);
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -361,9 +359,8 @@ pub fn party_handler_cycle_active_player(
             StateMapSet::BackNine => {
                 match state_level.get() {
                     StateLevel::Hole18 => {
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("leader_board_review_last_game", true);
+                        run_trigger.set_target("game_handler_toggle_state_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -376,8 +373,6 @@ pub fn party_handler_cycle_active_player(
             },
             StateMapSet::SelectAHole => {
                 run_trigger.set_target("game_handler_toggle_state_game", true);
-                run_trigger.set_target("leader_board_log_game", true);
-                run_trigger.set_target("leader_board_review_last_game", true);
             },
         };
     } else {

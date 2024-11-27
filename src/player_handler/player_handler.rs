@@ -121,11 +121,16 @@ impl Player for PlayerAi {
     }
 
     fn add_bonk(&mut self, level: usize) {
-        self.score[level] += 1;
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj] += 1;
     }
 
     fn get_bonks(&mut self, level: usize) -> i32 {
-        self.score[level]
+        if level == 0 {
+            return 0;
+        }
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj]
     }
 
     fn get_hole_completion_state(&self) -> bool {
@@ -193,11 +198,16 @@ impl Player for PlayerRemote {
     }
 
     fn add_bonk(&mut self, level: usize) {
-        self.score[level] += 1;
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj] += 1;
     }
 
     fn get_bonks(&mut self, level: usize) -> i32 {
-        self.score[level]
+        if level == 0 {
+            return 0;
+        }
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj]
     }
 
     fn get_hole_completion_state(&self) -> bool {

@@ -451,6 +451,7 @@ pub fn game_handler_toggle_state_game(
             next_state_turn.set(StateTurn::NotInGame);
             game_handler.game_completed();
             party.game_completed();
+            run_trigger.set_target("leader_board_review_last_game", true);
         },
     };
     run_trigger.set_target("game_handler_toggle_state_game", false);
