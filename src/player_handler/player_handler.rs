@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    LeaderBoard,
+    // LeaderBoard,
     Player,
     PlayerLocal,
     PlayerAi,
@@ -12,28 +12,26 @@ use crate::{
 
 impl Player for PlayerLocal {
     fn new() -> Self {
-        let player_id = Uuid::now_v7();
-        LeaderBoard::new(player_id.clone());
         PlayerLocal {
-            player_id: player_id,
+            player_id: Uuid::now_v7(),
             player_type: String::from("PlayerLocal"),
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
-            bonks_level: 0,
+            score: [0; 18],
         }
     }
 
     fn start_game(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn hole_completed(&mut self) {
@@ -42,12 +40,20 @@ impl Player for PlayerLocal {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
-    fn add_bonk(&mut self) {
-        self.bonks_level += 1;
+    fn add_bonk(&mut self, level: usize) {
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj] += 1;
+    }
+
+    fn get_bonks(&mut self, level: usize) -> i32 {
+        if level == 0 {
+            return 0;
+        }
+        let index_adj = (level as i32 - 1) as usize;
+        self.score[index_adj]
     }
 
     fn get_hole_completion_state(&self) -> bool {
@@ -74,8 +80,8 @@ impl Player for PlayerLocal {
         self.ball_location = location;
     }
 
-    fn get_bonks_level(&self) -> u32 {
-        self.bonks_level
+    fn get_score(&self) -> [i32; 18] {
+        self.score
     }
 }
 
@@ -89,20 +95,20 @@ impl Player for PlayerAi {
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
-            bonks_level: 0,
+            score: [0; 18],
         }
     }
 
     fn start_game(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn hole_completed(&mut self) {
@@ -111,12 +117,15 @@ impl Player for PlayerAi {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
-    fn add_bonk(&mut self) {
-        self.bonks_level += 1;
+    fn add_bonk(&mut self, level: usize) {
+        self.score[level] += 1;
+    }
+
+    fn get_bonks(&mut self, level: usize) -> i32 {
+        self.score[level]
     }
 
     fn get_hole_completion_state(&self) -> bool {
@@ -143,8 +152,8 @@ impl Player for PlayerAi {
         self.ball_location = location;
     }
 
-    fn get_bonks_level(&self) -> u32 {
-        self.bonks_level
+    fn get_score(&self) -> [i32; 18] {
+        self.score
     }
 }
 
@@ -158,20 +167,20 @@ impl Player for PlayerRemote {
             hole_completion_state: false,
             ball_material: Color::srgb(1.0, 0.0, 1.0),
             ball_location: Vec3::new(0.0, 0.0, 0.0),
-            bonks_level: 0,
+            score: [0; 18],
         }
     }
 
     fn start_game(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn game_completed(&mut self) {
         self.hole_completion_state = false;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
-        self.bonks_level = 0;
+        self.score = [0; 18];
     }
 
     fn hole_completed(&mut self) {
@@ -180,12 +189,15 @@ impl Player for PlayerRemote {
 
     fn next_round_prep(&mut self) {
         self.hole_completion_state = false;
-        self.bonks_level = 0;
         self.ball_location = Vec3::new(0.0, 0.0, 0.0);
     }
 
-    fn add_bonk(&mut self) {
-        self.bonks_level += 1;
+    fn add_bonk(&mut self, level: usize) {
+        self.score[level] += 1;
+    }
+
+    fn get_bonks(&mut self, level: usize) -> i32 {
+        self.score[level]
     }
 
     fn get_hole_completion_state(&self) -> bool {
@@ -212,7 +224,7 @@ impl Player for PlayerRemote {
         self.ball_location = location;
     }
 
-    fn get_bonks_level(&self) -> u32 {
-        self.bonks_level
+    fn get_score(&self) -> [i32; 18] {
+        self.score
     }
 }

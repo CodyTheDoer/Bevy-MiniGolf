@@ -18,6 +18,8 @@ impl RunTrigger {
             game_handler_state_turn_next_player_turn: false,
             game_handler_start_game_local: false,
             game_handler_toggle_state_game: false,
+            leader_board_log_game: false,
+            leader_board_review_last_game: false,
         }
     }
 
@@ -61,6 +63,12 @@ impl RunTrigger {
             },
             "game_handler_toggle_state_game" => {
                 self.game_handler_toggle_state_game
+            },
+            "leader_board_log_game" => {
+                self.leader_board_log_game
+            },
+            "leader_board_review_last_game" => {
+                self.leader_board_review_last_game
             },
             _ => {false},
         }
@@ -120,6 +128,14 @@ impl RunTrigger {
                 self.game_handler_toggle_state_game = state;
                 info!("response: game_handler_toggle_state_game: {}", self.get("game_handler_toggle_state_game"));
             }
+            "leader_board_log_game" => {
+                self.leader_board_log_game = state;
+                info!("response: leader_board_log_game: {}", self.get("leader_board_log_game"));
+            }
+            "leader_board_review_last_game" => {
+                self.leader_board_review_last_game = state;
+                info!("response: leader_board_review_last_game: {}", self.get("leader_board_review_last_game"));
+            }
             _ => {
                 info!("Unrecognized Input: RunTrigger: {:?}", target);
             },
@@ -176,5 +192,13 @@ impl RunTrigger {
 
     pub fn game_handler_toggle_state_game(&self) -> bool {
         self.game_handler_toggle_state_game
+    }
+
+    pub fn leader_board_log_game(&self) -> bool {
+        self.leader_board_log_game
+    }
+
+    pub fn leader_board_review_last_game(&self) -> bool {
+        self.leader_board_review_last_game
     }
 }

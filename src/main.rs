@@ -34,7 +34,7 @@ use minigolf::{
     CameraHandler,
     Fonts,
     GameHandler,
-    LeaderBoardHandler,
+    LeaderBoard,
     Party,
     Player,
     PlayerLocal,
@@ -74,6 +74,12 @@ use minigolf::player_handler::party_handler::{
     party_handler_active_player_set_ball_location,
     party_handler_active_player_set_hole_completion_state_true,
     party_handler_cycle_active_player,
+};
+
+// --- User Interface - Leader Board Handler Import --- //
+use minigolf::player_handler::leader_board_handler::{
+    leader_board_log_game,
+    leader_board_review_last_game,
 };
 
 // // --- User Interface - Turn Handler Import --- //
@@ -139,7 +145,7 @@ fn main() {
         .insert_resource(Fonts::new())
         .insert_resource(Party::new())
         .insert_resource(RunTrigger::new())
-        .insert_resource(LeaderBoardHandler::new())     
+        .insert_resource(LeaderBoard::new())     
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_3d_camera)
@@ -161,7 +167,8 @@ fn main() {
         .add_systems(Update, game_handler_state_turn_next_player_turn.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_state_turn_next_player_turn()))
         .add_systems(Update, game_handler_toggle_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_toggle_state_game()))
 
-        // .add_systems(Update, leader_board_.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_()))
+        .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
+        .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
         .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
         .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))

@@ -224,14 +224,15 @@ pub trait Player {
     fn hole_completed(&mut self);
     fn game_completed(&mut self);
     fn next_round_prep(&mut self);
-    fn add_bonk(&mut self);
+    fn add_bonk(&mut self, level: usize);
+    fn get_bonks(&mut self, level: usize) -> i32;
     fn get_hole_completion_state(&self) -> bool;
     fn set_hole_completion_state(&mut self, hole_completion_state: bool);
     fn get_player_id(&self) -> Uuid;
     fn get_player_type(&self) -> String;
+    fn get_score(&self) -> [i32; 18];
     fn get_ball_location(&self) -> Vec3;
     fn set_ball_location(&mut self, location: Vec3);
-    fn get_bonks_level(&self) -> u32;
 }
 
 #[derive(Clone, Resource)]
@@ -241,7 +242,7 @@ pub struct PlayerLocal {
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_level: u32,
+	pub score: [i32; 18],
 }
 
 #[derive(Clone, Resource)]
@@ -251,7 +252,7 @@ pub struct PlayerAi {
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_level: u32,
+	pub score: [i32; 18],
 }
 
 #[derive(Clone, Resource)]
@@ -261,7 +262,7 @@ pub struct PlayerRemote {
 	pub hole_completion_state: bool,
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
-	pub bonks_level: u32,
+	pub score: [i32; 18],
 }
 
 // --- Party Handler --- //
@@ -299,17 +300,26 @@ pub struct GameHandler {
     arrow_state: bool,
     network_server_connection: bool,
     remotely_pushed_state: Option<RemoteStateUpdate>,
+    game_id: Option<Uuid>,
+}
+
+#[derive(Clone, Resource)]
+pub struct GameRecord{
+    game_id: Uuid,
+    players: Vec<Uuid>,
+    scores: Vec<[i32; 18]>,
+}
+
+impl GameRecord {
+    pub fn unwrap(&self) -> (Uuid, Vec<Uuid>, Vec<[i32; 18]>) {
+        (self.game_id, self.players.clone(), self.scores.clone())
+    } 
 }
 
 #[derive(Resource)]
 pub struct LeaderBoard {
-	player_id: Uuid,
-    scores: [i32; 18]
-}
-
-#[derive(Resource)]
-pub struct LeaderBoardHandler {
-    leaderboards: Vec<LeaderBoard>,
+    current_scores: [i32; 18],
+    past_games: Vec<GameRecord>,
 }
 
 #[derive(Resource)]
@@ -327,6 +337,8 @@ pub struct RunTrigger{
     game_handler_state_turn_next_player_turn: bool,
     game_handler_start_game_local: bool,
     game_handler_toggle_state_game: bool,
+    leader_board_log_game: bool,
+    leader_board_review_last_game: bool,
 }
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]

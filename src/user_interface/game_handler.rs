@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use uuid::Uuid;
+
 // States
 use crate::{
     RemoteStateUpdate,
@@ -20,18 +22,29 @@ use crate::{
 
 impl GameHandler {
     pub fn new() -> Self {
-        let current_level = 0;
-        let active_ball_location = None;
-        let arrow_state = false;
-        let network_server_connection = false;
-        let remotely_pushed_state = None;
         GameHandler {
-            current_level,
-            active_ball_location,
-            arrow_state,
-            network_server_connection,
-            remotely_pushed_state,
+            current_level: 0,
+            active_ball_location: None,
+            arrow_state: false,
+            network_server_connection: false,
+            remotely_pushed_state: None,
+            game_id: None,
         }
+    }
+
+    pub fn get_game_id(&mut self) -> Uuid {
+        if self.game_id == None {
+            self.gen_game_id();
+        }
+        self.game_id.unwrap() // .expect("GameHandler.get_game_id(): game_id get/gen failed")
+    }
+
+    pub fn gen_game_id(&mut self) {
+        self.game_id = Some(Uuid::now_v7());
+    }
+
+    pub fn clear_game_id(&mut self) {
+        self.game_id = None;
     }
 
     // Level Handling logic
@@ -55,7 +68,8 @@ impl GameHandler {
             StateMapSet::BackNine => {
                 self.current_level = 10;
             },
-            StateMapSet::SelectAHole => {},
+            StateMapSet::SelectAHole => {
+            },
         }
     }
 

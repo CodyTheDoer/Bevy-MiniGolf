@@ -4,8 +4,8 @@ use uuid::Uuid;
 
 // States
 use crate::{
-    StateGame,
-    StateLevel,
+    StateGame, 
+    StateLevel, 
     StateMapSet,
     // StateMenu,
 };
@@ -32,6 +32,19 @@ impl Party {
             players,
             active_player,
         } 
+    }
+    
+    pub fn get_all_player_ids_and_scores(&mut self) -> (Vec<Uuid>, Vec<[i32; 18]>) {
+        let mut players: Vec<Uuid> = Vec::new();
+        let mut scores: Vec<[i32; 18]> = Vec::new();
+        let players_lock = self.players.lock().unwrap();
+        for player in players_lock.iter() {
+            let player_id = player.lock().unwrap().get_player_id();
+            players.push(player_id);
+            let score = player.lock().unwrap().get_score();
+            scores.push(score);
+        }
+        (players, scores)
     }
     
     pub fn add_player(&self, player: Arc<Mutex<dyn Player + Send>>) {
@@ -105,20 +118,20 @@ impl Party {
         self.all_players_get_finished_count() == player_count
     }
 
-    pub fn active_player_get_bonks_level(&self) -> u32 {
-        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
-        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
-        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-        player.get_bonks_level()
-    }
-
-    pub fn active_player_add_bonk(&self) {
+    pub fn active_player_get_bonks_level(&self, level: usize) -> i32 {
         let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
         let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-        player.add_bonk();
+        player.get_bonks(level) 
+    }
+
+    pub fn active_player_add_bonk(&self, level: usize) {
+        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let player_arc = &players_lock[active_player_index as usize - 1]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
+        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        player.add_bonk(level);
         info!("post function: active_player_add_bonk"); 
     }
 
@@ -247,11 +260,13 @@ impl Party {
 pub fn party_handler_active_player_add_bonk(
     mut run_trigger: ResMut<RunTrigger>,
     party: Res<Party>,
+    game_handler: Res<GameHandler>,
 ) {
     info!("function: party_handler_active_player_add_bonk"); 
     run_trigger.set_target("party_handler_active_player_set_ball_location", true);
     run_trigger.set_target("game_handler_set_active_ball_location", true);
-    party.active_player_add_bonk();
+    let level = game_handler.get_current_level() as usize;
+    party.active_player_add_bonk(level);
     run_trigger.set_target("party_handler_active_player_add_bonk", false);
 }
 
@@ -315,6 +330,8 @@ pub fn party_handler_cycle_active_player(
                 match state_level.get() {
                     StateLevel::Hole18 => {
                         run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("leader_board_log_game", true);
+                        run_trigger.set_target("leader_board_review_last_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -329,6 +346,8 @@ pub fn party_handler_cycle_active_player(
                 match state_level.get() {
                     StateLevel::Hole9 => {
                         run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("leader_board_log_game", true);
+                        run_trigger.set_target("leader_board_review_last_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -343,6 +362,8 @@ pub fn party_handler_cycle_active_player(
                 match state_level.get() {
                     StateLevel::Hole18 => {
                         run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("leader_board_log_game", true);
+                        run_trigger.set_target("leader_board_review_last_game", true);
                     },
                     _ => {
                         party.next_round_prep();
@@ -355,6 +376,8 @@ pub fn party_handler_cycle_active_player(
             },
             StateMapSet::SelectAHole => {
                 run_trigger.set_target("game_handler_toggle_state_game", true);
+                run_trigger.set_target("leader_board_log_game", true);
+                run_trigger.set_target("leader_board_review_last_game", true);
             },
         };
     } else {
