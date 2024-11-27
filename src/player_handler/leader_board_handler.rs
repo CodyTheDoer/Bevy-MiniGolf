@@ -39,13 +39,13 @@ impl LeaderBoard {
     }
 
     pub fn get_last_game(&self) -> GameRecord {
-        let index_adj = (self.past_games.len() as i32 - 1) as usize;
-        self.past_games[index_adj].clone()
+        let index = self.past_games.len() as i32 - 1;
+        self.past_games[index as usize].clone()
     }
 
-    pub fn review_last_game(&self) {
-        let (game_id, players, scores) = self.get_last_game().unwrap();
-        info!("Review Last Game:");
+    pub fn review_game(&self, record: GameRecord) {
+        info!("Review Game Record:");
+        let (game_id, players, scores) = record.unwrap();
         info!("game_id: {:?}", game_id);
         for i in 0..players.len() {
             let result = format!(
@@ -72,6 +72,7 @@ pub fn leader_board_review_last_game(
     mut run_trigger: ResMut<RunTrigger>,
     leader_board: Res<LeaderBoard>,
 ) {
-    // leader_board.review_last_game();
+    let record = leader_board.get_last_game();
+    leader_board.review_game(record);
     run_trigger.set_target("leader_board_review_last_game", false);
 }
