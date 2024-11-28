@@ -48,11 +48,16 @@ pub mod user_interface;
 //     InGameHoleCompletePlayer,
 // }
 
+
 #[derive(Clone, Debug)]
-pub enum RemoteStateUpdate {
-    // ConnectionState(ConnectionState),
-    // GameState(GameState),
-    // LevelState(LevelState),
+pub enum StateUpdateRef {
+    StateGameConnection(StateGameConnection),
+    StateCameraOrbitEntity(StateCameraOrbitEntity),
+    StateGame(StateGame),
+    StateLevel(StateLevel),
+    StateMapSet(StateMapSet),
+    StateGamePlayStyle(StateGamePlayStyle),
+    StateTurn(StateTurn),
 }
 
 // --- State Enums --- //
@@ -299,7 +304,7 @@ pub struct GameHandler {
     active_ball_location: Option<Vec3>,
     arrow_state: bool,
     network_server_connection: bool,
-    remotely_pushed_state: Option<RemoteStateUpdate>,
+    remotely_pushed_state: Option<StateUpdateRef>,
     game_id: Option<Uuid>,
 }
 
@@ -343,3 +348,4 @@ pub struct RunTrigger{
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
 pub struct GolfBallTag(pub usize);
+

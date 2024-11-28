@@ -60,7 +60,7 @@ impl Fonts {
 //     // Extract the yaw rotation around the y-axis from the camera's quaternion
 //     let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
 //     for (name, transform) in scene_meshes.iter() {
-//         let active_player: usize = party.get_active_player().try_into().unwrap();
+//         let active_player: usize = party.get_active_player_index().try_into().unwrap();
 //         if *name.as_str() == *format!("ball{}", active_player).as_str()  && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
 //             let ball_position = transform.translation;
             
@@ -444,7 +444,7 @@ pub fn update_ui(
         format!("state_turn: {:?}", *state_turn),                                                                                           // 9
         format!("Party Size: {:?}", party.get_party_size()),                                                                                // 10
         format!("Current Level: {:?}", game_handler.get_current_level()),                                                                   // 11
-        format!("Active Player: {:?}", party.get_active_player()),                                                                          // 12 
+        format!("Active Player: {:?}", party.get_active_player_index()),                                                                          // 12 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 13
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 14
         format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                                             // 15 

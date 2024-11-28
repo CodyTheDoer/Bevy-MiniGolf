@@ -215,9 +215,16 @@ impl Party {
         info!("post function: next_set_order_player"); 
     }
 
-    pub fn get_active_player(&self) -> i32 {
+    pub fn get_active_player_index(&self) -> i32 {
         let active_player = *self.active_player.lock().unwrap();
         active_player
+    }
+
+    pub fn get_active_player_clone(&self) -> Arc<Mutex<dyn Player + Send>> {
+        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let player_arc = players_lock[active_player_index as usize - 1].clone(); // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
+        player_arc
     }
 
     pub fn set_active_player(&mut self, target: i32) {
@@ -277,7 +284,7 @@ pub fn party_handler_active_player_set_ball_location(
     // golf_ball_tag_query: Query<Entity, With<GolfBallTag>>,
 ) {
     info!("function: party_handler_active_player_set_ball_location"); 
-    // let owned_match = GolfBallTag(party.get_active_player().try_into().unwrap());
+    // let owned_match = GolfBallTag(party.get_active_player_index().try_into().unwrap());
     // for golf_ball in golf_ball_tag_query.iter_mut() {
     //     owned_match => {
     if let Some(current_ball_location) = game_handler.get_active_ball_location() {

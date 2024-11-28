@@ -4,13 +4,13 @@ use uuid::Uuid;
 
 // States
 use crate::{
-    RemoteStateUpdate,
     StateCameraOrbitEntity,
     StateLevel,
     StateGame,
     StateMapSet,
     StateMenu,
     StateTurn,
+    StateUpdateRef,
 };
 
 // Resources
@@ -169,12 +169,12 @@ impl GameHandler {
 
     pub fn auth_server_handshake_received(
         &mut self, 
-        parsed_state: Option<RemoteStateUpdate>,
+        parsed_state: Option<StateUpdateRef>,
     ) {
         self.remotely_pushed_state = Some(parsed_state.unwrap());
     }
 
-    pub fn get_pushed_state(&self) -> RemoteStateUpdate {
+    pub fn get_pushed_state(&self) -> StateUpdateRef {
         self.remotely_pushed_state.clone().expect("Push State get failed.")
     }
 }
@@ -314,7 +314,7 @@ pub fn game_handler_get_active_ball_location(
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
-    info!("function: game_handler_get_active_ball_location, active_player: {:?}", party.get_active_player()); 
+    info!("function: game_handler_get_active_ball_location, active_player: {:?}", party.get_active_player_index()); 
     game_handler.set_active_ball_location(party.active_player_get_ball_location());
 
     // game_handler.get_active_ball_location();
@@ -328,7 +328,7 @@ pub fn game_handler_reset_active_ball_location(
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
     info!("function: game_handler_reset_active_ball_location"); 
-    // let owned_active_player = party.get_active_player();
+    // let owned_active_player = party.get_active_player_index();
     // // let owned_golf_ball = format!("ball{}", owned_active_player);
     // if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
     // }
@@ -345,7 +345,7 @@ pub fn game_handler_set_active_ball_location(
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
     info!("function: game_handler_set_active_ball_location"); 
-    // let owned_active_player = party.get_active_player();
+    // let owned_active_player = party.get_active_player_index();
     // let owned_golf_ball = format!("ball{}", owned_active_player);
     if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
         game_handler.set_active_ball_location(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
