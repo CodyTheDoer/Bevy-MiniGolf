@@ -16,6 +16,10 @@ pub mod level_handler;
 pub mod player_handler;
 pub mod user_interface;
 
+#[derive(Debug, Event)]
+pub struct OnlineStateChange;
+
+
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {
     StateGameConnection(StateGameConnection),
@@ -117,27 +121,6 @@ pub enum StateMenu {
     MenuOnline,
     MenuPreferences,
     MenuPlayer,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateRunTrigger {
-    #[default]
-    Idle,
-    PartyHandlerActivePlayerAddBonk,
-    PartyHandlerActivePlayerSetBallLocation,
-    PartyHandlerActivePlayerSetHoleCompletionStateTrue,
-    PartyHandlerCycleActivePlayer,
-    GameHandlerCycleStateCamera,
-    GameHandlerCycleStateMapSet,
-    GameHandlerCycleCurrentLevel,
-    GameHandlerGetActiveBallLocation,
-    GameHandlerResetActiveBallLocation,
-    GameHandlerSetActiveBallLocation,
-    GameHandlerStateTurnNextPlayerTurn,
-    GameHandlerStartGameLocal,
-    GameHandlerToggleStateGame,
-    LeaderBoardLogGame,
-    LeaderBoardReviewLastGame,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -320,8 +303,14 @@ pub struct LeaderBoard {
 pub struct RunTrigger{
     party_handler_active_player_add_bonk: bool,
     party_handler_active_player_set_ball_location: bool,
-    party_handler_cycle_active_player: bool,
     party_handler_active_player_set_hole_completion_state_true: bool,
+    party_handler_cycle_active_player: bool,
+    party_handler_new_player_ai: bool,
+    party_handler_new_player_local: bool,
+    party_handler_new_player_remote: bool,
+    party_handler_remove_ai: bool,
+    party_handler_remove_last_player: bool,
+    network_get_client_state_game: bool,
     game_handler_cycle_state_camera: bool,
     game_handler_cycle_state_map_set: bool,
     game_handler_cycle_current_level: bool,
@@ -333,6 +322,28 @@ pub struct RunTrigger{
     game_handler_toggle_state_game: bool,
     leader_board_log_game: bool,
     leader_board_review_last_game: bool,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum StateRunTrigger {
+    #[default]
+    Idle,
+    PartyHandlerActivePlayerAddBonk,
+    PartyHandlerActivePlayerSetBallLocation,
+    PartyHandlerActivePlayerSetHoleCompletionStateTrue,
+    PartyHandlerCycleActivePlayer,
+    NetworkGetClientStateGame,
+    GameHandlerCycleStateCamera,
+    GameHandlerCycleStateMapSet,
+    GameHandlerCycleCurrentLevel,
+    GameHandlerGetActiveBallLocation,
+    GameHandlerResetActiveBallLocation,
+    GameHandlerSetActiveBallLocation,
+    GameHandlerStateTurnNextPlayerTurn,
+    GameHandlerStartGameLocal,
+    GameHandlerToggleStateGame,
+    LeaderBoardLogGame,
+    LeaderBoardReviewLastGame,
 }
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]

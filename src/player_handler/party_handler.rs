@@ -15,7 +15,9 @@ use crate::{
     GameHandler,
     Party,
     Player,
+    PlayerAi,
     PlayerLocal,
+    PlayerRemote,
     RunTrigger,
 };
 
@@ -204,6 +206,14 @@ impl Party {
         player.get_player_type()
     }
 
+    pub fn main_player_get_player_id(&self) -> Uuid {
+        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let player_arc = &players_lock[0]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
+        let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        player.get_player_id()
+    }
+
     pub fn next_proximity_player(&self, ) {
         todo!(); 
     }
@@ -389,3 +399,50 @@ pub fn party_handler_cycle_active_player(
     run_trigger.set_target("party_handler_cycle_active_player", false);
 }
 
+pub fn party_handler_remove_ai(
+    mut party: ResMut<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    party.remove_ai();
+    run_trigger.set_target("party_handler_remove_ai", false);
+    info!("post response: party_handler_remove_ai: {}", run_trigger.get("party_handler_remove_ai"));  
+}
+
+pub fn party_handler_remove_last_player(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    party.remove_last_player();
+    run_trigger.set_target("party_handler_remove_last_player", false);
+    info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  
+}
+
+pub fn party_handler_new_player_local(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    let new_player_local = PlayerLocal::new();
+    let new_player = Arc::new(Mutex::new(new_player_local));
+    party.add_player(new_player);
+    run_trigger.set_target("party_handler_new_player_local", false);
+}
+
+pub fn party_handler_new_player_ai(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    let new_player_ai = PlayerAi::new();
+    let new_player = Arc::new(Mutex::new(new_player_ai));
+    party.add_player(new_player);
+    run_trigger.set_target("party_handler_new_player_ai", false);
+}
+
+pub fn party_handler_new_player_remote(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    let new_player_remote = PlayerRemote::new();
+    let new_player = Arc::new(Mutex::new(new_player_remote));
+    party.add_player(new_player);
+    run_trigger.set_target("party_handler_new_player_local", false);
+}

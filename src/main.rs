@@ -11,24 +11,24 @@ use bevy_rapier3d::prelude::*;
 use bevy_matchbox::prelude::*;
 // use bevy_editor_pls::prelude::*;
 
-use std::sync::{
-    Arc,
-    Mutex,
-};
+// use std::sync::{
+//     Arc,
+//     Mutex,
+// };
 
 // --- States --- //
 use minigolf::{ 
-    StateArrow,
-    StateCameraOrbitEntity,
-    StateGame,
-    StateGameConnection,
-    StateGamePlayStyle,
-    StateLevel,
-    StateMapSet,
-    StateMenu,
-    StateRunTrigger,
-    StateTurn,
-    StateUpdateRef,
+    StateArrow, 
+    StateCameraOrbitEntity, 
+    StateGame, 
+    StateGameConnection, 
+    StateGamePlayStyle, 
+    StateLevel, 
+    StateMapSet, 
+    StateMenu, 
+    StateRunTrigger, 
+    StateTurn, 
+    StateUpdateRef
 };
 
 // --- Resources --- //
@@ -37,11 +37,12 @@ use minigolf::{
     Fonts,
     GameHandler,
     LeaderBoard,
+    OnlineStateChange,
     Party,
-    Player,
-    PlayerLocal,
-    PlayerAi,
-    PlayerRemote,
+    // Player,
+    // PlayerLocal,
+    // PlayerAi,
+    // PlayerRemote,
     RunTrigger,
 };
 
@@ -78,6 +79,11 @@ use minigolf::player_handler::party_handler::{
     party_handler_active_player_set_ball_location,
     party_handler_active_player_set_hole_completion_state_true,
     party_handler_cycle_active_player,
+    party_handler_new_player_ai,
+    party_handler_new_player_local,
+    party_handler_new_player_remote,
+    party_handler_remove_ai,
+    party_handler_remove_last_player,
 };
 
 // --- Leader Board Handler Import --- //
@@ -86,9 +92,8 @@ use minigolf::player_handler::leader_board_handler::{
     leader_board_review_last_game,
 };
 
-// // --- User Interface - Turn Handler Import --- //
-// use minigolf::user_interface::turn_handler::{
-// };
+// // --- Network Handler Import --- //
+use minigolf::network_handler::network_get_client_state_game;
 
 // // --- User Interface - Menu Handler Import --- //
 // use minigolf::user_interface::menu_handler::{
@@ -141,6 +146,7 @@ fn main() {
         .insert_state(StateLevel::MainMenu)
         .insert_state(StateMapSet::Tutorial)
         .insert_state(StateMenu::MenuMainMenu)
+        .insert_state(StateRunTrigger::Idle)
         .insert_state(StateTurn::NotInGame)
 
         // --- Resource Initialization --- //
@@ -187,11 +193,21 @@ fn main() {
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
         .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
+        .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
+        
         .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
         .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
-        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_cycle_active_player()))
         .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
         
+        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_cycle_active_player()))
+        
+        .add_systems(Update, party_handler_new_player_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_ai()))
+        .add_systems(Update, party_handler_new_player_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_local()))
+        .add_systems(Update, party_handler_new_player_remote.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_remote()))
+        
+        .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
+        .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
+
         .add_systems(Update, temp_interface);
 
     app.run();
@@ -223,9 +239,6 @@ fn auth_server_handshake(
         socket.send(message.as_bytes().into(), peer);
     }
 }
-
-#[derive(Debug, Event)]
-pub struct OnlineStateChange;
 
 fn server_parse_message(
     message: &str,
@@ -312,11 +325,12 @@ fn server_parse_message(
                 _ => None,
             },
             "StateRunTrigger" => match split[1] {
-                "Idle" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::Idle)),
                 "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
                 "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
                 "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
                 "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
+
+                "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
 
                 "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
                 "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
@@ -345,44 +359,57 @@ fn server_parse_message(
     }
 }
 
-fn remote_state_change_monitor(
+pub fn remote_state_change_monitor(
     mut online_event_listener: EventReader<OnlineStateChange>,
     mut game_handler: ResMut<GameHandler>,
     mut next_state_connection: ResMut<NextState<StateGameConnection>>,
     mut next_state_game: ResMut<NextState<StateGame>>,
+    mut next_state_level: ResMut<NextState<StateLevel>>,
+    mut next_state_map_set: ResMut<NextState<StateMapSet>>,
+    mut next_state_turn: ResMut<NextState<StateTurn>>,
+    mut next_state_game_play_style: ResMut<NextState<StateGamePlayStyle>>,
+    mut next_state_camera_orbit_entity: ResMut<NextState<StateCameraOrbitEntity>>,
+    mut next_state_run_trigger: ResMut<NextState<StateRunTrigger>>,
 ) {
     for ev in online_event_listener.read() {
         let pushed_state =  game_handler.get_pushed_state();
         match pushed_state {
             StateUpdateRef::StateGameConnection(state_game_connection) => {
+                info!("StateGameConnection: {:?}", state_game_connection);
                 next_state_connection.set(state_game_connection); 
                 game_handler.set_connected_true();
             },
             StateUpdateRef::StateGame(state_game) => {
+                info!("StateGame: {:?}", state_game);
                 next_state_game.set(state_game); 
             },
-            StateUpdateRef::StateLevel(_) => {
-                info!("StateLevel received");
+            StateUpdateRef::StateLevel(state_level) => {
+                info!("StateLevel: {:?}", state_level);
+                next_state_level.set(state_level);
             },
-            StateUpdateRef::StateMapSet(_) => {
-                info!("StateMapSet received");
+            StateUpdateRef::StateMapSet(state_map_set) => {
+                info!("StateMapSet: {:?}", state_map_set);
+                next_state_map_set.set(state_map_set);
             },
-            StateUpdateRef::StateTurn(_) => {
-                info!("StateTurn received");
+            StateUpdateRef::StateTurn(state_turn) => {
+                info!("StateTurn: {:?}", state_turn);
+                next_state_turn.set(state_turn);
             },
-            StateUpdateRef::StateGamePlayStyle(_) => {
-                info!("StateGamePlayStyle received");
+            StateUpdateRef::StateGamePlayStyle(state_game_play_style) => {
+                info!("StateGamePlayStyle: {:?}", state_game_play_style);
+                next_state_game_play_style.set(state_game_play_style);
             },
-            StateUpdateRef::StateCameraOrbitEntity(_) => {
-                info!("StateCameraOrbitEntity received");
+            StateUpdateRef::StateCameraOrbitEntity(state_camera_orbit_entity) => {
+                info!("StateCameraOrbitEntity: {:?}", state_camera_orbit_entity);
+                next_state_camera_orbit_entity.set(state_camera_orbit_entity);
             },
-            StateUpdateRef::StateRunTrigger(_) => {
-                info!("StateRunTrigger received");
+            StateUpdateRef::StateRunTrigger(state_run_trigger) => {
+                info!("StateRunTrigger: {:?}", state_run_trigger);
+                next_state_run_trigger.set(state_run_trigger);
             },
         }
     }
 }
-
 
 fn receive_messages(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
@@ -397,10 +424,6 @@ fn receive_messages(
         match std::str::from_utf8(&message) {
             Ok(message) => {
                 info!("Received message: {message:?}");
-                // let split: &Vec<&str> = &message.split("::").collect();
-                // for i in 0..split.len() {
-                //     info!("split{}: {:?}", i, split[i]);
-                // }
                 server_parse_message(message, &mut game_handler, &mut online_event_handler);
             },
             Err(e) => error!("Failed to convert message to string: {e}"),
@@ -411,7 +434,6 @@ fn receive_messages(
 fn temp_interface(
     mut run_trigger: ResMut<RunTrigger>,
     keys: Res<ButtonInput<KeyCode>>,
-    party: Res<Party>,
     state_game: Res<State<StateGame>>,
 ) {
     if keys.just_released(KeyCode::Space) {
@@ -469,8 +491,8 @@ fn temp_interface(
             StateGame::NotInGame => {},
             StateGame::InGame => {
                 run_trigger.set_target("party_handler_cycle_active_player", true);},
+            };
         };
-    };
     if keys.just_released(KeyCode::KeyS) {
         info!("just_released: KeyS");  
         match state_game.get() {
@@ -485,7 +507,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                party.remove_last_player();
+                run_trigger.set_target("party_handler_remove_last_player", true);
             },
         };
     };
@@ -494,7 +516,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                party.remove_ai();
+                run_trigger.set_target("party_handler_remove_ai", true);
             },
         };
     };
@@ -503,9 +525,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let new_player_local = PlayerLocal::new();
-                let new_player = Arc::new(Mutex::new(new_player_local));
-                party.add_player(new_player);
+                run_trigger.set_target("party_handler_new_player_local", true);
             },
         };
     };
@@ -514,9 +534,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let new_player_remote = PlayerRemote::new();
-                let new_player = Arc::new(Mutex::new(new_player_remote));
-                party.add_player(new_player);
+                run_trigger.set_target("party_handler_new_player_remote", true);
             },
         };
     };
@@ -525,9 +543,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                let new_player_ai = PlayerAi::new();
-                let new_player = Arc::new(Mutex::new(new_player_ai));
-                party.add_player(new_player);
+                run_trigger.set_target("party_handler_new_player_ai", true);
             },
         };
     };

@@ -7,8 +7,14 @@ impl RunTrigger {
         Self{
             party_handler_active_player_add_bonk: false,
             party_handler_active_player_set_ball_location: false,
-            party_handler_cycle_active_player: false,
             party_handler_active_player_set_hole_completion_state_true: false,
+            party_handler_cycle_active_player: false,
+            party_handler_new_player_ai: false,
+            party_handler_new_player_local: false,
+            party_handler_new_player_remote: false,
+            party_handler_remove_ai: false,
+            party_handler_remove_last_player: false,
+            network_get_client_state_game: false,
             game_handler_cycle_state_camera: false,
             game_handler_cycle_state_map_set: false,
             game_handler_cycle_current_level: false,
@@ -31,11 +37,29 @@ impl RunTrigger {
             "party_handler_active_player_set_ball_location" => {
                 self.party_handler_active_player_set_ball_location
             },
+            "party_handler_active_player_set_hole_completion_state_true" => {
+                self.party_handler_active_player_set_hole_completion_state_true
+            },
             "party_handler_cycle_active_player" => {
                 self.party_handler_cycle_active_player
             },
-            "party_handler_active_player_set_hole_completion_state_true" => {
-                self.party_handler_active_player_set_hole_completion_state_true
+            "party_handler_new_player_ai" => {
+                self.party_handler_new_player_ai
+            },
+            "party_handler_new_player_local" => {
+                self.party_handler_new_player_local
+            },
+            "party_handler_new_player_remote" => {
+                self.party_handler_new_player_remote
+            },
+            "party_handler_remove_ai" => {
+                self.party_handler_remove_ai
+            },
+            "party_handler_remove_last_player" => {
+                self.party_handler_remove_last_player
+            },
+            "network_get_client_state_game" => {
+                self.network_get_client_state_game
             },
             "game_handler_cycle_state_camera" => {
                 self.game_handler_cycle_state_camera
@@ -84,14 +108,38 @@ impl RunTrigger {
                 self.party_handler_active_player_set_ball_location = state;
                 info!("response: party_handler_active_player_set_ball_location: {}", self.get("party_handler_active_player_set_ball_location"));  
             },
-            "party_handler_cycle_active_player" => {
-                self.party_handler_cycle_active_player = state;
-                info!("response: party_handler_cycle_active_player: {}", self.get("party_handler_cycle_active_player"));  
-            },
             "party_handler_active_player_set_hole_completion_state_true" => {
                 self.party_handler_active_player_set_hole_completion_state_true = state;
                 info!("response: party_handler_active_player_set_hole_completion_state_true: {}", self.get("party_handler_active_player_set_hole_completion_state_true"));
             }
+            "party_handler_cycle_active_player" => {
+                self.party_handler_cycle_active_player = state;
+                info!("response: party_handler_cycle_active_player: {}", self.get("party_handler_cycle_active_player"));  
+            },
+            "party_handler_new_player_ai" => {
+                self.party_handler_new_player_ai = state;
+                info!("response: party_handler_new_player_ai: {}", self.get("party_handler_new_player_ai"));  
+            },
+            "party_handler_new_player_local" => {
+                self.party_handler_new_player_local = state;
+                info!("response: party_handler_new_player_local: {}", self.get("party_handler_new_player_local"));  
+            },
+            "party_handler_new_player_remote" => {
+                self.party_handler_new_player_remote = state;
+                info!("response: party_handler_new_player_remote: {}", self.get("party_handler_new_player_remote"));  
+            },
+            "party_handler_remove_ai" => {
+                self.party_handler_remove_ai = state;
+                info!("response: party_handler_remove_ai: {}", self.get("party_handler_remove_ai"));  
+            },
+            "party_handler_remove_last_player" => {
+                self.party_handler_remove_last_player = state;
+                info!("response: party_handler_remove_last_player: {}", self.get("party_handler_remove_last_player"));  
+            },
+            "network_get_client_state_game" => {
+                self.network_get_client_state_game = state;
+                info!("response: network_get_client_state_game: {}", self.get("network_get_client_state_game"));  
+            },
             "game_handler_cycle_state_camera" => {
                 self.game_handler_cycle_state_camera = state;
                 info!("response: game_handler_cycle_state_camera: {}", self.get("game_handler_cycle_state_camera"));  
@@ -150,12 +198,36 @@ impl RunTrigger {
         self.party_handler_active_player_set_ball_location
     }
 
+    pub fn party_handler_active_player_set_hole_completion_state_true(&self) -> bool {
+        self.party_handler_active_player_set_hole_completion_state_true
+    }
+
     pub fn party_handler_cycle_active_player(&self) -> bool {
         self.party_handler_cycle_active_player
     }
 
-    pub fn party_handler_active_player_set_hole_completion_state_true(&self) -> bool {
-        self.party_handler_active_player_set_hole_completion_state_true
+    pub fn party_handler_new_player_ai(&self) -> bool {
+        self.party_handler_new_player_ai
+    }
+
+    pub fn party_handler_new_player_local(&self) -> bool {
+        self.party_handler_new_player_local
+    }
+
+    pub fn party_handler_new_player_remote(&self) -> bool {
+        self.party_handler_new_player_remote
+    }
+
+    pub fn party_handler_remove_ai(&self) -> bool {
+        self.party_handler_remove_ai
+    }
+
+    pub fn party_handler_remove_last_player(&self) -> bool {
+        self.party_handler_remove_last_player
+    }
+
+    pub fn network_get_client_state_game(&self) -> bool {
+        self.network_get_client_state_game
     }
 
     pub fn game_handler_cycle_state_camera(&self) -> bool {
