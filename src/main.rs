@@ -26,6 +26,7 @@ use minigolf::{
     StateLevel,
     StateMapSet,
     StateMenu,
+    StateRunTrigger,
     StateTurn,
     StateUpdateRef,
 };
@@ -310,6 +311,27 @@ fn server_parse_message(
                 "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
                 _ => None,
             },
+            "StateRunTrigger" => match split[1] {
+                "Idle" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::Idle)),
+                "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
+                "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
+                "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
+                "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
+
+                "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
+                "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
+                "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
+                "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
+                "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
+                "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
+                "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
+                "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
+                "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
+
+                "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
+                "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
+                _ => None,
+            },
             _ => None,
         };
         
@@ -353,6 +375,9 @@ fn remote_state_change_monitor(
             },
             StateUpdateRef::StateCameraOrbitEntity(_) => {
                 info!("StateCameraOrbitEntity received");
+            },
+            StateUpdateRef::StateRunTrigger(_) => {
+                info!("StateRunTrigger received");
             },
         }
     }
@@ -507,93 +532,3 @@ fn temp_interface(
         };
     };
 }
-
-/*
-pub enum StateArrow {
-    #[default]
-    Idle,
-    DrawingArrow,
-}
-
-pub enum StateCameraOrbitEntity {
-    #[default]
-    Menu,
-    Ball,
-    Cup,
-    FreePan,
-    LeaderBoard,
-}
-
-pub enum StateLevel {
-    #[default]
-    MainMenu,
-    Hole1,
-    Hole2,
-    Hole3,
-    Hole4,
-    Hole5,
-    Hole6,
-    Hole7,
-    Hole8,
-    Hole9,
-    Hole10,
-    Hole11,
-    Hole12,
-    Hole13,
-    Hole14,
-    Hole15,
-    Hole16,
-    Hole17,
-    Hole18,
-    HoleTutorial,
-    MenuLeaderBoard,
-    MenuLocal,
-    MenuOnline,
-    MenuPreferences,
-    MenuPlayer,
-}
-
-pub enum StateMapSet {
-    #[default]
-    Tutorial,
-    WholeCorse,
-    FrontNine,
-    BackNine,
-    SelectAHole,
-}
-
-pub enum StateMenu {
-    #[default]
-    MenuMainMenu,
-    MenuLeaderBoard,
-    MenuLocal,
-    MenuOnline,
-    MenuPreferences,
-    MenuPlayer,
-}
-
-pub enum StateGame {
-    #[default]
-    NotInGame,
-    InGame,
-}
-
-pub enum StateGameConnection {
-    #[default]
-    Local,
-    Online,
-}
-
-pub enum StateGamePlayStyle {
-    #[default]
-    SetOrder,
-    Proximity,
-}
-
-pub enum StateTurn {
-    #[default]
-    NotInGame,
-    Active,
-    NextTurn,
-}
-*/

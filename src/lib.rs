@@ -16,39 +16,6 @@ pub mod level_handler;
 pub mod player_handler;
 pub mod user_interface;
 
-// #[derive(Clone, Debug)]
-// enum NetworkInterface {
-//     InitHandshake,
-//     HandshakeConfirmed,
-
-//     PlayerCheckProfile,
-//     PlayerUpload,
-//     PlayerUpdate,
-
-//     RequestLeaderBoard,
-//     UpdateLeaderBoard,
-    
-//     FriendsGet,
-//     FriendSearch,
-//     FriendAdd,
-//     FriendRemove,
-
-//     PartyGet,
-//     PartyAddFriend,
-//     PartyAddAI,
-//     PartyRemovePlayer,
-//     PartyJoin,
-//     PartyLeave,
-    
-//     FindMatchInit,
-//     FindMatchCancel,
-
-//     InGameQuit,
-//     InGameBonk,
-//     InGameHoleCompletePlayer,
-// }
-
-
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {
     StateGameConnection(StateGameConnection),
@@ -57,6 +24,7 @@ pub enum StateUpdateRef {
     StateLevel(StateLevel),
     StateMapSet(StateMapSet),
     StateGamePlayStyle(StateGamePlayStyle),
+    StateRunTrigger(StateRunTrigger),
     StateTurn(StateTurn),
 }
 
@@ -77,6 +45,27 @@ pub enum StateCameraOrbitEntity {
     Cup,
     FreePan,
     LeaderBoard,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum StateGame {
+    #[default]
+    NotInGame,
+    InGame,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum StateGameConnection {
+    #[default]
+    Local,
+    Online,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum StateGamePlayStyle {
+    #[default]
+    SetOrder,
+    Proximity,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -131,24 +120,24 @@ pub enum StateMenu {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateGame {
+pub enum StateRunTrigger {
     #[default]
-    NotInGame,
-    InGame,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateGameConnection {
-    #[default]
-    Local,
-    Online,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateGamePlayStyle {
-    #[default]
-    SetOrder,
-    Proximity,
+    Idle,
+    PartyHandlerActivePlayerAddBonk,
+    PartyHandlerActivePlayerSetBallLocation,
+    PartyHandlerActivePlayerSetHoleCompletionStateTrue,
+    PartyHandlerCycleActivePlayer,
+    GameHandlerCycleStateCamera,
+    GameHandlerCycleStateMapSet,
+    GameHandlerCycleCurrentLevel,
+    GameHandlerGetActiveBallLocation,
+    GameHandlerResetActiveBallLocation,
+    GameHandlerSetActiveBallLocation,
+    GameHandlerStateTurnNextPlayerTurn,
+    GameHandlerStartGameLocal,
+    GameHandlerToggleStateGame,
+    LeaderBoardLogGame,
+    LeaderBoardReviewLastGame,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
