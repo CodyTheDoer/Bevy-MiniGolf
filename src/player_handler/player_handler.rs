@@ -68,6 +68,10 @@ impl Player for PlayerLocal {
         self.player_id.clone()
     }
 
+    fn set_player_id(&mut self, new_id: Uuid) {
+        self.player_id = new_id;
+    }
+
     fn get_player_type(&self) -> String {
         self.player_type.clone()
     }
@@ -145,6 +149,10 @@ impl Player for PlayerAi {
         self.player_id.clone()
     }
 
+    fn set_player_id(&mut self, new_id: Uuid) {
+        self.player_id = new_id;
+    }
+
     fn get_player_type(&self) -> String {
         self.player_type.clone()
     }
@@ -220,6 +228,10 @@ impl Player for PlayerRemote {
 
     fn get_player_id(&self) -> Uuid {
         self.player_id.clone()
+    }
+
+    fn set_player_id(&mut self, new_id: Uuid) {
+        self.player_id = new_id;
     }
 
     fn get_player_type(&self) -> String {

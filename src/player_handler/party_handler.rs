@@ -207,11 +207,17 @@ impl Party {
     }
 
     pub fn main_player_get_player_id(&self) -> Uuid {
-        let active_player_index = *self.active_player.lock().unwrap(); // Get the active player index
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[0]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
         let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
         player.get_player_id()
+    }
+
+    pub fn player_set_player_id(&mut self, player_idx: usize, new_id: Uuid) {
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        let player_arc = &players_lock[player_idx]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
+        let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+        player.set_player_id(new_id);
     }
 
     pub fn next_proximity_player(&self, ) {

@@ -10,6 +10,7 @@ use std::sync::Mutex;
 
 // Direct Imports
 pub mod network_handler;
+pub mod database_handler;
 
 // Directory Imports
 pub mod level_handler;
@@ -131,6 +132,13 @@ pub enum StateTurn {
     NextTurn,
 }
 
+// Database //
+
+use sqlx::MySqlPool;
+
+#[derive(Resource)]
+pub struct DatabasePool(pub MySqlPool);
+
 // World //
 
 #[derive(Component)]
@@ -206,6 +214,7 @@ pub trait Player {
     fn get_hole_completion_state(&self) -> bool;
     fn set_hole_completion_state(&mut self, hole_completion_state: bool);
     fn get_player_id(&self) -> Uuid;
+    fn set_player_id(&mut self, new_id: Uuid);
     fn get_player_type(&self) -> String;
     fn get_score(&self) -> [i32; 18];
     fn get_ball_location(&self) -> Vec3;

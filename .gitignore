@@ -1,1 +1,8 @@
+# Ignore the build dir
 /target
+
+# Ignore the .env file to keep sensitive data out of version control
+.env
+
+# Rust-related
+Cargo.lock
