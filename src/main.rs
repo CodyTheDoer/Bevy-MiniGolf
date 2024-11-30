@@ -15,9 +15,9 @@ use tokio::runtime::Runtime;
 // use uuid::Uuid;
 
 // --- External Plugins --- //
-use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
+// use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use bevy_rapier3d::prelude::*;
-use bevy_matchbox::prelude::*;
+// use bevy_matchbox::prelude::*;
 // use bevy_editor_pls::prelude::*;
 
 // use std::sync::{
@@ -36,8 +36,7 @@ use minigolf::{
     StateMapSet, 
     StateMenu, 
     StateRunTrigger, 
-    StateTurn, 
-    StateUpdateRef
+    StateTurn,
 };
 
 // --- Resources --- //
@@ -49,10 +48,6 @@ use minigolf::{
     LeaderBoard,
     OnlineStateChange,
     Party,
-    // Player,
-    // PlayerLocal,
-    // PlayerAi,
-    // PlayerRemote,
     RunTrigger,
 };
 
@@ -104,8 +99,6 @@ use minigolf::player_handler::leader_board_handler::{
 
 // // --- Database Handler Import --- //
 use minigolf::database_handler::{
-    database_startup_system,
-    query_boot_system,
     first_time_boot_system,
     establish_connection,
 };
@@ -114,7 +107,7 @@ use minigolf::database_handler::{
 use minigolf::network_handler::{
     auth_server_handshake,
     network_get_client_state_game,
-    server_parse_message,
+    // server_parse_message,
     start_socket,
     receive_messages,
     remote_state_change_monitor,
@@ -196,7 +189,6 @@ fn main() {
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, setup_ui)
-        .add_systems(Startup, database_startup_system)
         
         // Network - Startup //
         .add_systems(Startup, start_socket)

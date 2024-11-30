@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    user_interface::run_trigger, GameHandler, GameRecord, LeaderBoard, Party, RunTrigger
+    GameHandler, 
+    GameRecord, 
+    LeaderBoard, 
+    Party, 
+    RunTrigger,
 };
 
 impl LeaderBoard {
@@ -61,8 +65,8 @@ impl LeaderBoard {
 pub fn leader_board_log_game(
     mut run_trigger: ResMut<RunTrigger>,
     mut leader_board: ResMut<LeaderBoard>,
-    mut game_handler: ResMut<GameHandler>,
-    mut party: ResMut<Party>,
+    game_handler: ResMut<GameHandler>,
+    party: ResMut<Party>,
 ) {
     leader_board.log_game(game_handler, party);
     run_trigger.set_target("leader_board_log_game", false);

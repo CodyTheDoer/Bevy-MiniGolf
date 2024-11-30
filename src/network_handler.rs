@@ -27,7 +27,7 @@ use crate::{
 pub fn network_get_client_state_game(
     mut run_trigger: ResMut<RunTrigger>,
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
-    mut party: ResMut<Party>,
+    party: Res<Party>,
     state_game: Res<State<StateGame>>,
 ) {
     let peers: Vec<_> = socket.connected_peers().collect();
@@ -205,7 +205,7 @@ pub fn remote_state_change_monitor(
     mut next_state_camera_orbit_entity: ResMut<NextState<StateCameraOrbitEntity>>,
     mut next_state_run_trigger: ResMut<NextState<StateRunTrigger>>,
 ) {
-    for ev in online_event_listener.read() {
+    for _ev in online_event_listener.read() {
         let pushed_state =  game_handler.get_pushed_state();
         match pushed_state {
             StateUpdateRef::StateGameConnection(state_game_connection) => {

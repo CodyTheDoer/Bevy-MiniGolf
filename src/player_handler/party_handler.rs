@@ -406,7 +406,7 @@ pub fn party_handler_cycle_active_player(
 }
 
 pub fn party_handler_remove_ai(
-    mut party: ResMut<Party>,
+    party: Res<Party>,
     mut run_trigger: ResMut<RunTrigger>,
 ) {
     party.remove_ai();

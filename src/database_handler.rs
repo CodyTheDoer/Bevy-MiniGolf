@@ -1,13 +1,10 @@
 // --- Internal Bevy Plugins --- //
-use bevy::{prelude::*,
-    tasks::IoTaskPool,
-};
+use bevy::prelude::*;
 
 use dotenv::dotenv;
 use std::env;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::MySqlPool;
-use tokio::runtime::Runtime;
 use uuid::Uuid;
 
 // --- States --- //
@@ -19,10 +16,6 @@ use crate::{
 };
 
 use bevy_tokio_tasks::{TaskContext, TokioTasksRuntime};
-
-pub fn database_startup_system(pool: Res<DatabasePool>) {
-    println!("Database pool has been set up successfully");
-}
 
 pub async fn query_boot_system(
     pool: MySqlPool,
@@ -37,7 +30,7 @@ pub async fn query_boot_system(
         Err(err) => {
             eprintln!("Failed to execute query: {:?}", err);
             // Run a callback on the main thread to handle the error properly
-            ctx.run_on_main_thread(move |ctx| {
+            ctx.run_on_main_thread(move |_ctx| {
                 info!("Failed to execute query in the task: {:?}", err);
             })
             .await;
@@ -67,7 +60,7 @@ pub async fn query_boot_system(
             Err(err) => {
                 eprintln!("Failed to insert new player: {:?}", err);
                 // Run a callback on the main thread to handle the error properly
-                ctx.run_on_main_thread(move |ctx| {
+                ctx.run_on_main_thread(move |_ctx| {
                     info!("Failed to insert new player in the task: {:?}", err);
                 })
                 .await;
@@ -84,7 +77,7 @@ pub async fn query_boot_system(
             Err(err) => {
                 eprintln!("Failed to retrieve existing player_id: {:?}", err);
                 // Run a callback on the main thread to handle the error properly
-                ctx.run_on_main_thread(move |ctx| {
+                ctx.run_on_main_thread(move |_ctx| {
                     info!("Failed to retrieve existing player_id in the task: {:?}", err);
                 })
                 .await;
@@ -100,7 +93,7 @@ pub async fn query_boot_system(
             }
             Err(_) => {
                 eprintln!("Failed to convert player_id from binary to UUID");
-                ctx.run_on_main_thread(|ctx| {
+                ctx.run_on_main_thread(|_ctx| {
                     info!("Failed to convert player_id from binary in the task");
                 })
                 .await;
