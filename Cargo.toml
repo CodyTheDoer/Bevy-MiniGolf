@@ -13,6 +13,7 @@ bevy_matchbox = "0.10"
 dotenv = "0.15.0"
 sqlx = { version = "0.8.0", features = [ "runtime-tokio", "mysql" ] }
 tokio = { version = "1.0", features = ["full"] } 
+bevy-tokio-tasks = "0.14.0"
 # uuid = "1.11.0" <- Covered below in dependencies.uuid
 
 # Enable a small amount of optimization in the dev profile.

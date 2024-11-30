@@ -357,4 +357,3 @@ pub enum StateRunTrigger {
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
 pub struct GolfBallTag(pub usize);
-

@@ -4,17 +4,18 @@ use bevy::{prelude::*,
     time::common_conditions::on_timer, 
     utils::Duration,
     input::common_conditions::*,
-    tasks::IoTaskPool,
+    // tasks::IoTaskPool,
 };
 
-use dotenv::dotenv;
-use std::env;
-use sqlx::mysql::MySqlPoolOptions;
-use sqlx::MySqlPool;
+// use dotenv::dotenv;
+// use std::env;
+// use sqlx::mysql::MySqlPoolOptions;
+// use sqlx::MySqlPool;
 use tokio::runtime::Runtime;
-use uuid::Uuid;
+// use uuid::Uuid;
 
 // --- External Plugins --- //
+use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use bevy_rapier3d::prelude::*;
 use bevy_matchbox::prelude::*;
 // use bevy_editor_pls::prelude::*;
@@ -164,6 +165,7 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
         // .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
@@ -184,10 +186,10 @@ fn main() {
         .insert_resource(CameraHandler::new())
         .insert_resource(GameHandler::new())
         .insert_resource(Fonts::new())
+        .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
         .insert_resource(RunTrigger::new())
-        .insert_resource(LeaderBoard::new()) 
-
+        
         // --- Event Initialization --- //
         .add_event::<OnlineStateChange>()    
 

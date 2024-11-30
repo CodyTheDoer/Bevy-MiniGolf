@@ -18,13 +18,15 @@ use crate::{
     Party,
 };
 
+use bevy_tokio_tasks::{TaskContext, TokioTasksRuntime};
+
 pub fn database_startup_system(pool: Res<DatabasePool>) {
     println!("Database pool has been set up successfully");
 }
 
 pub async fn query_boot_system(
     pool: MySqlPool,
-    // mut party: ResMut<Party>,
+    mut ctx: TaskContext, 
 ) {
     // Count how many players exist in the player_table
     let row: (i64,) = match sqlx::query_as("SELECT COUNT(*) FROM player_table")
@@ -34,12 +36,17 @@ pub async fn query_boot_system(
         Ok(row) => row,
         Err(err) => {
             eprintln!("Failed to execute query: {:?}", err);
+            // Run a callback on the main thread to handle the error properly
+            ctx.run_on_main_thread(move |ctx| {
+                info!("Failed to execute query in the task: {:?}", err);
+            })
+            .await;
             return;
         }
     };
-    println!("Number of rows: {}", row.0);
 
-    if row.0 == 0 {
+    println!("Number of rows: {}", row.0);
+    let player_id = if row.0 == 0 {
         // No players exist, so let's create a new one
         let player_id = Uuid::now_v7(); // Generates a new UUID v7 for player_id
         let email = env::var("PLAYER_EMAIL").unwrap_or_else(|_| "player@example.com".to_string());
@@ -48,21 +55,27 @@ pub async fn query_boot_system(
         // Insert the new player into the player_table
         match sqlx::query("INSERT INTO player_table (player_id, username, email, created, updated) VALUES (UUID_TO_BIN(?), ?, ?, NOW(), NOW())")
             .bind(player_id.to_string())
-            .bind(username)
-            .bind(email)
+            .bind(&username)
+            .bind(&email)
             .execute(&pool)
             .await
         {
-            Ok(result) => {
+            Ok(_) => {
                 println!("Inserted new player with ID: {:?}", player_id);
-                // party.player_set_player_id(0, player_id);
+                player_id
             },
             Err(err) => {
                 eprintln!("Failed to insert new player: {:?}", err);
+                // Run a callback on the main thread to handle the error properly
+                ctx.run_on_main_thread(move |ctx| {
+                    info!("Failed to insert new player in the task: {:?}", err);
+                })
+                .await;
+                return;
             }
         }
     } else {
-        // Player already exists, you could retrieve the player_id and set it in Party here
+        // Retrieve existing player ID
         let existing_player: (Vec<u8>,) = match sqlx::query_as("SELECT player_id FROM player_table LIMIT 1")
             .fetch_one(&pool)
             .await
@@ -70,40 +83,56 @@ pub async fn query_boot_system(
             Ok(row) => row,
             Err(err) => {
                 eprintln!("Failed to retrieve existing player_id: {:?}", err);
+                // Run a callback on the main thread to handle the error properly
+                ctx.run_on_main_thread(move |ctx| {
+                    info!("Failed to retrieve existing player_id in the task: {:?}", err);
+                })
+                .await;
                 return;
             }
         };
 
-        // Convert the binary `player_id` back to a Uuid
-        if let Ok(player_id) = Uuid::from_slice(&existing_player.0) {
-            println!("Setting existing player ID: {}", player_id);
-            // Call to set the player ID in Party system
-            // party.player_set_player_id(0, player_id);
-        } else {
-            eprintln!("Failed to convert player_id from binary to UUID");
+        // Convert the binary player_id back to a Uuid
+        match Uuid::from_slice(&existing_player.0) {
+            Ok(player_id) => {
+                println!("Retrieved existing player ID: {}", player_id);
+                player_id
+            }
+            Err(_) => {
+                eprintln!("Failed to convert player_id from binary to UUID");
+                ctx.run_on_main_thread(|ctx| {
+                    info!("Failed to convert player_id from binary in the task");
+                })
+                .await;
+                return;
+            }
         }
-    }
+    };
+
+    // Run on the main thread to update the resource with player ID
+    ctx.run_on_main_thread(move |ctx| {
+        info!("Successfully retrieved or created player ID: {:?}", player_id);
+        if let Some(mut party) = ctx.world.get_resource_mut::<Party>() {
+            // Update the Party resource as needed
+            party.player_set_player_id(0, player_id);
+            info!("Updated Party resource with player ID: {:?}", player_id);
+        } else {
+            info!("Failed to access Party resource");
+        }
+    })
+    .await;
 }
 
 pub fn first_time_boot_system(
     pool: Res<DatabasePool>,
-    // party: Res<Party>,
+    runtime: ResMut<TokioTasksRuntime>, 
 ) {
     let pool = pool.0.clone();
-    
-    // Use Bevy's IoTaskPool to run the async function in the background
-    let task_pool = IoTaskPool::get();
 
-    task_pool.spawn(async move {
-        // Create a new Tokio runtime
-        let runtime = Runtime::new().expect("Failed to create Tokio runtime");
-        
-        // Run the query within the runtime's context
-        runtime.block_on(async move {
-            query_boot_system(pool).await;
-        });
-    })
-    .detach();
+    // Spawn the background task using bevy_tokio_tasks
+    runtime.spawn_background_task(move |ctx| {
+        query_boot_system(pool, ctx)
+    });
 }
 
 pub async fn establish_connection() -> sqlx::Result<sqlx::Pool<sqlx::MySql>> {
