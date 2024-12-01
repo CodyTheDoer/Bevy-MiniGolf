@@ -99,8 +99,9 @@ use minigolf::player_handler::leader_board_handler::{
 
 // // --- Database Handler Import --- //
 use minigolf::database_handler::{
-    first_time_boot_system,
-    establish_connection,
+    first_time_boot_system_local_player,
+    first_time_boot_setup_map_set,
+    database_establish_connection,
 };
 
 // // --- Network Handler Import --- //
@@ -129,7 +130,7 @@ fn main() {
     let runtime = Runtime::new().expect("Failed to create Tokio runtime");    
 
     // Use the runtime to block on the async function and get the pool
-    let pool = runtime.block_on(establish_connection())
+    let pool = runtime.block_on(database_establish_connection())
         .expect("Failed to create database connection pool");
 
     let mut app = App::new();
@@ -194,7 +195,8 @@ fn main() {
         .add_systems(Startup, start_socket)
 
         // Database - Interface //
-        .add_systems(Update, first_time_boot_system.run_if(input_just_released(KeyCode::ShiftLeft)))
+        .add_systems(Update, first_time_boot_system_local_player.run_if(input_just_released(KeyCode::ShiftLeft)))
+        .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //
         .add_systems(Update, receive_messages)
