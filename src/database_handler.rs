@@ -3,20 +3,103 @@ use bevy::prelude::*;
 
 use dotenv::dotenv;
 use std::env;
-use sqlx::mysql::MySqlPoolOptions;
-use sqlx::MySqlPool;
+use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
+
+use std::sync::Arc;
+use std::sync::Mutex;
 
 // --- States --- //
 
 // --- Resources --- //
 use crate::{
-    DatabasePool,
+    DatabaseConnection,
     Party,
 };
 
-use bevy_tokio_tasks::{TaskContext, TokioTasksRuntime};
+impl DatabaseConnection {
+    pub fn new(path: &str) -> Self {
+        let conn = Connection::open(path).expect("Failed to open SQLite database");
+        Self {
+            conn: Arc::new(Mutex::new(conn)),
+        }
+    }
 
+    pub fn get_connection(&self) -> Arc<Mutex<Connection>> {
+        self.conn.clone()
+    }
+}
+
+pub fn first_time_boot_system_local_player(
+    db: Res<DatabaseConnection>,
+    mut party: ResMut<Party>,
+) {
+    dotenv().ok();
+    let conn = db.get_connection();
+    let conn = conn.lock().unwrap(); // Lock the mutex
+
+    // Create table if it doesn't exist
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS player_table (
+            player_id TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            golf_ball INT,
+            putter INT
+        )",
+        [],
+    )
+    .expect("Failed to create table");
+
+    // Create a trigger to update the `updated` column only when specific columns are updated
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS update_player_table_timestamp
+         AFTER UPDATE ON player_table
+         FOR EACH ROW
+         WHEN 
+            NEW.username != OLD.username OR 
+            NEW.email != OLD.email OR
+            NEW.golf_ball != OLD.golf_ball OR
+            NEW.putter != OLD.putter
+         BEGIN
+            UPDATE player_table SET updated = CURRENT_TIMESTAMP WHERE player_id = OLD.player_id;
+         END;",
+        [],
+    )
+    .expect("Failed to create trigger");
+
+    // Check for existing players
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM player_table", [], |row| row.get(0))
+        .unwrap_or(0);
+
+    if count == 0 {
+        let player_id = Uuid::now_v7().to_string();
+        let player_username = env::var("PLAYER_USERNAME").unwrap();
+        let player_email = env::var("PLAYER_EMAIL").unwrap();
+        conn.execute(
+            "INSERT INTO player_table (player_id, username, email) VALUES (?1, ?2, ?3)",
+            rusqlite::params![
+                player_id,
+                player_username,
+                player_email,
+            ],
+        )
+        .expect("Failed to insert new player");
+        println!("Inserted new player with ID: {:?}", Uuid::parse_str(&player_id));
+        party.player_set_player_id(0, Uuid::parse_str(&player_id).expect("Parse from String to Uuid failed"));
+    } else {
+        let player_id: String = conn
+            .query_row("SELECT player_id FROM player_table LIMIT 1", [], |row| row.get(0))
+            .expect("Failed to retrieve player_id");
+        println!("Existing player ID: {:?}", Uuid::parse_str(&player_id));
+        party.player_set_player_id(0, Uuid::parse_str(&player_id).expect("Parse from String to Uuid failed"));
+    }
+}
+
+/*
 pub async fn database_establish_connection() -> sqlx::Result<sqlx::Pool<sqlx::MySql>> {
     dotenv().ok();
 
@@ -413,3 +496,4 @@ pub async fn first_time_boot_setup_map_set_creation(
         };
     };
 }
+*/

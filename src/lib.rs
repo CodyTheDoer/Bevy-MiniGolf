@@ -3,6 +3,10 @@ use bevy_rapier3d::prelude::RigidBody;
 
 use uuid::Uuid;
 
+use rusqlite::{params, Connection, Result};
+use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
+
 // use std::fmt;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -16,6 +20,11 @@ pub mod database_handler;
 pub mod level_handler;
 pub mod player_handler;
 pub mod user_interface;
+
+#[derive(Resource)]
+pub struct DatabaseConnection{
+    pub conn: Arc<Mutex<Connection>>,
+}
 
 #[derive(Debug, Event)]
 pub struct OnlineStateChange;
@@ -131,13 +140,6 @@ pub enum StateTurn {
     Active,
     NextTurn,
 }
-
-// Database //
-
-use sqlx::MySqlPool;
-
-#[derive(Resource)]
-pub struct DatabasePool(pub MySqlPool);
 
 // World //
 
@@ -302,6 +304,9 @@ impl GameRecord {
     } 
 }
 
+#[derive(Asset, Clone, Component, Debug, TypePath)]
+pub struct GolfBallTag(pub usize);
+
 #[derive(Resource)]
 pub struct LeaderBoard {
     current_scores: [i32; 18],
@@ -355,5 +360,30 @@ pub enum StateRunTrigger {
     LeaderBoardReviewLastGame,
 }
 
-#[derive(Asset, Clone, Component, Debug, TypePath)]
-pub struct GolfBallTag(pub usize);
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MapSet {
+    pub map_set_id: Uuid,
+    pub map_set_name: String,
+    pub created: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
+    pub last_updated: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
+    pub hole_range_start: i32,
+    pub hole_range_end: i32,
+    pub file_path_level_1: Option<String>,
+    pub file_path_level_2: Option<String>,
+    pub file_path_level_3: Option<String>,
+    pub file_path_level_4: Option<String>,
+    pub file_path_level_5: Option<String>,
+    pub file_path_level_6: Option<String>,
+    pub file_path_level_7: Option<String>,
+    pub file_path_level_8: Option<String>,
+    pub file_path_level_9: Option<String>,
+    pub file_path_level_10: Option<String>,
+    pub file_path_level_11: Option<String>,
+    pub file_path_level_12: Option<String>,
+    pub file_path_level_13: Option<String>,
+    pub file_path_level_14: Option<String>,
+    pub file_path_level_15: Option<String>,
+    pub file_path_level_16: Option<String>,
+    pub file_path_level_17: Option<String>,
+    pub file_path_level_18: Option<String>,
+}

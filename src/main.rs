@@ -1,9 +1,12 @@
 // --- Internal Bevy Plugins --- //
 use bevy::{prelude::*,
-    window::{PresentMode, WindowTheme},
-    time::common_conditions::on_timer, 
-    utils::Duration,
     input::common_conditions::*,
+    time::common_conditions::on_timer, 
+    utils::{
+        Duration,
+        HashMap,
+    },
+    window::{PresentMode, WindowTheme},
     // tasks::IoTaskPool,
 };
 
@@ -11,13 +14,19 @@ use bevy::{prelude::*,
 // use std::env;
 // use sqlx::mysql::MySqlPoolOptions;
 // use sqlx::MySqlPool;
-use tokio::runtime::Runtime;
-// use uuid::Uuid;
+use time::{macros::datetime,
+    OffsetDateTime,
+};
+use uuid::Uuid;
+use rmp_serde::{
+    decode,
+    // encode,
+};
 
 // --- External Plugins --- //
 // use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use bevy_rapier3d::prelude::*;
-// use bevy_matchbox::prelude::*;
+use bevy_matchbox::prelude::*;
 // use bevy_editor_pls::prelude::*;
 
 // use std::sync::{
@@ -42,10 +51,11 @@ use minigolf::{
 // --- Resources --- //
 use minigolf::{
     CameraHandler,
-    DatabasePool,
+    DatabaseConnection,
     Fonts,
     GameHandler,
     LeaderBoard,
+    MapSet,
     OnlineStateChange,
     Party,
     RunTrigger,
@@ -98,11 +108,7 @@ use minigolf::player_handler::leader_board_handler::{
 };
 
 // // --- Database Handler Import --- //
-use minigolf::database_handler::{
-    first_time_boot_system_local_player,
-    first_time_boot_setup_map_set,
-    database_establish_connection,
-};
+use minigolf::database_handler::boot_system_sync_local_player;
 
 // // --- Network Handler Import --- //
 use minigolf::network_handler::{
@@ -127,12 +133,6 @@ use minigolf::network_handler::{
 // };
 
 fn main() {
-    let runtime = Runtime::new().expect("Failed to create Tokio runtime");    
-
-    // Use the runtime to block on the async function and get the pool
-    let pool = runtime.block_on(database_establish_connection())
-        .expect("Failed to create database connection pool");
-
     let mut app = App::new();
         app.add_plugins((
             DefaultPlugins.set(
@@ -176,7 +176,7 @@ fn main() {
         .insert_state(StateTurn::NotInGame)
 
         // --- Resource Initialization --- //
-        .insert_resource(DatabasePool(pool))
+        .insert_resource(DatabaseConnection::new("game_data.db"))
         .insert_resource(CameraHandler::new())
         .insert_resource(GameHandler::new())
         .insert_resource(Fonts::new())
@@ -195,8 +195,8 @@ fn main() {
         .add_systems(Startup, start_socket)
 
         // Database - Interface //
-        .add_systems(Update, first_time_boot_system_local_player.run_if(input_just_released(KeyCode::ShiftLeft)))
-        .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
+        .add_systems(Update, boot_system_sync_local_player.run_if(input_just_released(KeyCode::ShiftLeft)))
+        // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //
         .add_systems(Update, receive_messages)
@@ -241,8 +241,58 @@ fn main() {
 
         .add_systems(Update, temp_interface);
 
+        // .add_systems(Update, devfn_receive_messages_map_set);
+
     app.run();
 }
+
+// pub fn devfn_receive_messages_map_set(
+//     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+//     mut client_map_sets: ResMut<HashMap<Uuid, OffsetDateTime>>,
+//     mut game_handler: ResMut<GameHandler>,
+//     mut online_event_handler: EventWriter<OnlineStateChange>,
+// ) {
+//     for (peer, state) in socket.update_peers() {
+//         info!("{peer}: {state:?}");
+//     }
+
+//     for (_id, message) in socket.receive() {
+//         // Attempt to deserialize the message into a summary or a full map set
+//         if let Ok(summary) = decode::<Vec<(Uuid, OffsetDateTime)>>(&message) {
+//             // Summary received, now crosscheck and determine which maps are missing or outdated
+//             let mut request_full_map_sets = false;
+
+//             for (map_set_id, timestamp) in summary {
+//                 if let Some(existing_timestamp) = client_map_sets.get(&map_set_id) {
+//                     if existing_timestamp < &timestamp {
+//                         // Local version is outdated
+//                         request_full_map_sets = true;
+//                         break;
+//                     }
+//                 } else {
+//                     // Local version is missing this map set
+//                     request_full_map_sets = true;
+//                     break;
+//                 }
+//             }
+
+//             if request_full_map_sets {
+//                 // Send a request to the host for the full map set data
+//                 let request_message = "REQUEST_FULL_MAP_SETS".as_bytes();
+//                 socket.send(request_message.into(), _id);
+//                 info!("Requested full map sets from the host.");
+//             }
+//         } else if let Ok(map_sets) = decode::<Vec<MapSet>>(&message) {
+//             // Full map set data received, update the client database
+//             for map_set in map_sets {
+//                 client_map_sets.insert(map_set.map_set_id.clone(), map_set.last_updated);
+//             }
+//             info!("Updated local map sets from received full map set data.");
+//         } else {
+//             error!("Failed to parse incoming message.");
+//         }
+//     }
+// }
 
 //-----------------------------------------------------------------------------------//
 
