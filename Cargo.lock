@@ -3971,6 +3971,7 @@ dependencies = [
  "bevy_rapier3d",
  "bevy_render",
  "dotenv",
+ "regex",
  "rmp-serde",
  "rusqlite",
  "serde",

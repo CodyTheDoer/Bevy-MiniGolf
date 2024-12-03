@@ -60,6 +60,7 @@ use minigolf::{
     OnlineStateChange,
     Party,
     RunTrigger,
+    UpdateIdResource,
 };
 
 // --- User Camera World Import --- //
@@ -108,9 +109,6 @@ use minigolf::player_handler::leader_board_handler::{
     leader_board_review_last_game,
 };
 
-// // --- Database Handler Import --- //
-use minigolf::database_handler::boot_system_sync_local_player;
-
 // // --- Network Handler Import --- //
 use minigolf::network_handler::{
     auth_server_handshake,
@@ -121,9 +119,8 @@ use minigolf::network_handler::{
     remote_state_change_monitor,
 };
 
-// // --- User Interface - Menu Handler Import --- //
-// use minigolf::user_interface::menu_handler::{
-// };
+// --- Database Handler Import --- //
+use minigolf::database_handler::db_pipeline_sync_local_player;
 
 // // --- Level Handler Import --- //
 // use minigolf::level_handler::level_handler::{
@@ -185,12 +182,10 @@ fn main() {
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
         .insert_resource(RunTrigger::new())
+        .insert_resource(UpdateIdResource { update_id: None })
         
         // --- Event Initialization --- //
         .add_event::<OnlineStateChange>()    
-
-        // Database - Interface //
-        .add_systems(Startup, boot_system_sync_local_player)
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_3d_camera)
@@ -198,6 +193,7 @@ fn main() {
         
         // Network - Startup //
         .add_systems(Startup, start_socket)
+        .add_systems(Startup, db_pipeline_sync_local_player)
         // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //

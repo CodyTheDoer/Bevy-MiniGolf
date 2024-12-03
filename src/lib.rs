@@ -29,6 +29,10 @@ pub struct DatabaseConnection{
 #[derive(Debug, Event)]
 pub struct OnlineStateChange;
 
+#[derive(Resource)]
+pub struct UpdateIdResource {
+    pub update_id: Option<Uuid>,
+}
 
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {

@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 // --- External Plugins --- //
 use bevy_matchbox::prelude::*;
+use regex::Regex;
+use uuid::Uuid;
 
 // --- States --- //
 use crate::{ 
@@ -24,7 +26,10 @@ use crate::{
     OnlineStateChange,
     Party,
     RunTrigger,
+    UpdateIdResource,
 };
+
+use crate::database_handler::db_pipeline_sync_local_player;
 
 pub fn auth_server_handshake(
     db: Res<DatabaseConnection>,
@@ -93,21 +98,30 @@ pub fn receive_messages(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
     mut game_handler: ResMut<GameHandler>,
     mut online_event_handler: EventWriter<OnlineStateChange>,
-    party: Res<Party>,
+    party: ResMut<Party>,
+    db: Res<DatabaseConnection>,
+    update_id_res: ResMut<UpdateIdResource>,
 ) {
     for (peer, state) in socket.update_peers() {
         info!("{peer}: {state:?}");
     }
 
+    let mut parse_message = false;
+    let mut op_message = None;
     for (_id, message) in socket.receive() {
         match std::str::from_utf8(&message) {
             Ok(message) => {
-                info!("Received message: {message:?}");
-                server_parse_message(message, &mut game_handler, &mut online_event_handler, &party);
+                info!("Received message: {:?}", message.clone());
+                let owned_message = message.to_owned();
+                op_message = Some(owned_message);
+                parse_message = true;
             },
             Err(e) => error!("Failed to convert message to string: {e}"),
         }
     }
+    if parse_message == true{
+        server_parse_message(op_message.unwrap().as_str(), &mut game_handler, &mut online_event_handler, party, db, update_id_res);
+    };
 }
 
 pub fn remote_state_change_monitor(
@@ -166,129 +180,56 @@ pub fn server_parse_message(
     message: &str,
     game_handler: &mut ResMut<GameHandler>,
     online_event_handler: &mut EventWriter<OnlineStateChange>,
-    party: &Res<Party>,
+    party: ResMut<Party>,
+    db: Res<DatabaseConnection>,
+    mut update_id_res: ResMut<UpdateIdResource>,
 ) {
     info!("server_parse_message: Initiated");
+    info!("message: {}", &message);
 
-    let trimmed_message: &str = message.trim_start_matches('(').trim_end_matches(')');
-    let parts: Vec<&str> = trimmed_message.splitn(2, ", ").collect();
+    // Regex to match any command, with an optional UUID or other payload
+    let re = Regex::new(r#"^\(([^,]+), ([a-zA-Z]+)(\("([^"]+)"\))?\)$"#).unwrap();
+    
+    if let Some(caps) = re.captures(message) {
+        let target_client = caps.get(1).map_or("", |m| m.as_str());
+        let command = caps.get(2).map_or("", |m| m.as_str());
+        let player_id = String::from(party.main_player_get_player_id());
 
-    let player_id = String::from(party.main_player_get_player_id());
-    let player_id_str = player_id.as_str();
-
-    // Ensure that the split resulted in the expected two parts (protocol and payload)
-    if parts.len() != 2 {
-        return;
-    };
-
-    let target_client = parts[0].trim();
-    let payload = parts[1].trim();
-
-    if target_client == player_id_str  {
-        let state_update: &Vec<&str> = &payload.split("::").collect();
-        if state_update.len() != 2 {
-            info!("Invalid message format");
-            return;
-        }
-        if game_handler.is_not_connected() { // handle a new connection.
-            let parsed_state = match state_update[0] {
-                "StateGameConnection" => match state_update[1] {
-                    "Online" => Some(StateUpdateRef::StateGameConnection(StateGameConnection::Online)),
-                    _ => None,
+        if target_client == player_id {
+            match command {
+                "SyncExistingPlayerId" => {
+                    // Handle SyncExistingPlayerId command
+                    if let Some(uuid_str) = caps.get(4).map(|m| m.as_str()) {
+                        if let Ok(parsed_uuid) = Uuid::parse_str(uuid_str) {
+                            let update_id = Some(parsed_uuid);
+                            info!("parsed_uuid: {:?}", update_id);
+                            update_id_res.update_id = update_id;
+                            db_pipeline_sync_local_player(db, party, update_id_res);
+                        }
+                    }
                 }
-                _ => None,
-            };
-            
-            if let Some(state) = parsed_state {
-                info!("Updated state valid: {:?}", state);
-                game_handler.auth_server_handshake_received(Some(state));
-                online_event_handler.send(OnlineStateChange);
-            } else {
-                info!("Updated state invalid");
+                "InitPlayerConnection" => {
+                    // Handle InitPlayerConnection command
+                    if game_handler.is_not_connected() {
+                        let parsed_state = Some(StateUpdateRef::StateGameConnection(
+                            StateGameConnection::Online,
+                        ));
+                        info!("Parsed state update: {:?}", parsed_state);
+                        game_handler.auth_server_handshake_received(parsed_state);
+                        online_event_handler.send(OnlineStateChange);
+                    }
+                }
+                _ => {
+                    // Handle unknown commands
+                    info!("Unknown command: {}", command);
+                }
             }
         } else {
-            let parsed_state = match state_update[0] {
-                "StateGame" => match state_update[1] {
-                    "InGame" => Some(StateUpdateRef::StateGame(StateGame::InGame)),
-                    "NotInGame" => Some(StateUpdateRef::StateGame(StateGame::NotInGame)),
-                    _ => None,
-                },
-                "StateLevel" => match state_update[1] {
-                    "MainMenu" => Some(StateUpdateRef::StateLevel(StateLevel::MainMenu)),
-                    "Hole1" => Some(StateUpdateRef::StateLevel(StateLevel::Hole1)),
-                    "Hole2" => Some(StateUpdateRef::StateLevel(StateLevel::Hole2)),
-                    "Hole3" => Some(StateUpdateRef::StateLevel(StateLevel::Hole3)),
-                    "Hole4" => Some(StateUpdateRef::StateLevel(StateLevel::Hole4)),
-                    "Hole5" => Some(StateUpdateRef::StateLevel(StateLevel::Hole5)),
-                    "Hole6" => Some(StateUpdateRef::StateLevel(StateLevel::Hole6)),
-                    "Hole7" => Some(StateUpdateRef::StateLevel(StateLevel::Hole7)),
-                    "Hole8" => Some(StateUpdateRef::StateLevel(StateLevel::Hole8)),
-                    "Hole9" => Some(StateUpdateRef::StateLevel(StateLevel::Hole9)),
-                    "Hole10" => Some(StateUpdateRef::StateLevel(StateLevel::Hole10)),
-                    "Hole11" => Some(StateUpdateRef::StateLevel(StateLevel::Hole11)),
-                    "Hole12" => Some(StateUpdateRef::StateLevel(StateLevel::Hole12)),
-                    "Hole13" => Some(StateUpdateRef::StateLevel(StateLevel::Hole13)),
-                    "Hole14" => Some(StateUpdateRef::StateLevel(StateLevel::Hole14)),
-                    "Hole15" => Some(StateUpdateRef::StateLevel(StateLevel::Hole15)),
-                    "Hole16" => Some(StateUpdateRef::StateLevel(StateLevel::Hole16)),
-                    "Hole17" => Some(StateUpdateRef::StateLevel(StateLevel::Hole17)),
-                    "Hole18" => Some(StateUpdateRef::StateLevel(StateLevel::Hole18)),
-                    "HoleTutorial" => Some(StateUpdateRef::StateLevel(StateLevel::HoleTutorial)),
-                    _ => None,
-                },
-                "StateCameraOrbitEntity" => match state_update[1] {
-                    "Menu" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Menu)),
-                    "Ball" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Ball)),
-                    "Cup" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Cup)),
-                    "FreePan" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::FreePan)),
-                    "LeaderBoard" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::LeaderBoard)),
-                    _ => None,
-                },
-                "StateMapSet" => match state_update[1] {
-                    "Tutorial" => Some(StateUpdateRef::StateMapSet(StateMapSet::Tutorial)),
-                    "WholeCorse" => Some(StateUpdateRef::StateMapSet(StateMapSet::WholeCorse)),
-                    "FrontNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::FrontNine)),
-                    "BackNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::BackNine)),
-                    "SelectAHole" => Some(StateUpdateRef::StateMapSet(StateMapSet::SelectAHole)),
-                    _ => None,
-                },
-                "StateGamePlayStyle" => match state_update[1] {
-                    "SetOrder" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::SetOrder)),
-                    "Proximity" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::Proximity)),
-                    _ => None,
-                },
-                "StateTurn" => match state_update[1] {
-                    "NotInGame" => Some(StateUpdateRef::StateTurn(StateTurn::NotInGame)),
-                    "Active" => Some(StateUpdateRef::StateTurn(StateTurn::Active)),
-                    "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
-                    _ => None,
-                },
-                "StateRunTrigger" => match state_update[1] {
-                    "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
-                    "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
-                    "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
-                    "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
-    
-                    "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
-    
-                    "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
-                    "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
-                    "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
-                    "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
-                    "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
-                    "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
-                    "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
-                    "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
-                    "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
-    
-                    "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
-                    "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
-                    _ => None,
-                },
-                _ => None,
-            };
-        };
-    };
+            info!("Target client ID does not match player ID.");
+        }
+    } else {
+        info!("Invalid message format: {}", message);
+    }
 }
 
 pub fn start_socket(mut commands: Commands) {
