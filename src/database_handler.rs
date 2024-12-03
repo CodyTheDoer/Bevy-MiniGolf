@@ -30,45 +30,13 @@ impl DatabaseConnection {
     }
 }
 
-pub fn first_time_boot_system_local_player(
+pub fn boot_system_sync_local_player(
     db: Res<DatabaseConnection>,
     mut party: ResMut<Party>,
 ) {
     dotenv().ok();
     let conn = db.get_connection();
     let conn = conn.lock().unwrap(); // Lock the mutex
-
-    // Create table if it doesn't exist
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS player_table (
-            player_id TEXT PRIMARY KEY,
-            username TEXT NOT NULL,
-            email TEXT NOT NULL,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            golf_ball INT,
-            putter INT
-        )",
-        [],
-    )
-    .expect("Failed to create table");
-
-    // Create a trigger to update the `updated` column only when specific columns are updated
-    conn.execute(
-        "CREATE TRIGGER IF NOT EXISTS update_player_table_timestamp
-         AFTER UPDATE ON player_table
-         FOR EACH ROW
-         WHEN 
-            NEW.username != OLD.username OR 
-            NEW.email != OLD.email OR
-            NEW.golf_ball != OLD.golf_ball OR
-            NEW.putter != OLD.putter
-         BEGIN
-            UPDATE player_table SET updated = CURRENT_TIMESTAMP WHERE player_id = OLD.player_id;
-         END;",
-        [],
-    )
-    .expect("Failed to create trigger");
 
     // Check for existing players
     let count: i64 = conn
@@ -115,7 +83,7 @@ pub async fn database_establish_connection() -> sqlx::Result<sqlx::Pool<sqlx::My
     Ok(pool)
 }
 
-pub fn first_time_boot_system_local_player(
+pub fn boot_system_sync_local_player(
     pool: Res<DatabasePool>,
     runtime: ResMut<TokioTasksRuntime>, 
 ) {
@@ -124,18 +92,6 @@ pub fn first_time_boot_system_local_player(
     // Spawn the background task using bevy_tokio_tasks
     runtime.spawn_background_task(move |ctx| {
         first_time_boot_local_player_creation(pool, ctx)
-    });
-}
-
-pub fn first_time_boot_setup_map_set(
-    pool: Res<DatabasePool>,
-    runtime: ResMut<TokioTasksRuntime>, 
-) {
-    let pool = pool.0.clone();
-
-    // Spawn the background task using bevy_tokio_tasks
-    runtime.spawn_background_task(move |ctx| {
-        first_time_boot_setup_map_set_creation(pool, ctx)
     });
 }
 
@@ -236,6 +192,18 @@ pub async fn first_time_boot_local_player_creation(
         }
     })
     .await;
+}
+
+pub fn first_time_boot_setup_map_set(
+    pool: Res<DatabasePool>,
+    runtime: ResMut<TokioTasksRuntime>, 
+) {
+    let pool = pool.0.clone();
+
+    // Spawn the background task using bevy_tokio_tasks
+    runtime.spawn_background_task(move |ctx| {
+        first_time_boot_setup_map_set_creation(pool, ctx)
+    });
 }
 
 pub async fn first_time_boot_setup_map_set_creation(

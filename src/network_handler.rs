@@ -18,11 +18,53 @@ use crate::{
 
 // --- Resources --- //
 use crate::{
+    ClientProtocol,
+    DatabaseConnection,
     GameHandler,
     OnlineStateChange,
     Party,
     RunTrigger,
 };
+
+pub fn auth_server_handshake(
+    db: Res<DatabaseConnection>,
+    mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+    party: Res<Party>,
+    client_protocol: Res<ClientProtocol>,
+) {
+    let conn = db.get_connection();
+    let conn = conn.lock().unwrap(); // Lock the mutex
+
+    let peers: Vec<_> = socket.connected_peers().collect();
+    
+    let player_info_tuple: (String, String, String) = conn
+        .query_row(
+            "SELECT player_id, username, email FROM player_table LIMIT 1",
+            [],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,  // Fetch player_id as String
+                    row.get::<_, String>(1)?,  // Fetch username as String
+                    row.get::<_, String>(2)?,  // Fetch email as String
+                ))
+            },
+        )
+        .expect("Failed to retrieve player info");
+    info!("player_info: {:?}", player_info_tuple.clone());
+
+    let player_info = format!("{}, {}, {}", player_info_tuple.0, player_info_tuple.1, player_info_tuple.2);
+    let protocol_call = client_protocol.init_player_connection();
+
+    for peer in peers {
+        let message = format!{
+            "({}, {})",
+            protocol_call,
+            player_info,
+        };
+        info!("Sending message: {message:?} to {peer}");
+        socket.send(message.as_bytes().into(), peer);
+    }
+}
 
 pub fn network_get_client_state_game(
     mut run_trigger: ResMut<RunTrigger>,
@@ -47,148 +89,23 @@ pub fn network_get_client_state_game(
     run_trigger.set_target("network_get_client_state_game", false);
 }
 
-pub fn start_socket(mut commands: Commands) {
-    let socket = MatchboxSocket::new_reliable("ws://localhost:3536/minigolf");
-    commands.insert_resource(socket);
-}
-
-pub fn auth_server_handshake(
+pub fn receive_messages(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+    mut game_handler: ResMut<GameHandler>,
+    mut online_event_handler: EventWriter<OnlineStateChange>,
     party: Res<Party>,
 ) {
-    let peers: Vec<_> = socket.connected_peers().collect();
-        
-    // grab the reference to the main player
-    let player = party.get_active_player_clone();
-        
-    // grab the player id
-    let player_id = player.lock().unwrap().get_player_id();
-
-    for peer in peers {
-        let message = format!{
-            "{}",
-            player_id,
-        };
-        info!("Sending message: {message:?} to {peer}");
-        socket.send(message.as_bytes().into(), peer);
-    }
-}
-
-pub fn server_parse_message(
-    message: &str,
-    game_handler: &mut ResMut<GameHandler>,
-    online_event_handler: &mut EventWriter<OnlineStateChange>,
-) {
-    let split: &Vec<&str> = &message.split("::").collect();
-    if split.len() != 2 {
-        info!("Invalid message format");
-        return;
+    for (peer, state) in socket.update_peers() {
+        info!("{peer}: {state:?}");
     }
 
-    if game_handler.is_not_connected() { // handle a new connection.
-        let parsed_state = match split[0] {
-            "StateGameConnection" => match split[1] {
-                "Online" => Some(StateUpdateRef::StateGameConnection(StateGameConnection::Online)),
-                _ => None,
-            }
-            _ => None,
-        };
-        
-        if let Some(state) = parsed_state {
-            info!("Updated state valid: {:?}", state);
-            game_handler.auth_server_handshake_received(Some(state));
-            online_event_handler.send(OnlineStateChange);
-        } else {
-            info!("Updated state invalid");
-        }
-    } else {
-        let parsed_state = match split[0] {
-            "StateGame" => match split[1] {
-                "InGame" => Some(StateUpdateRef::StateGame(StateGame::InGame)),
-                "NotInGame" => Some(StateUpdateRef::StateGame(StateGame::NotInGame)),
-                _ => None,
+    for (_id, message) in socket.receive() {
+        match std::str::from_utf8(&message) {
+            Ok(message) => {
+                info!("Received message: {message:?}");
+                server_parse_message(message, &mut game_handler, &mut online_event_handler, &party);
             },
-            "StateLevel" => match split[1] {
-                "MainMenu" => Some(StateUpdateRef::StateLevel(StateLevel::MainMenu)),
-                "Hole1" => Some(StateUpdateRef::StateLevel(StateLevel::Hole1)),
-                "Hole2" => Some(StateUpdateRef::StateLevel(StateLevel::Hole2)),
-                "Hole3" => Some(StateUpdateRef::StateLevel(StateLevel::Hole3)),
-                "Hole4" => Some(StateUpdateRef::StateLevel(StateLevel::Hole4)),
-                "Hole5" => Some(StateUpdateRef::StateLevel(StateLevel::Hole5)),
-                "Hole6" => Some(StateUpdateRef::StateLevel(StateLevel::Hole6)),
-                "Hole7" => Some(StateUpdateRef::StateLevel(StateLevel::Hole7)),
-                "Hole8" => Some(StateUpdateRef::StateLevel(StateLevel::Hole8)),
-                "Hole9" => Some(StateUpdateRef::StateLevel(StateLevel::Hole9)),
-                "Hole10" => Some(StateUpdateRef::StateLevel(StateLevel::Hole10)),
-                "Hole11" => Some(StateUpdateRef::StateLevel(StateLevel::Hole11)),
-                "Hole12" => Some(StateUpdateRef::StateLevel(StateLevel::Hole12)),
-                "Hole13" => Some(StateUpdateRef::StateLevel(StateLevel::Hole13)),
-                "Hole14" => Some(StateUpdateRef::StateLevel(StateLevel::Hole14)),
-                "Hole15" => Some(StateUpdateRef::StateLevel(StateLevel::Hole15)),
-                "Hole16" => Some(StateUpdateRef::StateLevel(StateLevel::Hole16)),
-                "Hole17" => Some(StateUpdateRef::StateLevel(StateLevel::Hole17)),
-                "Hole18" => Some(StateUpdateRef::StateLevel(StateLevel::Hole18)),
-                "HoleTutorial" => Some(StateUpdateRef::StateLevel(StateLevel::HoleTutorial)),
-                _ => None,
-            },
-            "StateCameraOrbitEntity" => match split[1] {
-                "Menu" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Menu)),
-                "Ball" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Ball)),
-                "Cup" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Cup)),
-                "FreePan" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::FreePan)),
-                "LeaderBoard" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::LeaderBoard)),
-                _ => None,
-            },
-            "StateMapSet" => match split[1] {
-                "Tutorial" => Some(StateUpdateRef::StateMapSet(StateMapSet::Tutorial)),
-                "WholeCorse" => Some(StateUpdateRef::StateMapSet(StateMapSet::WholeCorse)),
-                "FrontNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::FrontNine)),
-                "BackNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::BackNine)),
-                "SelectAHole" => Some(StateUpdateRef::StateMapSet(StateMapSet::SelectAHole)),
-                _ => None,
-            },
-            "StateGamePlayStyle" => match split[1] {
-                "SetOrder" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::SetOrder)),
-                "Proximity" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::Proximity)),
-                _ => None,
-            },
-            "StateTurn" => match split[1] {
-                "NotInGame" => Some(StateUpdateRef::StateTurn(StateTurn::NotInGame)),
-                "Active" => Some(StateUpdateRef::StateTurn(StateTurn::Active)),
-                "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
-                _ => None,
-            },
-            "StateRunTrigger" => match split[1] {
-                "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
-                "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
-                "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
-                "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
-
-                "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
-
-                "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
-                "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
-                "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
-                "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
-                "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
-                "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
-                "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
-                "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
-                "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
-
-                "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
-                "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
-                _ => None,
-            },
-            _ => None,
-        };
-        
-        if let Some(state) = parsed_state {
-            info!("Updated state valid: {:?}", state);
-            game_handler.auth_server_handshake_received(Some(state));
-            online_event_handler.send(OnlineStateChange);
-        } else {
-            info!("Updated state invalid");
+            Err(e) => error!("Failed to convert message to string: {e}"),
         }
     }
 }
@@ -245,22 +162,256 @@ pub fn remote_state_change_monitor(
     }
 }
 
-pub fn receive_messages(
-    mut socket: ResMut<MatchboxSocket<SingleChannel>>,
-    mut game_handler: ResMut<GameHandler>,
-    mut online_event_handler: EventWriter<OnlineStateChange>,
+pub fn server_parse_message(
+    message: &str,
+    game_handler: &mut ResMut<GameHandler>,
+    online_event_handler: &mut EventWriter<OnlineStateChange>,
+    party: &Res<Party>,
 ) {
-    for (peer, state) in socket.update_peers() {
-        info!("{peer}: {state:?}");
-    }
+    info!("server_parse_message: Initiated");
 
-    for (_id, message) in socket.receive() {
-        match std::str::from_utf8(&message) {
-            Ok(message) => {
-                info!("Received message: {message:?}");
-                server_parse_message(message, &mut game_handler, &mut online_event_handler);
-            },
-            Err(e) => error!("Failed to convert message to string: {e}"),
+    let trimmed_message: &str = message.trim_start_matches('(').trim_end_matches(')');
+    let parts: Vec<&str> = trimmed_message.splitn(2, ", ").collect();
+
+    let player_id = String::from(party.main_player_get_player_id());
+    let player_id_str = player_id.as_str();
+
+    // Ensure that the split resulted in the expected two parts (protocol and payload)
+    if parts.len() != 2 {
+        return;
+    };
+
+    let target_client = parts[0].trim();
+    let payload = parts[1].trim();
+
+    if target_client == player_id_str  {
+        let state_update: &Vec<&str> = &payload.split("::").collect();
+        if state_update.len() != 2 {
+            info!("Invalid message format");
+            return;
         }
-    }
+        if game_handler.is_not_connected() { // handle a new connection.
+            let parsed_state = match state_update[0] {
+                "StateGameConnection" => match state_update[1] {
+                    "Online" => Some(StateUpdateRef::StateGameConnection(StateGameConnection::Online)),
+                    _ => None,
+                }
+                _ => None,
+            };
+            
+            if let Some(state) = parsed_state {
+                info!("Updated state valid: {:?}", state);
+                game_handler.auth_server_handshake_received(Some(state));
+                online_event_handler.send(OnlineStateChange);
+            } else {
+                info!("Updated state invalid");
+            }
+        } else {
+            let parsed_state = match state_update[0] {
+                "StateGame" => match state_update[1] {
+                    "InGame" => Some(StateUpdateRef::StateGame(StateGame::InGame)),
+                    "NotInGame" => Some(StateUpdateRef::StateGame(StateGame::NotInGame)),
+                    _ => None,
+                },
+                "StateLevel" => match state_update[1] {
+                    "MainMenu" => Some(StateUpdateRef::StateLevel(StateLevel::MainMenu)),
+                    "Hole1" => Some(StateUpdateRef::StateLevel(StateLevel::Hole1)),
+                    "Hole2" => Some(StateUpdateRef::StateLevel(StateLevel::Hole2)),
+                    "Hole3" => Some(StateUpdateRef::StateLevel(StateLevel::Hole3)),
+                    "Hole4" => Some(StateUpdateRef::StateLevel(StateLevel::Hole4)),
+                    "Hole5" => Some(StateUpdateRef::StateLevel(StateLevel::Hole5)),
+                    "Hole6" => Some(StateUpdateRef::StateLevel(StateLevel::Hole6)),
+                    "Hole7" => Some(StateUpdateRef::StateLevel(StateLevel::Hole7)),
+                    "Hole8" => Some(StateUpdateRef::StateLevel(StateLevel::Hole8)),
+                    "Hole9" => Some(StateUpdateRef::StateLevel(StateLevel::Hole9)),
+                    "Hole10" => Some(StateUpdateRef::StateLevel(StateLevel::Hole10)),
+                    "Hole11" => Some(StateUpdateRef::StateLevel(StateLevel::Hole11)),
+                    "Hole12" => Some(StateUpdateRef::StateLevel(StateLevel::Hole12)),
+                    "Hole13" => Some(StateUpdateRef::StateLevel(StateLevel::Hole13)),
+                    "Hole14" => Some(StateUpdateRef::StateLevel(StateLevel::Hole14)),
+                    "Hole15" => Some(StateUpdateRef::StateLevel(StateLevel::Hole15)),
+                    "Hole16" => Some(StateUpdateRef::StateLevel(StateLevel::Hole16)),
+                    "Hole17" => Some(StateUpdateRef::StateLevel(StateLevel::Hole17)),
+                    "Hole18" => Some(StateUpdateRef::StateLevel(StateLevel::Hole18)),
+                    "HoleTutorial" => Some(StateUpdateRef::StateLevel(StateLevel::HoleTutorial)),
+                    _ => None,
+                },
+                "StateCameraOrbitEntity" => match state_update[1] {
+                    "Menu" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Menu)),
+                    "Ball" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Ball)),
+                    "Cup" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Cup)),
+                    "FreePan" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::FreePan)),
+                    "LeaderBoard" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::LeaderBoard)),
+                    _ => None,
+                },
+                "StateMapSet" => match state_update[1] {
+                    "Tutorial" => Some(StateUpdateRef::StateMapSet(StateMapSet::Tutorial)),
+                    "WholeCorse" => Some(StateUpdateRef::StateMapSet(StateMapSet::WholeCorse)),
+                    "FrontNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::FrontNine)),
+                    "BackNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::BackNine)),
+                    "SelectAHole" => Some(StateUpdateRef::StateMapSet(StateMapSet::SelectAHole)),
+                    _ => None,
+                },
+                "StateGamePlayStyle" => match state_update[1] {
+                    "SetOrder" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::SetOrder)),
+                    "Proximity" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::Proximity)),
+                    _ => None,
+                },
+                "StateTurn" => match state_update[1] {
+                    "NotInGame" => Some(StateUpdateRef::StateTurn(StateTurn::NotInGame)),
+                    "Active" => Some(StateUpdateRef::StateTurn(StateTurn::Active)),
+                    "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
+                    _ => None,
+                },
+                "StateRunTrigger" => match state_update[1] {
+                    "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
+                    "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
+                    "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
+                    "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
+    
+                    "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
+    
+                    "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
+                    "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
+                    "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
+                    "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
+                    "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
+                    "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
+                    "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
+                    "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
+                    "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
+    
+                    "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
+                    "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
+                    _ => None,
+                },
+                _ => None,
+            };
+        };
+    };
 }
+
+pub fn start_socket(mut commands: Commands) {
+    let socket = MatchboxSocket::new_reliable("ws://localhost:3536/minigolf");
+    commands.insert_resource(socket);
+}
+
+
+// pub fn server_parse_message(
+//     message: &str,
+//     game_handler: &mut ResMut<GameHandler>,
+//     online_event_handler: &mut EventWriter<OnlineStateChange>,
+// ) {
+//     let split: &Vec<&str> = &message.split("::").collect();
+//     if split.len() != 2 {
+//         info!("Invalid message format");
+//         return;
+//     }
+
+//     if game_handler.is_not_connected() { // handle a new connection.
+//         let parsed_state = match split[0] {
+//             "StateGameConnection" => match split[1] {
+//                 "Online" => Some(StateUpdateRef::StateGameConnection(StateGameConnection::Online)),
+//                 _ => None,
+//             }
+//             _ => None,
+//         };
+        
+//         if let Some(state) = parsed_state {
+//             info!("Updated state valid: {:?}", state);
+//             game_handler.auth_server_handshake_received(Some(state));
+//             online_event_handler.send(OnlineStateChange);
+//         } else {
+//             info!("Updated state invalid");
+//         }
+//     } else {
+//         let parsed_state = match split[0] {
+//             "StateGame" => match split[1] {
+//                 "InGame" => Some(StateUpdateRef::StateGame(StateGame::InGame)),
+//                 "NotInGame" => Some(StateUpdateRef::StateGame(StateGame::NotInGame)),
+//                 _ => None,
+//             },
+//             "StateLevel" => match split[1] {
+//                 "MainMenu" => Some(StateUpdateRef::StateLevel(StateLevel::MainMenu)),
+//                 "Hole1" => Some(StateUpdateRef::StateLevel(StateLevel::Hole1)),
+//                 "Hole2" => Some(StateUpdateRef::StateLevel(StateLevel::Hole2)),
+//                 "Hole3" => Some(StateUpdateRef::StateLevel(StateLevel::Hole3)),
+//                 "Hole4" => Some(StateUpdateRef::StateLevel(StateLevel::Hole4)),
+//                 "Hole5" => Some(StateUpdateRef::StateLevel(StateLevel::Hole5)),
+//                 "Hole6" => Some(StateUpdateRef::StateLevel(StateLevel::Hole6)),
+//                 "Hole7" => Some(StateUpdateRef::StateLevel(StateLevel::Hole7)),
+//                 "Hole8" => Some(StateUpdateRef::StateLevel(StateLevel::Hole8)),
+//                 "Hole9" => Some(StateUpdateRef::StateLevel(StateLevel::Hole9)),
+//                 "Hole10" => Some(StateUpdateRef::StateLevel(StateLevel::Hole10)),
+//                 "Hole11" => Some(StateUpdateRef::StateLevel(StateLevel::Hole11)),
+//                 "Hole12" => Some(StateUpdateRef::StateLevel(StateLevel::Hole12)),
+//                 "Hole13" => Some(StateUpdateRef::StateLevel(StateLevel::Hole13)),
+//                 "Hole14" => Some(StateUpdateRef::StateLevel(StateLevel::Hole14)),
+//                 "Hole15" => Some(StateUpdateRef::StateLevel(StateLevel::Hole15)),
+//                 "Hole16" => Some(StateUpdateRef::StateLevel(StateLevel::Hole16)),
+//                 "Hole17" => Some(StateUpdateRef::StateLevel(StateLevel::Hole17)),
+//                 "Hole18" => Some(StateUpdateRef::StateLevel(StateLevel::Hole18)),
+//                 "HoleTutorial" => Some(StateUpdateRef::StateLevel(StateLevel::HoleTutorial)),
+//                 _ => None,
+//             },
+//             "StateCameraOrbitEntity" => match split[1] {
+//                 "Menu" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Menu)),
+//                 "Ball" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Ball)),
+//                 "Cup" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Cup)),
+//                 "FreePan" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::FreePan)),
+//                 "LeaderBoard" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::LeaderBoard)),
+//                 _ => None,
+//             },
+//             "StateMapSet" => match split[1] {
+//                 "Tutorial" => Some(StateUpdateRef::StateMapSet(StateMapSet::Tutorial)),
+//                 "WholeCorse" => Some(StateUpdateRef::StateMapSet(StateMapSet::WholeCorse)),
+//                 "FrontNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::FrontNine)),
+//                 "BackNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::BackNine)),
+//                 "SelectAHole" => Some(StateUpdateRef::StateMapSet(StateMapSet::SelectAHole)),
+//                 _ => None,
+//             },
+//             "StateGamePlayStyle" => match split[1] {
+//                 "SetOrder" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::SetOrder)),
+//                 "Proximity" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::Proximity)),
+//                 _ => None,
+//             },
+//             "StateTurn" => match split[1] {
+//                 "NotInGame" => Some(StateUpdateRef::StateTurn(StateTurn::NotInGame)),
+//                 "Active" => Some(StateUpdateRef::StateTurn(StateTurn::Active)),
+//                 "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
+//                 _ => None,
+//             },
+//             "StateRunTrigger" => match split[1] {
+//                 "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
+//                 "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
+//                 "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
+//                 "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
+
+//                 "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
+
+//                 "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
+//                 "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
+//                 "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
+//                 "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
+//                 "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
+//                 "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
+//                 "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
+//                 "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
+//                 "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
+
+//                 "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
+//                 "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
+//                 _ => None,
+//             },
+//             _ => None,
+//         };
+        
+//         if let Some(state) = parsed_state {
+//             info!("Updated state valid: {:?}", state);
+//             game_handler.auth_server_handshake_received(Some(state));
+//             online_event_handler.send(OnlineStateChange);
+//         } else {
+//             info!("Updated state invalid");
+//         }
+//     }
+// }

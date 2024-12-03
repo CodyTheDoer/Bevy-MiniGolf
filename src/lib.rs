@@ -141,6 +141,18 @@ pub enum StateTurn {
     NextTurn,
 }
 
+#[derive(Clone, PartialEq, Eq, Hash, Resource,)]
+pub struct ClientProtocol {}
+
+impl ClientProtocol {
+    pub fn new() -> Self {ClientProtocol{}}
+
+    pub fn init_player_connection(&self) -> String {
+        let res: String = String::from("ClientProtocol::InitPlayerConnection");
+        res
+    }
+}
+
 // World //
 
 #[derive(Component)]

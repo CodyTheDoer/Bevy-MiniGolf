@@ -51,6 +51,7 @@ use minigolf::{
 // --- Resources --- //
 use minigolf::{
     CameraHandler,
+    ClientProtocol,
     DatabaseConnection,
     Fonts,
     GameHandler,
@@ -178,6 +179,7 @@ fn main() {
         // --- Resource Initialization --- //
         .insert_resource(DatabaseConnection::new("game_data.db"))
         .insert_resource(CameraHandler::new())
+        .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
@@ -187,15 +189,15 @@ fn main() {
         // --- Event Initialization --- //
         .add_event::<OnlineStateChange>()    
 
+        // Database - Interface //
+        .add_systems(Startup, boot_system_sync_local_player)
+
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, setup_ui)
         
         // Network - Startup //
         .add_systems(Startup, start_socket)
-
-        // Database - Interface //
-        .add_systems(Update, boot_system_sync_local_player.run_if(input_just_released(KeyCode::ShiftLeft)))
         // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //
