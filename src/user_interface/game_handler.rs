@@ -27,11 +27,24 @@ impl GameHandler {
             active_ball_location: None,
             arrow_state: false,
             network_server_connection: false,
+            remote_game: false,
             remotely_pushed_state: None,
             game_id: None,
         }
     }
 
+    pub fn remote_game(&self) -> bool {
+        self.remote_game
+    }
+    
+    pub fn set_remote_game_false(&mut self) {
+        self.remote_game = false;
+    }
+    
+    pub fn set_remote_game_true(&mut self) {
+        self.remote_game = true;
+    }
+    
     pub fn get_game_id(&mut self) -> Uuid {
         if self.game_id == None {
             self.gen_game_id();
@@ -152,11 +165,7 @@ impl GameHandler {
     }
     
     pub fn is_not_connected(&self) -> bool {
-        if self.network_server_connection == false {
-            true
-        } else {
-            false
-        }
+        !self.network_server_connection
     }
     
     pub fn set_connected_false(&mut self) {

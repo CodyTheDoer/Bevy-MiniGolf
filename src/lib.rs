@@ -36,7 +36,7 @@ pub struct UpdateIdResource {
 
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {
-    StateGameConnection(StateGameConnection),
+    StateEngineConnection(StateEngineConnection),
     StateCameraOrbitEntity(StateCameraOrbitEntity),
     StateGame(StateGame),
     StateLevel(StateLevel),
@@ -73,7 +73,7 @@ pub enum StateGame {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateGameConnection {
+pub enum StateEngineConnection {
     #[default]
     Local,
     Online,
@@ -152,10 +152,36 @@ impl ClientProtocol {
     pub fn new() -> Self {ClientProtocol{}}
 
     pub fn init_player_connection(&self) -> String {
-        let res: String = String::from("ClientProtocol::InitPlayerConnection");
-        res
+        String::from("InitPlayerConnection")
+    }
+
+    pub fn all_states_packet(&self) -> String {
+        String::from("PacketAllStates")
+    }
+
+    pub fn heart_beat_packet(&self) -> String {
+        String::from("PacketHeartBeat")
     }
 }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PacketAllStates<'a> {
+    player_id: &'a str,
+    state_game: &'a str,
+    state_cam_orbit_entity: &'a str,
+    state_game_play_style: &'a str,
+    state_level: &'a str,
+    state_map_set: &'a str,
+    state_menu: &'a str,
+    state_turn: &'a str,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PacketHeartBeat<'a> {
+    player_id: &'a str,
+}
+
+#[derive(Resource)]
+pub struct HeartBeatTimer(pub Timer);
 
 // World //
 
@@ -303,6 +329,7 @@ pub struct GameHandler {
     active_ball_location: Option<Vec3>,
     arrow_state: bool,
     network_server_connection: bool,
+    remote_game: bool,
     remotely_pushed_state: Option<StateUpdateRef>,
     game_id: Option<Uuid>,
 }
@@ -340,6 +367,7 @@ pub struct RunTrigger{
     party_handler_new_player_remote: bool,
     party_handler_remove_ai: bool,
     party_handler_remove_last_player: bool,
+    network_get_client_state_all: bool,
     network_get_client_state_game: bool,
     game_handler_cycle_state_camera: bool,
     game_handler_cycle_state_map_set: bool,

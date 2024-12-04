@@ -39,7 +39,7 @@ use minigolf::{
     StateArrow, 
     StateCameraOrbitEntity, 
     StateGame, 
-    StateGameConnection, 
+    StateEngineConnection, 
     StateGamePlayStyle, 
     StateLevel, 
     StateMapSet, 
@@ -56,7 +56,7 @@ use minigolf::{
     Fonts,
     GameHandler,
     LeaderBoard,
-    MapSet,
+    HeartBeatTimer,
     OnlineStateChange,
     Party,
     RunTrigger,
@@ -112,8 +112,9 @@ use minigolf::player_handler::leader_board_handler::{
 // // --- Network Handler Import --- //
 use minigolf::network_handler::{
     auth_server_handshake,
+    network_get_client_state_all,
     network_get_client_state_game,
-    // server_parse_message,
+    send_client_heartbeat,
     start_socket,
     receive_messages,
     remote_state_change_monitor,
@@ -165,7 +166,7 @@ fn main() {
         .insert_state(StateArrow::Idle)
         .insert_state(StateCameraOrbitEntity::Menu)
         .insert_state(StateGame::NotInGame)
-        .insert_state(StateGameConnection::Local)
+        .insert_state(StateEngineConnection::Local)
         .insert_state(StateGamePlayStyle::SetOrder)
         .insert_state(StateLevel::MainMenu)
         .insert_state(StateMapSet::Tutorial)
@@ -178,12 +179,13 @@ fn main() {
         .insert_resource(CameraHandler::new())
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
+        .insert_resource(HeartBeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
         .insert_resource(RunTrigger::new())
         .insert_resource(UpdateIdResource { update_id: None })
-        
+
         // --- Event Initialization --- //
         .add_event::<OnlineStateChange>()    
 
@@ -201,7 +203,7 @@ fn main() {
         .add_systems(Update, remote_state_change_monitor)
         .add_systems(Update, auth_server_handshake
             .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
-            .run_if(on_timer(Duration::from_secs(5))))
+            .run_if(on_timer(Duration::from_millis(500))))
 
         // Camera //
         .add_systems(Update, state_camera_orbit_entity_logic)
@@ -222,6 +224,7 @@ fn main() {
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
         .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
+        .add_systems(Update, network_get_client_state_all.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_all()))
         .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
         
         .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
@@ -237,6 +240,7 @@ fn main() {
         .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
         .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
 
+        .add_systems(Update, heartbeat_system)
         .add_systems(Update, temp_interface);
 
         // .add_systems(Update, devfn_receive_messages_map_set);
@@ -244,53 +248,19 @@ fn main() {
     app.run();
 }
 
-// pub fn devfn_receive_messages_map_set(
-//     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
-//     mut client_map_sets: ResMut<HashMap<Uuid, OffsetDateTime>>,
-//     mut game_handler: ResMut<GameHandler>,
-//     mut online_event_handler: EventWriter<OnlineStateChange>,
-// ) {
-//     for (peer, state) in socket.update_peers() {
-//         info!("{peer}: {state:?}");
-//     }
-
-//     for (_id, message) in socket.receive() {
-//         // Attempt to deserialize the message into a summary or a full map set
-//         if let Ok(summary) = decode::<Vec<(Uuid, OffsetDateTime)>>(&message) {
-//             // Summary received, now crosscheck and determine which maps are missing or outdated
-//             let mut request_full_map_sets = false;
-
-//             for (map_set_id, timestamp) in summary {
-//                 if let Some(existing_timestamp) = client_map_sets.get(&map_set_id) {
-//                     if existing_timestamp < &timestamp {
-//                         // Local version is outdated
-//                         request_full_map_sets = true;
-//                         break;
-//                     }
-//                 } else {
-//                     // Local version is missing this map set
-//                     request_full_map_sets = true;
-//                     break;
-//                 }
-//             }
-
-//             if request_full_map_sets {
-//                 // Send a request to the host for the full map set data
-//                 let request_message = "REQUEST_FULL_MAP_SETS".as_bytes();
-//                 socket.send(request_message.into(), _id);
-//                 info!("Requested full map sets from the host.");
-//             }
-//         } else if let Ok(map_sets) = decode::<Vec<MapSet>>(&message) {
-//             // Full map set data received, update the client database
-//             for map_set in map_sets {
-//                 client_map_sets.insert(map_set.map_set_id.clone(), map_set.last_updated);
-//             }
-//             info!("Updated local map sets from received full map set data.");
-//         } else {
-//             error!("Failed to parse incoming message.");
-//         }
-//     }
-// }
+pub fn heartbeat_system(
+    time: Res<Time>,
+    mut timer: ResMut<HeartBeatTimer>,
+    socket: ResMut<MatchboxSocket<SingleChannel>>,
+    party: Res<Party>,
+    client_protocol: Res<ClientProtocol>,
+) {
+    // Check if the timer has finished
+    if timer.0.tick(time.delta()).finished() {
+        // Call the function to send the heartbeat
+        send_client_heartbeat(socket, party, client_protocol);
+    }
+}
 
 //-----------------------------------------------------------------------------------//
 
@@ -356,6 +326,10 @@ fn temp_interface(
                 run_trigger.set_target("party_handler_cycle_active_player", true);},
             };
         };
+    if keys.just_released(KeyCode::KeyQ) {
+        info!("just_released: KeyQ");  
+        run_trigger.set_target("network_get_client_state_all", true);
+    };
     if keys.just_released(KeyCode::KeyS) {
         info!("just_released: KeyS");  
         match state_game.get() {
@@ -411,3 +385,51 @@ fn temp_interface(
         };
     };
 }
+
+// pub fn devfn_receive_messages_map_set(
+//     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+//     mut client_map_sets: ResMut<HashMap<Uuid, OffsetDateTime>>,
+//     mut game_handler: ResMut<GameHandler>,
+//     mut online_event_handler: EventWriter<OnlineStateChange>,
+// ) {
+//     for (peer, state) in socket.update_peers() {
+//         info!("{peer}: {state:?}");
+//     }
+
+//     for (_id, message) in socket.receive() {
+//         // Attempt to deserialize the message into a summary or a full map set
+//         if let Ok(summary) = decode::<Vec<(Uuid, OffsetDateTime)>>(&message) {
+//             // Summary received, now crosscheck and determine which maps are missing or outdated
+//             let mut request_full_map_sets = false;
+
+//             for (map_set_id, timestamp) in summary {
+//                 if let Some(existing_timestamp) = client_map_sets.get(&map_set_id) {
+//                     if existing_timestamp < &timestamp {
+//                         // Local version is outdated
+//                         request_full_map_sets = true;
+//                         break;
+//                     }
+//                 } else {
+//                     // Local version is missing this map set
+//                     request_full_map_sets = true;
+//                     break;
+//                 }
+//             }
+
+//             if request_full_map_sets {
+//                 // Send a request to the host for the full map set data
+//                 let request_message = "REQUEST_FULL_MAP_SETS".as_bytes();
+//                 socket.send(request_message.into(), _id);
+//                 info!("Requested full map sets from the host.");
+//             }
+//         } else if let Ok(map_sets) = decode::<Vec<MapSet>>(&message) {
+//             // Full map set data received, update the client database
+//             for map_set in map_sets {
+//                 client_map_sets.insert(map_set.map_set_id.clone(), map_set.last_updated);
+//             }
+//             info!("Updated local map sets from received full map set data.");
+//         } else {
+//             error!("Failed to parse incoming message.");
+//         }
+//     }
+// }

@@ -3,16 +3,20 @@ use bevy::prelude::*;
 // --- External Plugins --- //
 use bevy_matchbox::prelude::*;
 use regex::Regex;
+use rmp_serde::encode;
+use serde_json;
 use uuid::Uuid;
 
+use crate::user_interface::run_trigger;
 // --- States --- //
 use crate::{ 
     StateCameraOrbitEntity, 
     StateGame, 
-    StateGameConnection, 
+    StateEngineConnection, 
     StateGamePlayStyle, 
     StateLevel, 
     StateMapSet, 
+    StateMenu,
     StateRunTrigger, 
     StateTurn, 
     StateUpdateRef
@@ -24,6 +28,8 @@ use crate::{
     DatabaseConnection,
     GameHandler,
     OnlineStateChange,
+    PacketAllStates,
+    PacketHeartBeat,
     Party,
     RunTrigger,
     UpdateIdResource,
@@ -58,17 +64,105 @@ pub fn auth_server_handshake(
     info!("player_info: {:?}", player_info_tuple.clone());
 
     let player_info = format!("{}, {}, {}", player_info_tuple.0, player_info_tuple.1, player_info_tuple.2);
-    let protocol_call = client_protocol.init_player_connection();
+
+    let message = format!{
+        "({}, ({}))",
+        client_protocol.init_player_connection(),
+        player_info,
+    };
+
+    // Serialize the PacketAllStates instance to MessagePack format
+    let serialized_message = match encode::to_vec(&message) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!("Failed to serialize auth_server_handshake: {:?}", err);
+            return;
+        }
+    };
 
     for peer in peers {
-        let message = format!{
-            "({}, {})",
-            protocol_call,
-            player_info,
-        };
-        info!("Sending message: {message:?} to {peer}");
-        socket.send(message.as_bytes().into(), peer);
+        info!("Sending serialized auth_server_handshake: {message:?} to {peer}");
+        socket.send(serialized_message.clone().into(), peer);
     }
+}
+
+pub fn network_get_client_state_all(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+    party: Res<Party>,
+    state_cam_orbit_entity: Res<State<StateCameraOrbitEntity>>,
+    state_game: Res<State<StateGame>>,
+    state_game_play_style: Res<State<StateGamePlayStyle>>,
+    state_level: Res<State<StateLevel>>,
+    state_map_set: Res<State<StateMapSet>>,
+    state_menu: Res<State<StateMenu>>,
+    state_turn: Res<State<StateTurn>>,
+    client_protocol: Res<ClientProtocol>,
+) {
+    let peers: Vec<_> = socket.connected_peers().collect();
+    
+    let player_id = format!("{:?}", party.main_player_get_player_id());
+    let state_game = format!("{:?}", state_game.get());
+    let state_cam_orbit_entity = format!("{:?}", state_cam_orbit_entity.get());
+    let state_game_play_style = format!("{:?}", state_game_play_style.get());
+    let state_level = format!("{:?}", state_level.get());
+    let state_map_set = format!("{:?}", state_map_set.get());
+    let state_menu = format!("{:?}", state_menu.get());
+    let state_turn = format!("{:?}", state_turn.get());
+    
+    let player_id = player_id.as_str();
+    let state_game = state_game.as_str();
+    let state_cam_orbit_entity = state_cam_orbit_entity.as_str();
+    let state_game_play_style = state_game_play_style.as_str();
+    let state_level = state_level.as_str();
+    let state_map_set = state_map_set.as_str();
+    let state_menu = state_menu.as_str();
+    let state_turn = state_turn.as_str();
+
+
+    // Create an instance of PacketAllStates struct with the current state values.
+    let all_states = PacketAllStates {
+        player_id,
+        state_game,
+        state_cam_orbit_entity,
+        state_game_play_style,
+        state_level,
+        state_map_set,
+        state_menu,
+        state_turn,
+    };
+
+    // Convert the PacketAllStates to JSON format for easy text-based parsing later
+    let packet_json = match serde_json::to_string(&all_states) {
+        Ok(json) => json,
+        Err(err) => {
+            error!("Failed to convert PacketAllStates to JSON: {:?}", err);
+            return;
+        }
+    };
+    
+    let message = format!{
+        "({}, ({}))",
+        client_protocol.all_states_packet(),
+        packet_json,
+    };
+    info!("Pretty: PacketAllStates: {:#?}", &message);
+
+    // Serialize the PacketAllStates instance to MessagePack format
+    let serialized_message = match encode::to_vec(&message) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!("Failed to serialize PacketAllStates: {:?}", err);
+            return;
+        }
+    };
+
+    for peer in peers {
+        info!("Sending serialized PacketAllStates to {peer}");
+        socket.send(serialized_message.clone().into(), peer);
+    }
+
+    run_trigger.set_target("network_get_client_state_all", false);
 }
 
 pub fn network_get_client_state_game(
@@ -89,8 +183,6 @@ pub fn network_get_client_state_game(
         info!("Sending message: {message:?} to {peer}");
         socket.send(message.as_bytes().into(), peer);
     }
-
-    
     run_trigger.set_target("network_get_client_state_game", false);
 }
 
@@ -109,14 +201,14 @@ pub fn receive_messages(
     let mut parse_message = false;
     let mut op_message = None;
     for (_id, message) in socket.receive() {
+        info!("Received message: {:?}", message.clone());
         match std::str::from_utf8(&message) {
             Ok(message) => {
-                info!("Received message: {:?}", message.clone());
                 let owned_message = message.to_owned();
                 op_message = Some(owned_message);
                 parse_message = true;
             },
-            Err(e) => error!("Failed to convert message to string: {e}"),
+            Err(e) => error!("receive_messages: Failed to convert message to string: {e}"),
         }
     }
     if parse_message == true{
@@ -127,7 +219,7 @@ pub fn receive_messages(
 pub fn remote_state_change_monitor(
     mut online_event_listener: EventReader<OnlineStateChange>,
     mut game_handler: ResMut<GameHandler>,
-    mut next_state_connection: ResMut<NextState<StateGameConnection>>,
+    mut next_state_connection: ResMut<NextState<StateEngineConnection>>,
     mut next_state_game: ResMut<NextState<StateGame>>,
     mut next_state_level: ResMut<NextState<StateLevel>>,
     mut next_state_map_set: ResMut<NextState<StateMapSet>>,
@@ -139,9 +231,9 @@ pub fn remote_state_change_monitor(
     for _ev in online_event_listener.read() {
         let pushed_state =  game_handler.get_pushed_state();
         match pushed_state {
-            StateUpdateRef::StateGameConnection(state_game_connection) => {
-                info!("StateGameConnection: {:?}", state_game_connection);
-                next_state_connection.set(state_game_connection); 
+            StateUpdateRef::StateEngineConnection(state_engine_connection) => {
+                info!("StateEngineConnection: {:?}", state_engine_connection);
+                next_state_connection.set(state_engine_connection); 
                 game_handler.set_connected_true();
             },
             StateUpdateRef::StateGame(state_game) => {
@@ -176,6 +268,55 @@ pub fn remote_state_change_monitor(
     }
 }
 
+pub fn send_client_heartbeat(
+    mut socket: ResMut<MatchboxSocket<SingleChannel>>,
+    party: Res<Party>,
+    client_protocol: Res<ClientProtocol>,
+) {
+    let peers: Vec<_> = socket.connected_peers().collect();
+
+    // Get the player ID
+    let player_id = party.main_player_get_player_id();
+    let player_id_str = player_id.to_string();
+
+    // Create an instance of PacketHeartBeat
+    let heartbeat_packet = PacketHeartBeat {
+        player_id: player_id_str.as_str(),
+    };
+
+    // Convert the PacketHeartBeat to JSON format
+    let packet_json = match serde_json::to_string(&heartbeat_packet) {
+        Ok(json) => json,
+        Err(err) => {
+            error!("Failed to convert PacketHeartBeat to JSON: {:?}", err);
+            return;
+        }
+    };
+
+    // Construct the message in the same format as other packets
+    let message = format!(
+        "({}, ({}))",
+        client_protocol.heart_beat_packet(),
+        packet_json,
+    );
+    info!("Sending PacketHeartBeat message: {:#?}", &message);
+
+    // Serialize the PacketHeartBeat instance to MessagePack format
+    let serialized_message = match encode::to_vec(&message) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!("Failed to serialize PacketHeartBeat: {:?}", err);
+            return;
+        }
+    };
+
+    // Send the heartbeat message to all connected peers
+    for peer in peers {
+        info!("Sending serialized PacketHeartBeat to peer {:?}", peer);
+        socket.send(serialized_message.clone().into(), peer);
+    }
+}
+
 pub fn server_parse_message(
     message: &str,
     game_handler: &mut ResMut<GameHandler>,
@@ -207,22 +348,46 @@ pub fn server_parse_message(
                             db_pipeline_sync_local_player(db, party, update_id_res);
                         }
                     }
-                }
+                },
                 "InitPlayerConnection" => {
                     // Handle InitPlayerConnection command
                     if game_handler.is_not_connected() {
-                        let parsed_state = Some(StateUpdateRef::StateGameConnection(
-                            StateGameConnection::Online,
+                        let parsed_state = Some(StateUpdateRef::StateEngineConnection(
+                            StateEngineConnection::Online,
                         ));
                         info!("Parsed state update: {:?}", parsed_state);
                         game_handler.auth_server_handshake_received(parsed_state);
                         online_event_handler.send(OnlineStateChange);
                     }
-                }
+                },
+                "RunTrigger" => {
+                    if let Some(run_trigger) = caps.get(4).map(|m| m.as_str()) {
+                        info!("run_trigger: {:?}", run_trigger);
+                        // "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
+                        // "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
+                        // "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
+                        // "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
+
+                        // "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
+
+                        // "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
+                        // "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
+                        // "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
+                        // "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
+                        // "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
+                        // "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
+                        // "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
+                        // "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
+                        // "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
+
+                        // "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
+                        // "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
+                    }
+                },
                 _ => {
                     // Handle unknown commands
                     info!("Unknown command: {}", command);
-                }
+                },
             }
         } else {
             info!("Target client ID does not match player ID.");
@@ -236,123 +401,3 @@ pub fn start_socket(mut commands: Commands) {
     let socket = MatchboxSocket::new_reliable("ws://localhost:3536/minigolf");
     commands.insert_resource(socket);
 }
-
-
-// pub fn server_parse_message(
-//     message: &str,
-//     game_handler: &mut ResMut<GameHandler>,
-//     online_event_handler: &mut EventWriter<OnlineStateChange>,
-// ) {
-//     let split: &Vec<&str> = &message.split("::").collect();
-//     if split.len() != 2 {
-//         info!("Invalid message format");
-//         return;
-//     }
-
-//     if game_handler.is_not_connected() { // handle a new connection.
-//         let parsed_state = match split[0] {
-//             "StateGameConnection" => match split[1] {
-//                 "Online" => Some(StateUpdateRef::StateGameConnection(StateGameConnection::Online)),
-//                 _ => None,
-//             }
-//             _ => None,
-//         };
-        
-//         if let Some(state) = parsed_state {
-//             info!("Updated state valid: {:?}", state);
-//             game_handler.auth_server_handshake_received(Some(state));
-//             online_event_handler.send(OnlineStateChange);
-//         } else {
-//             info!("Updated state invalid");
-//         }
-//     } else {
-//         let parsed_state = match split[0] {
-//             "StateGame" => match split[1] {
-//                 "InGame" => Some(StateUpdateRef::StateGame(StateGame::InGame)),
-//                 "NotInGame" => Some(StateUpdateRef::StateGame(StateGame::NotInGame)),
-//                 _ => None,
-//             },
-//             "StateLevel" => match split[1] {
-//                 "MainMenu" => Some(StateUpdateRef::StateLevel(StateLevel::MainMenu)),
-//                 "Hole1" => Some(StateUpdateRef::StateLevel(StateLevel::Hole1)),
-//                 "Hole2" => Some(StateUpdateRef::StateLevel(StateLevel::Hole2)),
-//                 "Hole3" => Some(StateUpdateRef::StateLevel(StateLevel::Hole3)),
-//                 "Hole4" => Some(StateUpdateRef::StateLevel(StateLevel::Hole4)),
-//                 "Hole5" => Some(StateUpdateRef::StateLevel(StateLevel::Hole5)),
-//                 "Hole6" => Some(StateUpdateRef::StateLevel(StateLevel::Hole6)),
-//                 "Hole7" => Some(StateUpdateRef::StateLevel(StateLevel::Hole7)),
-//                 "Hole8" => Some(StateUpdateRef::StateLevel(StateLevel::Hole8)),
-//                 "Hole9" => Some(StateUpdateRef::StateLevel(StateLevel::Hole9)),
-//                 "Hole10" => Some(StateUpdateRef::StateLevel(StateLevel::Hole10)),
-//                 "Hole11" => Some(StateUpdateRef::StateLevel(StateLevel::Hole11)),
-//                 "Hole12" => Some(StateUpdateRef::StateLevel(StateLevel::Hole12)),
-//                 "Hole13" => Some(StateUpdateRef::StateLevel(StateLevel::Hole13)),
-//                 "Hole14" => Some(StateUpdateRef::StateLevel(StateLevel::Hole14)),
-//                 "Hole15" => Some(StateUpdateRef::StateLevel(StateLevel::Hole15)),
-//                 "Hole16" => Some(StateUpdateRef::StateLevel(StateLevel::Hole16)),
-//                 "Hole17" => Some(StateUpdateRef::StateLevel(StateLevel::Hole17)),
-//                 "Hole18" => Some(StateUpdateRef::StateLevel(StateLevel::Hole18)),
-//                 "HoleTutorial" => Some(StateUpdateRef::StateLevel(StateLevel::HoleTutorial)),
-//                 _ => None,
-//             },
-//             "StateCameraOrbitEntity" => match split[1] {
-//                 "Menu" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Menu)),
-//                 "Ball" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Ball)),
-//                 "Cup" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::Cup)),
-//                 "FreePan" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::FreePan)),
-//                 "LeaderBoard" => Some(StateUpdateRef::StateCameraOrbitEntity(StateCameraOrbitEntity::LeaderBoard)),
-//                 _ => None,
-//             },
-//             "StateMapSet" => match split[1] {
-//                 "Tutorial" => Some(StateUpdateRef::StateMapSet(StateMapSet::Tutorial)),
-//                 "WholeCorse" => Some(StateUpdateRef::StateMapSet(StateMapSet::WholeCorse)),
-//                 "FrontNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::FrontNine)),
-//                 "BackNine" => Some(StateUpdateRef::StateMapSet(StateMapSet::BackNine)),
-//                 "SelectAHole" => Some(StateUpdateRef::StateMapSet(StateMapSet::SelectAHole)),
-//                 _ => None,
-//             },
-//             "StateGamePlayStyle" => match split[1] {
-//                 "SetOrder" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::SetOrder)),
-//                 "Proximity" => Some(StateUpdateRef::StateGamePlayStyle(StateGamePlayStyle::Proximity)),
-//                 _ => None,
-//             },
-//             "StateTurn" => match split[1] {
-//                 "NotInGame" => Some(StateUpdateRef::StateTurn(StateTurn::NotInGame)),
-//                 "Active" => Some(StateUpdateRef::StateTurn(StateTurn::Active)),
-//                 "NextTurn" => Some(StateUpdateRef::StateTurn(StateTurn::NextTurn)),
-//                 _ => None,
-//             },
-//             "StateRunTrigger" => match split[1] {
-//                 "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
-//                 "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
-//                 "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
-//                 "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
-
-//                 "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
-
-//                 "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
-//                 "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
-//                 "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
-//                 "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
-//                 "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
-//                 "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
-//                 "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
-//                 "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
-//                 "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
-
-//                 "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
-//                 "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
-//                 _ => None,
-//             },
-//             _ => None,
-//         };
-        
-//         if let Some(state) = parsed_state {
-//             info!("Updated state valid: {:?}", state);
-//             game_handler.auth_server_handshake_received(Some(state));
-//             online_event_handler.send(OnlineStateChange);
-//         } else {
-//             info!("Updated state invalid");
-//         }
-//     }
-// }
