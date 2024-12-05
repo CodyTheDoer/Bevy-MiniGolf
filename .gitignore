@@ -6,3 +6,6 @@
 
 # Rust-related
 Cargo.lock
+
+# CSV for organization
+minigolf.csv

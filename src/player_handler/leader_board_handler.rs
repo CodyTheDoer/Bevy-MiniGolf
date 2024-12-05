@@ -26,7 +26,7 @@ impl LeaderBoard {
         mut game_handler: ResMut<GameHandler>,
         mut party: ResMut<Party>,
     ) {
-        let game_id = game_handler.get_game_id();
+        let game_id = game_handler.game_id_get();
         let (players, scores) = party.get_all_player_ids_and_scores();
         let record = GameRecord {
             game_id,
@@ -35,7 +35,7 @@ impl LeaderBoard {
         };
         self.past_games.push(record);
         self.reset_current_scores();
-        game_handler.clear_game_id();
+        game_handler.game_id_clear();
     }
 
     pub fn get_game_count(&self) -> usize {

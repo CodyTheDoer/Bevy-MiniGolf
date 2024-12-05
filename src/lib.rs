@@ -3,7 +3,7 @@ use bevy_rapier3d::prelude::RigidBody;
 
 use uuid::Uuid;
 
-use rusqlite::{params, Connection, Result};
+use rusqlite::Connection;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 
@@ -34,6 +34,43 @@ pub struct UpdateIdResource {
     pub update_id: Option<Uuid>,
 }
 
+#[derive(Clone, PartialEq, Eq, Hash, Resource,)]
+pub struct ClientProtocol {}
+
+impl ClientProtocol {
+    pub fn new() -> Self {ClientProtocol{}}
+
+    pub fn init_player_connection(&self) -> String {
+        String::from("InitPlayerConnection")
+    }
+
+    pub fn all_states_packet(&self) -> String {
+        String::from("PacketAllStates")
+    }
+
+    pub fn heart_beat_packet(&self) -> String {
+        String::from("PacketHeartBeat")
+    }
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PacketAllStates<'a> {
+    player_id: &'a str,
+    state_game: &'a str,
+    state_cam_orbit_entity: &'a str,
+    state_game_play_style: &'a str,
+    state_level: &'a str,
+    state_map_set: &'a str,
+    state_menu: &'a str,
+    state_turn: &'a str,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PacketHeartbeat<'a> {
+    player_id: &'a str,
+}
+
+// --- State Enums --- //
+
 #[derive(Clone, Debug)]
 pub enum StateUpdateRef {
     StateEngineConnection(StateEngineConnection),
@@ -44,8 +81,6 @@ pub enum StateUpdateRef {
     StateGamePlayStyle(StateGamePlayStyle),
     StateTurn(StateTurn),
 }
-
-// --- State Enums --- //
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateArrow {
@@ -144,43 +179,8 @@ pub enum StateTurn {
     NextTurn,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Resource,)]
-pub struct ClientProtocol {}
-
-impl ClientProtocol {
-    pub fn new() -> Self {ClientProtocol{}}
-
-    pub fn init_player_connection(&self) -> String {
-        String::from("InitPlayerConnection")
-    }
-
-    pub fn all_states_packet(&self) -> String {
-        String::from("PacketAllStates")
-    }
-
-    pub fn heart_beat_packet(&self) -> String {
-        String::from("PacketHeartBeat")
-    }
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PacketAllStates<'a> {
-    player_id: &'a str,
-    state_game: &'a str,
-    state_cam_orbit_entity: &'a str,
-    state_game_play_style: &'a str,
-    state_level: &'a str,
-    state_map_set: &'a str,
-    state_menu: &'a str,
-    state_turn: &'a str,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PacketHeartBeat<'a> {
-    player_id: &'a str,
-}
-
 #[derive(Resource)]
-pub struct HeartBeatTimer(pub Timer);
+pub struct HeartbeatTimer(pub Timer);
 
 // World //
 
@@ -239,10 +239,10 @@ pub struct CameraUi;
 
 // Define marker components to find the entities later
 #[derive(Component)]
-pub struct StateText;
+pub struct TextState;
 
 #[derive(Component)]
-pub struct TitleText;
+pub struct TextTitle;
 
 // --- Player Handler --- //
 
@@ -357,6 +357,17 @@ pub struct LeaderBoard {
 
 #[derive(Resource)]
 pub struct RunTrigger{
+    camera_handler_cycle_state_camera: bool,
+    game_handler_game_start: bool,
+    game_handler_game_state_change_routines: bool,
+    game_handler_update_players_ref_ball_locations: bool,
+    game_handler_update_players_reset_ref_ball_locations: bool,
+    game_handler_update_players_store_current_ball_locations_to_ref: bool,
+    leader_board_log_game: bool,
+    leader_board_review_last_game: bool,
+    level_handler_set_state_next_level: bool,
+    level_handler_set_state_next_map_set: bool,
+    network_get_client_state_game: bool,
     party_handler_active_player_add_bonk: bool,
     party_handler_active_player_set_ball_location: bool,
     party_handler_active_player_set_hole_completion_state_true: bool,
@@ -366,18 +377,7 @@ pub struct RunTrigger{
     party_handler_new_player_remote: bool,
     party_handler_remove_ai: bool,
     party_handler_remove_last_player: bool,
-    network_get_client_state_game: bool,
-    game_handler_cycle_state_camera: bool,
-    game_handler_cycle_state_map_set: bool,
-    game_handler_cycle_current_level: bool,
-    game_handler_get_active_ball_location: bool,
-    game_handler_reset_active_ball_location: bool,
-    game_handler_set_active_ball_location: bool,
-    game_handler_state_turn_next_player_turn: bool,
-    game_handler_start_game_local: bool,
-    game_handler_toggle_state_game: bool,
-    leader_board_log_game: bool,
-    leader_board_review_last_game: bool,
+    turn_handler_set_turn_next: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

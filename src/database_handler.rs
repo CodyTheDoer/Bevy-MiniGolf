@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use dotenv::dotenv;
 use std::env;
-use rusqlite::{params, Connection, Result};
+use rusqlite::Connection;
 use uuid::Uuid;
 
 use std::sync::Arc;
@@ -34,7 +34,7 @@ impl DatabaseConnection {
 pub fn db_pipeline_init_local_player(
     db: Res<DatabaseConnection>,
     mut party: ResMut<Party>,
-    mut update_id_res: ResMut<UpdateIdResource>,
+    update_id_res: Res<UpdateIdResource>,
 ) {
     info!("Init: db_pipeline_sync_local_player:");
     info!("update_id: {:?}", update_id_res.update_id);

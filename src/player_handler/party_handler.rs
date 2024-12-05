@@ -288,7 +288,7 @@ pub fn party_handler_active_player_add_bonk(
     info!("function: party_handler_active_player_add_bonk"); 
     run_trigger.set_target("party_handler_active_player_set_ball_location", true);
     run_trigger.set_target("game_handler_set_active_ball_location", true);
-    let level = game_handler.get_current_level() as usize;
+    let level = game_handler.current_level_get() as usize;
     party.active_player_add_bonk(level);
     run_trigger.set_target("party_handler_active_player_add_bonk", false);
 }
@@ -303,7 +303,7 @@ pub fn party_handler_active_player_set_ball_location(
     // let owned_match = GolfBallTag(party.get_active_player_index().try_into().unwrap());
     // for golf_ball in golf_ball_tag_query.iter_mut() {
     //     owned_match => {
-    if let Some(current_ball_location) = game_handler.get_active_ball_location() {
+    if let Some(current_ball_location) = game_handler.active_player_ball_location_get() {
         info!("Setting active ball location: {:?}", current_ball_location);
         party.active_player_set_ball_location(current_ball_location);
     } else {
@@ -360,7 +360,7 @@ pub fn party_handler_cycle_active_player(
                         party.set_active_player(1);
                         run_trigger.set_target("game_handler_cycle_current_level", true);
                         run_trigger.set_target("game_handler_get_active_ball_location", true);
-                        game_handler.next_level();
+                        game_handler.current_level_set_next_level();
                     },
                 }
             },
@@ -375,7 +375,7 @@ pub fn party_handler_cycle_active_player(
                         party.set_active_player(1);
                         run_trigger.set_target("game_handler_cycle_current_level", true);
                         run_trigger.set_target("game_handler_get_active_ball_location", true);
-                        game_handler.next_level();
+                        game_handler.current_level_set_next_level();
                     },
                 }
             },
@@ -390,7 +390,7 @@ pub fn party_handler_cycle_active_player(
                         party.set_active_player(1);
                         run_trigger.set_target("game_handler_cycle_current_level", true);
                         run_trigger.set_target("game_handler_get_active_ball_location", true);
-                        game_handler.next_level();
+                        game_handler.current_level_set_next_level();
                     },
                 }
             },

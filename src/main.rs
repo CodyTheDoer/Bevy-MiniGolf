@@ -1,38 +1,13 @@
 // --- Internal Bevy Plugins --- //
 use bevy::{prelude::*,
-    input::common_conditions::*,
     time::common_conditions::on_timer, 
-    utils::{
-        Duration,
-        HashMap,
-    },
+    utils::Duration,
     window::{PresentMode, WindowTheme},
-    // tasks::IoTaskPool,
-};
-
-// use dotenv::dotenv;
-// use std::env;
-// use sqlx::mysql::MySqlPoolOptions;
-// use sqlx::MySqlPool;
-use time::{macros::datetime,
-    OffsetDateTime,
-};
-use uuid::Uuid;
-use rmp_serde::{
-    decode,
-    // encode,
 };
 
 // --- External Plugins --- //
-// use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use bevy_rapier3d::prelude::*;
-use bevy_matchbox::prelude::*;
-// use bevy_editor_pls::prelude::*;
-
-// use std::sync::{
-//     Arc,
-//     Mutex,
-// };
+// use bevy_matchbox::prelude::*;
 
 // --- States --- //
 use minigolf::{ 
@@ -55,7 +30,7 @@ use minigolf::{
     Fonts,
     GameHandler,
     LeaderBoard,
-    HeartBeatTimer,
+    HeartbeatTimer,
     OnlineStateChange,
     Party,
     RunTrigger,
@@ -63,71 +38,58 @@ use minigolf::{
 };
 
 // --- User Camera World Import --- //
-use minigolf::user_interface::camera_world::{
-    setup_3d_camera,
-    pan_orbit_camera, 
-    state_camera_orbit_entity_logic,
+use minigolf::{
+    database_handler::db_pipeline_init_local_player,
+    level_handler::level_handler::{
+        level_handler_set_state_next_level,
+        level_handler_set_state_next_map_set,
+    },
+    player_handler::{
+        leader_board_handler::{
+            leader_board_log_game,
+            leader_board_review_last_game,
+        },
+        party_handler::{
+            party_handler_active_player_add_bonk,
+            party_handler_active_player_set_ball_location,
+            party_handler_active_player_set_hole_completion_state_true,
+            party_handler_cycle_active_player,
+            party_handler_new_player_ai,
+            party_handler_new_player_local,
+            party_handler_new_player_remote,
+            party_handler_remove_ai,
+            party_handler_remove_last_player,
+        },
+    },
+    network_handler::{
+        auth_server_handshake,
+        heartbeat_system,
+        network_get_client_state_game,
+        start_socket,
+        receive_messages,
+        remote_state_change_monitor,
+    },
+    user_interface::{
+        camera_handler::{
+            camera_handler_cycle_state_camera,
+            setup_3d_camera,
+            pan_orbit_camera, 
+            state_camera_orbit_entity_logic,
+        },
+        game_handler::{
+            game_handler_game_start,
+            game_handler_game_state_change_routines,
+            game_handler_update_players_ref_ball_locations,
+            game_handler_update_players_reset_ref_ball_locations,
+            game_handler_update_players_store_current_ball_locations_to_ref,
+        },
+        turn_handler::turn_handler_set_turn_next,
+        user_interface::{
+            setup_ui,
+            update_ui,
+        },
+    },
 };
-
-// --- User Interface Import --- //
-use minigolf::user_interface::user_interface::{
-    setup_ui,
-    update_ui,
-};
-
-// // --- Game Handler Import --- //
-use minigolf::user_interface::game_handler::{
-    game_handler_cycle_current_level,
-    game_handler_cycle_state_camera,
-    game_handler_cycle_state_map_set,
-    game_handler_get_active_ball_location,
-    game_handler_reset_active_ball_location,
-    game_handler_set_active_ball_location,
-    game_handler_state_turn_next_player_turn,
-    game_handler_start_game_local,
-    game_handler_toggle_state_game,
-
-};
-
-// // --- Party Handler Import --- //
-use minigolf::player_handler::party_handler::{
-    party_handler_active_player_add_bonk,
-    party_handler_active_player_set_ball_location,
-    party_handler_active_player_set_hole_completion_state_true,
-    party_handler_cycle_active_player,
-    party_handler_new_player_ai,
-    party_handler_new_player_local,
-    party_handler_new_player_remote,
-    party_handler_remove_ai,
-    party_handler_remove_last_player,
-};
-
-// --- Leader Board Handler Import --- //
-use minigolf::player_handler::leader_board_handler::{
-    leader_board_log_game,
-    leader_board_review_last_game,
-};
-
-// // --- Network Handler Import --- //
-use minigolf::network_handler::{
-    auth_server_handshake,
-    network_get_client_state_game,
-    send_client_heartbeat,
-    start_socket,
-    receive_messages,
-    remote_state_change_monitor,
-};
-
-// --- Database Handler Import --- //
-use minigolf::database_handler::db_pipeline_init_local_player;
-
-// // --- Level Handler Import --- //
-// use minigolf::level_handler::level_handler::{
-// };
-
-// // --- Physics Handler Import --- //
-// use minigolf::level_handler::physics_handler::{
-// };
 
 fn main() {
     let mut app = App::new();
@@ -176,7 +138,7 @@ fn main() {
         .insert_resource(CameraHandler::new())
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
-        .insert_resource(HeartBeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
+        .insert_resource(HeartbeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
@@ -208,19 +170,21 @@ fn main() {
         .add_systems(Update, update_ui)
 
         // Run Trigger Systems //        
-        .add_systems(Update, game_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_state_camera()))
-        .add_systems(Update, game_handler_cycle_current_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_current_level()))
-        .add_systems(Update, game_handler_cycle_state_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_cycle_state_map_set()))
-        .add_systems(Update, game_handler_get_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_get_active_ball_location()))
-        .add_systems(Update, game_handler_reset_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_reset_active_ball_location()))
-        .add_systems(Update, game_handler_set_active_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_set_active_ball_location()))
-        .add_systems(Update, game_handler_start_game_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_game_local()))
-        .add_systems(Update, game_handler_state_turn_next_player_turn.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_state_turn_next_player_turn()))
-        .add_systems(Update, game_handler_toggle_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_toggle_state_game()))
+        .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
+        
+        .add_systems(Update, game_handler_update_players_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_ref_ball_locations()))
+        .add_systems(Update, game_handler_update_players_reset_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_reset_ref_ball_locations()))
+        .add_systems(Update, game_handler_update_players_store_current_ball_locations_to_ref.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_store_current_ball_locations_to_ref()))
+        .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
+        .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
+        .add_systems(Update, game_handler_game_state_change_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_change_routines()))
 
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
         .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
+        .add_systems(Update, level_handler_set_state_next_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_level()))
+        .add_systems(Update, level_handler_set_state_next_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_map_set()))
+
         .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
         
         .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
@@ -242,20 +206,6 @@ fn main() {
         // .add_systems(Update, devfn_receive_messages_map_set);
 
     app.run();
-}
-
-pub fn heartbeat_system(
-    time: Res<Time>,
-    mut timer: ResMut<HeartBeatTimer>,
-    socket: ResMut<MatchboxSocket<SingleChannel>>,
-    party: Res<Party>,
-    client_protocol: Res<ClientProtocol>,
-) {
-    // Check if the timer has finished
-    if timer.0.tick(time.delta()).finished() {
-        // Call the function to send the heartbeat
-        send_client_heartbeat(socket, party, client_protocol);
-    }
 }
 
 //-----------------------------------------------------------------------------------//

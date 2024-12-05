@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use bevy_mod_raycast::prelude::*;
-
 // --- State Imports --- //
 use crate::{
     StateArrow, 
@@ -18,15 +16,13 @@ use crate::{
 // --- resource Imports --- //
 use crate::{
     CameraUi,
-    CameraWorld, 
     Fonts,
     GameHandler,
-    Interactable,
     LeaderBoard,
     Party,
     RunTrigger,
-    StateText,
-    TitleText,
+    TextState,
+    TextTitle,
 };
 
 impl Fonts {
@@ -113,166 +109,6 @@ impl Fonts {
 //     }
 // }
 
-pub fn draw_cursor(
-    mut raycast: Raycast,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    windows: Query<&Window>,
-    mut gizmos: Gizmos,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => return, // Exit if the camera is not found or multiple cameras are detected
-    };
-    
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    if let Some((_, intersection)) = hits.first() {
-        // Get the intersection point.
-        let point = intersection.position();
-
-        // Draw a circle at the intersection point using Gizmos (just above the surface).
-        let up = Dir3::Y; 
-        gizmos.circle(point + up * 0.05, up, 0.05, Color::WHITE);
-    }
-}
-
-pub fn ray_fire(
-    mut raycast: Raycast,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    interactable_query: Query<(Entity, &Name), With<Interactable>>,
-    windows: Query<&Window>,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => {
-            warn!("No CameraWorld found or multiple CameraWorlds detected.");
-            return;
-        },
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    // Loop through the raycast hits and detect if we hit an interactable entity
-    for (entity, _intersection) in hits {
-        if Some(interactable_query.get(*entity)).is_some() {
-        }
-    }
-}
-
-pub fn ray_release(
-    // mut party: ResMut<Party>,
-    mut raycast: Raycast,
-    camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
-    interactable_query: Query<Entity, With<Interactable>>,
-    scene_meshes: Query<(Entity, &Name)>,
-    windows: Query<&Window>,
-    // map_set_state: Res<State<StateMapSet>>,
-    // mut game_handler: ResMut<GameHandler>,
-    // mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
-) {    
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
-        Err(_) => {
-            warn!("No CameraWorld found or multiple CameraWorlds detected.");
-            return;
-        },
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-        return;
-    };
-
-    let hits = raycast.cast_ray(ray, &RaycastSettings::default());
-
-    // Loop through the raycast hits and detect if we hit an interactable entity
-    for (entity, _intersection) in hits {
-        if Some(interactable_query.get(*entity)).is_some() {
-            for (target_entity, name) in scene_meshes.iter() {
-                if *entity == target_entity {
-                    info!("Name: {:?} Entity: {:?}", name, &entity);
-                    info!("Entity Index: {}, Generation: {}", entity.index(), entity.generation());
-                    let owned_name = name.as_str();
-                    match owned_name {
-                        // --- Menu: Main Interface Mapping --- //
-                        "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
-                        },
-                        "main_menu_interface_local" => {
-                        },
-                        "main_menu_interface_online" => {
-                        },
-                        "main_menu_interface_preferences" => {
-                        },
-                        "main_menu_interface_tutorial" => {
-                        },
-                        "main_menu_player_text" | "main_menu_player_board.0" => {
-                        }
-                        /* 
-                            // Free Options to Build From
-                        "main_menu_interface_minigolf" => {},
-                        "main_menu_interface_sign_body" => {},
-                        */
-
-                        // --- Menu: Common Interactions --- //
-                        "main_menu_text" | "main_menu_board.0" => {
-                        },
-
-                        // --- Menu: Leader Board Interface Mapping --- //
-                        "leaderboard_menu_play_again_text" | "leaderboard_menu_play_again_board.0" => {
-                        },
-                        
-                        // --- Menu: Local Interface Mapping --- //
-
-                        "local_button_add_player" | "local_button_add_player_symbol" => {
-                        },
-                        "local_button_sub_player" | "local_button_sub_player_symbol" => {
-                        },
-
-                        "local_button_add_ai" | "local_button_add_ai_symbol" => {
-                        },
-                        "local_button_sub_ai" | "local_button_sub_ai_symbol" => {
-                        },
-
-                        // "local_playstyle_toggle_button_ordered.1" => {commands.insert_resource(NextState(PlayThroughStyleState::SetOrder))},
-                        // "local_playstyle_toggle_button_proximity.1" => {commands.insert_resource(NextState(PlayThroughStyleState::Proximity))},
-
-                        "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
-                        },
-                        "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
-                        },
-                        "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
-                        },
-                        "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
-                        },
-                        _ => {},
-                    }
-                };
-            }
-        }
-    }
-}
 
 pub fn setup_ui(
     asset_server: Res<AssetServer>,
@@ -333,7 +169,7 @@ pub fn setup_ui(
                     },
                     ..default()
                 },
-                TitleText, // Tag the title text so it can be updated later
+                TextTitle, // Tag the title text so it can be updated later
             ));
         });
 
@@ -373,7 +209,7 @@ pub fn setup_ui(
                     },
                     ..default()
                 },
-                StateText, // Tag the state text to easily find and update it later
+                TextState, // Tag the state text to easily find and update it later
             ));
         });
     }
@@ -414,7 +250,7 @@ pub fn setup_ui(
                     },
                     ..default()
                 },
-                StateText, // Tag the state text to easily find and update it later
+                TextState, // Tag the state text to easily find and update it later
             ));
         });
     }
@@ -433,7 +269,7 @@ pub fn update_ui(
     party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     leader_board: Res<LeaderBoard>,
-    mut query: Query<&mut Text, With<StateText>>,
+    mut query: Query<&mut Text, With<TextState>>,
     run_trigger: Res<RunTrigger>,
 ) {
     let state_texts_left = vec![
@@ -446,14 +282,14 @@ pub fn update_ui(
         format!("state_map_set: {:?}", *state_map_set),                                                                                     // 7
         format!("state_menu: {:?}", *state_menu),                                                                                           // 8
         format!("state_turn: {:?}", *state_turn),                                                                                           // 9
-        format!("GameHandler: Remote: {:?}", game_handler.remote_game()),                                                                                           // 10
+        format!("Remote Game: {:?}", game_handler.remote_game_get()),                                                                                           // 10
         format!("Party Size: {:?}", party.get_party_size()),                                                                                // 11
-        format!("Current Level: {:?}", game_handler.get_current_level()),                                                                   // 12
+        format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 12
         format!("Active Player: {:?}", party.get_active_player_index()),                                                                    // 13 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
-        format!("Active Player: Ball Location: {:?}", game_handler.get_active_ball_location()),                                             // 16 
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.get_current_level() as usize)),   // 17
+        format!("Active Player: Ball Location: {:?}", game_handler.active_player_ball_location_get()),                                             // 16 
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 17
         format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 18
         format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 19
         format!("______________________________________________________________________"),                                                  // 20  

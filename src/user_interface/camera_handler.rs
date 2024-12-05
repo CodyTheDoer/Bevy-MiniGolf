@@ -3,8 +3,6 @@ use bevy::prelude::*;
 
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
-// use bevy_mod_raycast::prelude::*;
-
 // State
 use crate::{
     StateCameraOrbitEntity, 
@@ -15,11 +13,11 @@ use crate::{
 use crate::{
     CameraHandler, 
     CameraWorld, 
-    // Ground, 
     PanOrbitAction,
     PanOrbitCameraBundle,
     PanOrbitSettings,
     RigidBody,
+    RunTrigger,
 };
 
 impl CameraHandler {
@@ -57,6 +55,38 @@ impl Default for PanOrbitSettings {
             scroll_pixel_sensitivity: 1.0,
         }
     }
+}
+
+pub fn camera_handler_cycle_state_camera(
+    mut run_trigger: ResMut<RunTrigger>,
+    camera_orbit_entity_state: Res<State<StateCameraOrbitEntity>>,
+    mut next_camera_orbit_entity_state: ResMut<NextState<StateCameraOrbitEntity>>,
+) {
+    info!("function: game_handler_cycle_state_camera"); 
+    match camera_orbit_entity_state.get() {
+        StateCameraOrbitEntity::Menu => {
+            info!("StateCameraOrbitEntity::Ball");
+            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Ball);
+        },
+        StateCameraOrbitEntity::Ball => {
+            info!("StateCameraOrbitEntity::Cup");
+            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Cup);
+        },
+        StateCameraOrbitEntity::Cup => {
+            info!("StateCameraOrbitEntity::FreePan");
+            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::FreePan);
+        },
+        StateCameraOrbitEntity::FreePan => {
+            info!("StateCameraOrbitEntity::LeaderBoard");
+            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::LeaderBoard);
+        },
+        StateCameraOrbitEntity::LeaderBoard => {
+            info!("StateCameraOrbitEntity::Menu");
+            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Menu);
+        },
+    }
+    run_trigger.set_target("game_handler_cycle_state_camera", false);
+    info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
 }
 
 pub fn setup_3d_camera(

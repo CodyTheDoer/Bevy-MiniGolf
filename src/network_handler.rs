@@ -7,7 +7,6 @@ use rmp_serde::encode;
 use serde_json;
 use uuid::Uuid;
 
-use crate::user_interface::run_trigger;
 // --- States --- //
 use crate::{ 
     StateCameraOrbitEntity, 
@@ -26,9 +25,10 @@ use crate::{
     ClientProtocol,
     DatabaseConnection,
     GameHandler,
+    HeartbeatTimer,
     OnlineStateChange,
     PacketAllStates,
-    PacketHeartBeat,
+    PacketHeartbeat,
     Party,
     RunTrigger,
     UpdateIdResource,
@@ -39,7 +39,6 @@ use crate::database_handler::db_pipeline_sync_local_player;
 pub fn auth_server_handshake(
     db: Res<DatabaseConnection>,
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
-    party: Res<Party>,
     client_protocol: Res<ClientProtocol>,
 ) {
     let conn = db.get_connection();
@@ -82,6 +81,20 @@ pub fn auth_server_handshake(
     for peer in peers {
         info!("Sending serialized auth_server_handshake: {message:?} to {peer}");
         socket.send(serialized_message.clone().into(), peer);
+    }
+}
+
+pub fn heartbeat_system(
+    time: Res<Time>,
+    mut timer: ResMut<HeartbeatTimer>,
+    socket: ResMut<MatchboxSocket<SingleChannel>>,
+    party: Res<Party>,
+    client_protocol: Res<ClientProtocol>,
+) {
+    // Check if the timer has finished
+    if timer.0.tick(time.delta()).finished() {
+        // Call the function to send the heartbeat
+        send_client_heartbeat(socket, party, client_protocol);
     }
 }
 
@@ -198,31 +211,7 @@ pub fn receive_messages(
         info!("{peer}: {state:?}");
     }
 
-    // let mut parse_message = false;
-    // let mut op_message = None;
-    // for (_id, message) in socket.receive() {
-    //     info!("Received message: {:?}", message.clone());
-    //     match std::str::from_utf8(&message) {
-    //         Ok(message) => {
-    //             let owned_message = message.to_owned();
-    //             op_message = Some(owned_message);
-    //             parse_message = true;
-    //         },
-    //         Err(e) => error!("receive_messages: Failed to convert message to string: {e}"),
-    //     }
-    // }
-    // if parse_message == true{
-    //     server_parse_message(
-    //         op_message.unwrap().as_str(), 
-    //         &mut game_handler, 
-    //         &mut online_event_handler, 
-    //         party, 
-    //         db, 
-    //         update_id_res,
-    //         run_trigger,
-    //     );
-    // };
-        // Collect all messages first
+    // Collect all messages first
     let mut messages: Vec<String> = Vec::new();
     for (_id, message) in socket.receive() {
         info!("Received message: {:?}", message.clone());
@@ -260,12 +249,12 @@ pub fn remote_state_change_monitor(
     mut next_state_camera_orbit_entity: ResMut<NextState<StateCameraOrbitEntity>>,
 ) {
     for _ev in online_event_listener.read() {
-        let pushed_state =  game_handler.get_pushed_state();
+        let pushed_state =  game_handler.pushed_state_get();
         match pushed_state {
             StateUpdateRef::StateEngineConnection(state_engine_connection) => {
                 info!("StateEngineConnection: {:?}", state_engine_connection);
                 next_state_connection.set(state_engine_connection); 
-                game_handler.set_connected_true();
+                game_handler.is_connected_set_true();
             },
             StateUpdateRef::StateGame(state_game) => {
                 info!("StateGame: {:?}", state_game);
@@ -307,15 +296,15 @@ pub fn send_client_heartbeat(
     let player_id_str = player_id.to_string();
 
     // Create an instance of PacketHeartBeat
-    let heartbeat_packet = PacketHeartBeat {
+    let heartbeat_packet = PacketHeartbeat {
         player_id: player_id_str.as_str(),
     };
 
-    // Convert the PacketHeartBeat to JSON format
+    // Convert the PacketHeartbeat to JSON format
     let packet_json = match serde_json::to_string(&heartbeat_packet) {
         Ok(json) => json,
         Err(err) => {
-            error!("Failed to convert PacketHeartBeat to JSON: {:?}", err);
+            error!("Failed to convert PacketHeartbeat to JSON: {:?}", err);
             return;
         }
     };
@@ -326,20 +315,20 @@ pub fn send_client_heartbeat(
         client_protocol.heart_beat_packet(),
         packet_json,
     );
-    info!("Sending PacketHeartBeat message: {:#?}", &message);
+    info!("Sending PacketHeartbeat message: {:#?}", &message);
 
-    // Serialize the PacketHeartBeat instance to MessagePack format
+    // Serialize the PacketHeartbeat instance to MessagePack format
     let serialized_message = match encode::to_vec(&message) {
         Ok(bytes) => bytes,
         Err(err) => {
-            error!("Failed to serialize PacketHeartBeat: {:?}", err);
+            error!("Failed to serialize PacketHeartbeat: {:?}", err);
             return;
         }
     };
 
-    // Send the heartbeat message to all connected peers
+    // Send the Heartbeat message to all connected peers
     for peer in peers {
-        info!("Sending serialized PacketHeartBeat to peer {:?}", peer);
+        info!("Sending serialized PacketHeartbeat to peer {:?}", peer);
         socket.send(serialized_message.clone().into(), peer);
     }
 }
@@ -385,7 +374,7 @@ pub fn server_parse_message(
                             StateEngineConnection::Online,
                         ));
                         info!("Parsed state update: {:?}", parsed_state);
-                        game_handler.auth_server_handshake_received(parsed_state);
+                        game_handler.pushed_state_set(parsed_state);
                         online_event_handler.send(OnlineStateChange);
                     }
                 },
