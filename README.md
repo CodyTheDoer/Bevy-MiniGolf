@@ -1,8 +1,9 @@
-![Screenshot of the first iteraction of the main menu](images/Minigolf%20001.png)
+![Screenshot of the first iteration of the rotating menu hub](images/Minigolf%20007.png)
 
 # MiniGolf Simulator - The Daily Bonk
 
 This project is my personal learning space for building a functional online enabled game in the bevy engine. It is a work-in-progress where I experiment and build knowledge.
+![Screenshot of the first iteraction of the main menu](images/Minigolf%20001.png)
 
 Deeply inspired by 3-D Ultra Minigolf from the late nineties.
     - Thanks Dad for letting me hog your PC endlessly to put balls in holes.
@@ -54,3 +55,6 @@ Sound:
 ```
 
 ![Screenshot of local menu scene and state monitoring during development](images/Minigolf%20004.png)
+
+Also the main menu is absolutely on a floating golfball
+![Screenshot of floating golfball menu from out of frame](images/Minigolf%20006.png)

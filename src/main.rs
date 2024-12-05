@@ -125,8 +125,8 @@ fn main() {
         // --- State Initialization --- //
         .insert_state(StateArrow::Idle)
         .insert_state(StateCameraOrbitEntity::Menu)
-        .insert_state(StateGame::NotInGame)
         .insert_state(StateEngineConnection::Local)
+        .insert_state(StateGame::NotInGame)
         .insert_state(StateGamePlayStyle::SetOrder)
         .insert_state(StateLevel::MainMenu)
         .insert_state(StateMapSet::Tutorial)
@@ -175,8 +175,8 @@ fn main() {
         .add_systems(Update, game_handler_update_players_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_ref_ball_locations()))
         .add_systems(Update, game_handler_update_players_reset_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_reset_ref_ball_locations()))
         .add_systems(Update, game_handler_update_players_store_current_ball_locations_to_ref.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_store_current_ball_locations_to_ref()))
+        
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
-        .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
         .add_systems(Update, game_handler_game_state_change_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_change_routines()))
 
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
@@ -199,6 +199,8 @@ fn main() {
         
         .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
         .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
+
+        .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
         .add_systems(Update, heartbeat_system)
         .add_systems(Update, temp_interface);
