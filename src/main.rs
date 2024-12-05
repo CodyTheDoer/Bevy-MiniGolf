@@ -44,7 +44,6 @@ use minigolf::{
     StateLevel, 
     StateMapSet, 
     StateMenu, 
-    StateRunTrigger, 
     StateTurn,
 };
 
@@ -112,7 +111,6 @@ use minigolf::player_handler::leader_board_handler::{
 // // --- Network Handler Import --- //
 use minigolf::network_handler::{
     auth_server_handshake,
-    network_get_client_state_all,
     network_get_client_state_game,
     send_client_heartbeat,
     start_socket,
@@ -171,7 +169,6 @@ fn main() {
         .insert_state(StateLevel::MainMenu)
         .insert_state(StateMapSet::Tutorial)
         .insert_state(StateMenu::MenuMainMenu)
-        .insert_state(StateRunTrigger::Idle)
         .insert_state(StateTurn::NotInGame)
 
         // --- Resource Initialization --- //
@@ -224,7 +221,6 @@ fn main() {
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
         .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
-        .add_systems(Update, network_get_client_state_all.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_all()))
         .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
         
         .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))

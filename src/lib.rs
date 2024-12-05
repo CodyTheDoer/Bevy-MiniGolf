@@ -42,7 +42,6 @@ pub enum StateUpdateRef {
     StateLevel(StateLevel),
     StateMapSet(StateMapSet),
     StateGamePlayStyle(StateGamePlayStyle),
-    StateRunTrigger(StateRunTrigger),
     StateTurn(StateTurn),
 }
 
@@ -367,7 +366,6 @@ pub struct RunTrigger{
     party_handler_new_player_remote: bool,
     party_handler_remove_ai: bool,
     party_handler_remove_last_player: bool,
-    network_get_client_state_all: bool,
     network_get_client_state_game: bool,
     game_handler_cycle_state_camera: bool,
     game_handler_cycle_state_map_set: bool,
@@ -380,28 +378,6 @@ pub struct RunTrigger{
     game_handler_toggle_state_game: bool,
     leader_board_log_game: bool,
     leader_board_review_last_game: bool,
-}
-
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateRunTrigger {
-    #[default]
-    Idle,
-    PartyHandlerActivePlayerAddBonk,
-    PartyHandlerActivePlayerSetBallLocation,
-    PartyHandlerActivePlayerSetHoleCompletionStateTrue,
-    PartyHandlerCycleActivePlayer,
-    NetworkGetClientStateGame,
-    GameHandlerCycleStateCamera,
-    GameHandlerCycleStateMapSet,
-    GameHandlerCycleCurrentLevel,
-    GameHandlerGetActiveBallLocation,
-    GameHandlerResetActiveBallLocation,
-    GameHandlerSetActiveBallLocation,
-    GameHandlerStateTurnNextPlayerTurn,
-    GameHandlerStartGameLocal,
-    GameHandlerToggleStateGame,
-    LeaderBoardLogGame,
-    LeaderBoardReviewLastGame,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

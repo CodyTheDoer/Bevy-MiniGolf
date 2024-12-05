@@ -14,7 +14,6 @@ impl RunTrigger {
             party_handler_new_player_remote: false,
             party_handler_remove_ai: false,
             party_handler_remove_last_player: false,
-            network_get_client_state_all: false,
             network_get_client_state_game: false,
             game_handler_cycle_state_camera: false,
             game_handler_cycle_state_map_set: false,
@@ -58,9 +57,6 @@ impl RunTrigger {
             },
             "party_handler_remove_last_player" => {
                 self.party_handler_remove_last_player
-            },
-            "network_get_client_state_all" => {
-                self.network_get_client_state_all
             },
             "network_get_client_state_game" => {
                 self.network_get_client_state_game
@@ -139,10 +135,6 @@ impl RunTrigger {
             "party_handler_remove_last_player" => {
                 self.party_handler_remove_last_player = state;
                 info!("response: party_handler_remove_last_player: {}", self.get("party_handler_remove_last_player"));  
-            },
-            "network_get_client_state_all" => {
-                self.network_get_client_state_all = state;
-                info!("response: network_get_client_state_all: {}", self.get("network_get_client_state_all"));  
             },
             "network_get_client_state_game" => {
                 self.network_get_client_state_game = state;
@@ -233,11 +225,6 @@ impl RunTrigger {
     pub fn party_handler_remove_last_player(&self) -> bool {
         self.party_handler_remove_last_player
     }
-
-    pub fn network_get_client_state_all(&self) -> bool {
-        self.network_get_client_state_all
-    }
-
 
     pub fn network_get_client_state_game(&self) -> bool {
         self.network_get_client_state_game

@@ -17,7 +17,6 @@ use crate::{
     StateLevel, 
     StateMapSet, 
     StateMenu,
-    StateRunTrigger, 
     StateTurn, 
     StateUpdateRef
 };
@@ -193,6 +192,7 @@ pub fn receive_messages(
     party: ResMut<Party>,
     db: Res<DatabaseConnection>,
     update_id_res: ResMut<UpdateIdResource>,
+    run_trigger: ResMut<RunTrigger>,
 ) {
     for (peer, state) in socket.update_peers() {
         info!("{peer}: {state:?}");
@@ -212,7 +212,15 @@ pub fn receive_messages(
         }
     }
     if parse_message == true{
-        server_parse_message(op_message.unwrap().as_str(), &mut game_handler, &mut online_event_handler, party, db, update_id_res);
+        server_parse_message(
+            op_message.unwrap().as_str(), 
+            &mut game_handler, 
+            &mut online_event_handler, 
+            party, 
+            db, 
+            update_id_res,
+            run_trigger,
+        );
     };
 }
 
@@ -226,7 +234,6 @@ pub fn remote_state_change_monitor(
     mut next_state_turn: ResMut<NextState<StateTurn>>,
     mut next_state_game_play_style: ResMut<NextState<StateGamePlayStyle>>,
     mut next_state_camera_orbit_entity: ResMut<NextState<StateCameraOrbitEntity>>,
-    mut next_state_run_trigger: ResMut<NextState<StateRunTrigger>>,
 ) {
     for _ev in online_event_listener.read() {
         let pushed_state =  game_handler.get_pushed_state();
@@ -259,10 +266,6 @@ pub fn remote_state_change_monitor(
             StateUpdateRef::StateCameraOrbitEntity(state_camera_orbit_entity) => {
                 info!("StateCameraOrbitEntity: {:?}", state_camera_orbit_entity);
                 next_state_camera_orbit_entity.set(state_camera_orbit_entity);
-            },
-            StateUpdateRef::StateRunTrigger(state_run_trigger) => {
-                info!("StateRunTrigger: {:?}", state_run_trigger);
-                next_state_run_trigger.set(state_run_trigger);
             },
         }
     }
@@ -324,6 +327,7 @@ pub fn server_parse_message(
     party: ResMut<Party>,
     db: Res<DatabaseConnection>,
     mut update_id_res: ResMut<UpdateIdResource>,
+    mut run_trigger: ResMut<RunTrigger>,
 ) {
     info!("server_parse_message: Initiated");
     info!("message: {}", &message);
@@ -332,9 +336,10 @@ pub fn server_parse_message(
     let re = Regex::new(r#"^\(([^,]+), ([a-zA-Z]+)(\("([^"]+)"\))?\)$"#).unwrap();
     
     if let Some(caps) = re.captures(message) {
+        let player_id = String::from(party.main_player_get_player_id());
+
         let target_client = caps.get(1).map_or("", |m| m.as_str());
         let command = caps.get(2).map_or("", |m| m.as_str());
-        let player_id = String::from(party.main_player_get_player_id());
 
         if target_client == player_id {
             match command {
@@ -361,27 +366,9 @@ pub fn server_parse_message(
                     }
                 },
                 "RunTrigger" => {
-                    if let Some(run_trigger) = caps.get(4).map(|m| m.as_str()) {
-                        info!("run_trigger: {:?}", run_trigger);
-                        // "PartyHandlerActivePlayerAddBonk" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerAddBonk)),
-                        // "PartyHandlerActivePlayerSetBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetBallLocation)),
-                        // "PartyHandlerActivePlayerSetHoleCompletionStateTrue" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerActivePlayerSetHoleCompletionStateTrue)),
-                        // "PartyHandlerCycleActivePlayer" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::PartyHandlerCycleActivePlayer)),
-
-                        // "network_get_client_state_game" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::NetworkGetClientStateGame)),
-
-                        // "GameHandlerCycleStateCamera" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateCamera)),
-                        // "GameHandlerCycleStateMapSet" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleStateMapSet)),
-                        // "GameHandlerCycleCurrentLevel" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerCycleCurrentLevel)),
-                        // "GameHandlerGetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerGetActiveBallLocation)),
-                        // "GameHandlerResetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerResetActiveBallLocation)),
-                        // "GameHandlerSetActiveBallLocation" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerSetActiveBallLocation)),
-                        // "GameHandlerStateTurnNextPlayerTurn" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStateTurnNextPlayerTurn)),
-                        // "GameHandlerStartGameLocal" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerStartGameLocal)),
-                        // "GameHandlerToggleStateGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::GameHandlerToggleStateGame)),
-
-                        // "LeaderBoardLogGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardLogGame)),
-                        // "LeaderBoardReviewLastGame" => Some(StateUpdateRef::StateRunTrigger(StateRunTrigger::LeaderBoardReviewLastGame)),
+                    if let Some(trigger) = caps.get(4).map(|m| m.as_str()) {
+                        info!("run_trigger: {:?}", trigger);
+                        run_trigger.set_target(trigger, true);
                     }
                 },
                 _ => {
