@@ -119,7 +119,7 @@ use minigolf::network_handler::{
 };
 
 // --- Database Handler Import --- //
-use minigolf::database_handler::db_pipeline_sync_local_player;
+use minigolf::database_handler::db_pipeline_init_local_player;
 
 // // --- Level Handler Import --- //
 // use minigolf::level_handler::level_handler::{
@@ -192,7 +192,7 @@ fn main() {
         
         // Network - Startup //
         .add_systems(Startup, start_socket)
-        .add_systems(Startup, db_pipeline_sync_local_player)
+        .add_systems(Startup, db_pipeline_init_local_player)
         // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //

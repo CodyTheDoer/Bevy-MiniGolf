@@ -189,39 +189,63 @@ pub fn receive_messages(
     mut socket: ResMut<MatchboxSocket<SingleChannel>>,
     mut game_handler: ResMut<GameHandler>,
     mut online_event_handler: EventWriter<OnlineStateChange>,
-    party: ResMut<Party>,
+    mut party: ResMut<Party>,
     db: Res<DatabaseConnection>,
-    update_id_res: ResMut<UpdateIdResource>,
-    run_trigger: ResMut<RunTrigger>,
+    mut update_id_res: ResMut<UpdateIdResource>,
+    mut run_trigger: ResMut<RunTrigger>,
 ) {
     for (peer, state) in socket.update_peers() {
         info!("{peer}: {state:?}");
     }
 
-    let mut parse_message = false;
-    let mut op_message = None;
+    // let mut parse_message = false;
+    // let mut op_message = None;
+    // for (_id, message) in socket.receive() {
+    //     info!("Received message: {:?}", message.clone());
+    //     match std::str::from_utf8(&message) {
+    //         Ok(message) => {
+    //             let owned_message = message.to_owned();
+    //             op_message = Some(owned_message);
+    //             parse_message = true;
+    //         },
+    //         Err(e) => error!("receive_messages: Failed to convert message to string: {e}"),
+    //     }
+    // }
+    // if parse_message == true{
+    //     server_parse_message(
+    //         op_message.unwrap().as_str(), 
+    //         &mut game_handler, 
+    //         &mut online_event_handler, 
+    //         party, 
+    //         db, 
+    //         update_id_res,
+    //         run_trigger,
+    //     );
+    // };
+        // Collect all messages first
+    let mut messages: Vec<String> = Vec::new();
     for (_id, message) in socket.receive() {
         info!("Received message: {:?}", message.clone());
         match std::str::from_utf8(&message) {
             Ok(message) => {
-                let owned_message = message.to_owned();
-                op_message = Some(owned_message);
-                parse_message = true;
+                messages.push(message.to_owned());
             },
             Err(e) => error!("receive_messages: Failed to convert message to string: {e}"),
         }
     }
-    if parse_message == true{
+
+    // Process all collected messages
+    for message in messages {
         server_parse_message(
-            op_message.unwrap().as_str(), 
+            message.as_str(), 
             &mut game_handler, 
             &mut online_event_handler, 
-            party, 
-            db, 
-            update_id_res,
-            run_trigger,
+            &mut party, 
+            &db, 
+            &mut update_id_res,
+            &mut run_trigger,
         );
-    };
+    }
 }
 
 pub fn remote_state_change_monitor(
@@ -324,10 +348,10 @@ pub fn server_parse_message(
     message: &str,
     game_handler: &mut ResMut<GameHandler>,
     online_event_handler: &mut EventWriter<OnlineStateChange>,
-    party: ResMut<Party>,
-    db: Res<DatabaseConnection>,
-    mut update_id_res: ResMut<UpdateIdResource>,
-    mut run_trigger: ResMut<RunTrigger>,
+    party: &mut ResMut<Party>,
+    db: &Res<DatabaseConnection>,
+    update_id_res: &mut ResMut<UpdateIdResource>,
+    run_trigger: &mut ResMut<RunTrigger>,
 ) {
     info!("server_parse_message: Initiated");
     info!("message: {}", &message);
