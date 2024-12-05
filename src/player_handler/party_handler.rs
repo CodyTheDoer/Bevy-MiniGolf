@@ -347,19 +347,19 @@ pub fn party_handler_cycle_active_player(
     if owned_finished_count == owned_party_size as i32 {
         match state_map_set.get() {
             StateMapSet::Tutorial => {
-                run_trigger.set_target("game_handler_toggle_state_game", true);
+                run_trigger.set_target("game_handler_game_state_change_routines", true);
             },
             StateMapSet::WholeCorse => {
                 match state_level.get() {
                     StateLevel::Hole18 => {
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("game_handler_game_state_change_routines", true);
                     },
                     _ => {
                         party.next_round_prep();
                         party.set_active_player(1);
-                        run_trigger.set_target("game_handler_cycle_current_level", true);
-                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        run_trigger.set_target("level_handler_set_state_next_level", true);
+                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
                         game_handler.current_level_set_next_level();
                     },
                 }
@@ -368,13 +368,13 @@ pub fn party_handler_cycle_active_player(
                 match state_level.get() {
                     StateLevel::Hole9 => {
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("game_handler_game_state_change_routines", true);
                     },
                     _ => {
                         party.next_round_prep();
                         party.set_active_player(1);
-                        run_trigger.set_target("game_handler_cycle_current_level", true);
-                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        run_trigger.set_target("level_handler_set_state_next_level", true);
+                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
                         game_handler.current_level_set_next_level();
                     },
                 }
@@ -383,24 +383,24 @@ pub fn party_handler_cycle_active_player(
                 match state_level.get() {
                     StateLevel::Hole18 => {
                         run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_toggle_state_game", true);
+                        run_trigger.set_target("game_handler_game_state_change_routines", true);
                     },
                     _ => {
                         party.next_round_prep();
                         party.set_active_player(1);
-                        run_trigger.set_target("game_handler_cycle_current_level", true);
-                        run_trigger.set_target("game_handler_get_active_ball_location", true);
+                        run_trigger.set_target("level_handler_set_state_next_level", true);
+                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
                         game_handler.current_level_set_next_level();
                     },
                 }
             },
             StateMapSet::SelectAHole => {
-                run_trigger.set_target("game_handler_toggle_state_game", true);
+                run_trigger.set_target("game_handler_game_state_change_routines", true);
             },
         };
     } else {
         party.next_set_order_player();
-        run_trigger.set_target("game_handler_get_active_ball_location", true);
+        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
     }
     run_trigger.set_target("party_handler_cycle_active_player", false);
 }

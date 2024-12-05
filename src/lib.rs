@@ -71,17 +71,6 @@ pub struct PacketHeartbeat<'a> {
 
 // --- State Enums --- //
 
-#[derive(Clone, Debug)]
-pub enum StateUpdateRef {
-    StateEngineConnection(StateEngineConnection),
-    StateCameraOrbitEntity(StateCameraOrbitEntity),
-    StateGame(StateGame),
-    StateLevel(StateLevel),
-    StateMapSet(StateMapSet),
-    StateGamePlayStyle(StateGamePlayStyle),
-    StateTurn(StateTurn),
-}
-
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateArrow {
     #[default]
@@ -175,8 +164,20 @@ pub enum StateMenu {
 pub enum StateTurn {
     #[default]
     NotInGame,
+    Idle,
     Active,
     NextTurn,
+}
+
+#[derive(Clone, Debug)]
+pub enum StateUpdateRef {
+    StateEngineConnection(StateEngineConnection),
+    StateCameraOrbitEntity(StateCameraOrbitEntity),
+    StateGame(StateGame),
+    StateLevel(StateLevel),
+    StateMapSet(StateMapSet),
+    StateGamePlayStyle(StateGamePlayStyle),
+    StateTurn(StateTurn),
 }
 
 #[derive(Resource)]
@@ -346,6 +347,16 @@ impl GameRecord {
     } 
 }
 
+#[derive(Debug)]
+pub struct MapID {
+    map: &'static str,
+}
+
+#[derive(Clone, Debug, Resource)]
+pub struct GLBStorageID {
+    glb: Arc<[MapID]>,
+}
+
 #[derive(Asset, Clone, Component, Debug, TypePath)]
 pub struct GolfBallTag(pub usize);
 
@@ -407,3 +418,16 @@ pub struct MapSet {
     pub file_path_level_17: Option<String>,
     pub file_path_level_18: Option<String>,
 }
+
+#[derive(Event)]
+pub struct SceneInstanceSpawnedEvent {
+    pub entity: Entity,
+}
+
+pub struct UserInterface {}
+
+#[derive(Resource)]
+pub struct UiUpdateTimer(pub Timer);
+
+#[derive(Debug, Event)]
+pub struct UiUpdateEvent;

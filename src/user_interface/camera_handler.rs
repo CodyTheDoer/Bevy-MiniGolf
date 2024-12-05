@@ -85,7 +85,7 @@ pub fn camera_handler_cycle_state_camera(
             next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Menu);
         },
     }
-    run_trigger.set_target("game_handler_cycle_state_camera", false);
+    run_trigger.set_target("camera_handler_cycle_state_camera", false);
     info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
 }
 

@@ -4,21 +4,24 @@ use uuid::Uuid;
 
 // States
 use crate::{
-    StateCameraOrbitEntity,
-    StateLevel,
-    StateGame,
-    StateMapSet,
-    StateMenu,
-    StateTurn,
-    StateUpdateRef,
+    StateCameraOrbitEntity, 
+    StateGame, 
+    StateLevel, 
+    StateMapSet, 
+    StateMenu, 
+    StateTurn, 
+    StateUpdateRef
 };
 
 // Resources
 use crate::{
     GameHandler,
+    GLBStorageID,
     Party,
     RunTrigger,
 };
+
+use crate::level_handler::level_handler::level_handler_init_level_game_handler_current_level;
 
 impl GameHandler {
     pub fn new() -> Self {
@@ -240,41 +243,49 @@ pub fn game_handler_update_players_store_current_ball_locations_to_ref (
 }
 
 pub fn game_handler_game_start (
+    mut game_handler: ResMut<GameHandler>,
+    mut next_level: ResMut<NextState<StateLevel>>,
     mut run_trigger: ResMut<RunTrigger>,
     state_game: Res<State<StateGame>>,
     state_map_set: Res<State<StateMapSet>>,
-    mut next_level: ResMut<NextState<StateLevel>>,
-    mut game_handler: ResMut<GameHandler>,
+    il_asset_server: Res<AssetServer>,
+    il_commands_init: Commands,
+    il_commands_purge: Commands,
+    il_scene_meshes: Query<(Entity, &Name)>,
+    il_glb_storage: Res<GLBStorageID>,
 ) {
     info!("function: game_handler_game_start "); 
-    info!("If check here");
-    match state_game.get() {
-        StateGame::NotInGame => {
-            match state_map_set.get() {
-                StateMapSet::Tutorial => {
-                    game_handler.current_level_set(0);
-                    next_level.set(StateLevel::HoleTutorial);
-                },
-                StateMapSet::WholeCorse => {
-                    game_handler.current_level_set(1);
-                    next_level.set(StateLevel::Hole1);
-                },
-                StateMapSet::FrontNine => {
-                    game_handler.current_level_set(1);
-                    next_level.set(StateLevel::Hole1);
-                },
-                StateMapSet::BackNine => {
-                    game_handler.current_level_set(10);
-                    next_level.set(StateLevel::Hole10);
-                },
-                StateMapSet::SelectAHole => {},
-            };
-            run_trigger.set_target("game_handler_toggle_state_game", true);
-        },
-        StateGame::InGame => {},
-    };
-    run_trigger.set_target("game_handler_game_start ", false);
-    todo!(); // Finish the if check for remote logic
+    if game_handler.remote_game_get() {
+
+    } else {
+        match state_game.get() {
+            StateGame::NotInGame => {
+                match state_map_set.get() {
+                    StateMapSet::Tutorial => {
+                        game_handler.current_level_set(0);
+                        next_level.set(StateLevel::HoleTutorial);
+                    },
+                    StateMapSet::WholeCorse => {
+                        game_handler.current_level_set(1);
+                        next_level.set(StateLevel::Hole1);
+                    },
+                    StateMapSet::FrontNine => {
+                        game_handler.current_level_set(1);
+                        next_level.set(StateLevel::Hole1);
+                    },
+                    StateMapSet::BackNine => {
+                        game_handler.current_level_set(10);
+                        next_level.set(StateLevel::Hole10);
+                    },
+                    StateMapSet::SelectAHole => {},
+                };
+                level_handler_init_level_game_handler_current_level(il_asset_server, il_commands_init, il_commands_purge, il_scene_meshes, il_glb_storage, game_handler);
+                run_trigger.set_target("game_handler_game_state_change_routines", true);
+            },
+            StateGame::InGame => {},
+        };
+        run_trigger.set_target("game_handler_game_start", false);
+    }
 }
 
 pub fn game_handler_game_state_change_routines(
@@ -292,11 +303,19 @@ pub fn game_handler_game_state_change_routines(
     info!("Current Game State: {:?}", state_game.get());
     match state_game.get() {
         StateGame::NotInGame => {
-            info!("StateGame::InGame");
-            next_state_game.set(StateGame::InGame);
-            info!("StateTurn::Active");
-            next_state_turn.set(StateTurn::Active);
-            next_camera_state.set(StateCameraOrbitEntity::Ball)
+            if game_handler.remote_game_get() {
+                info!("StateGame::InGame");
+                next_state_game.set(StateGame::InGame);
+                info!("StateTurn::Idle");
+                next_state_turn.set(StateTurn::Idle);
+                next_camera_state.set(StateCameraOrbitEntity::Ball)
+            } else {
+                info!("StateGame::InGame");
+                next_state_game.set(StateGame::InGame);
+                info!("StateTurn::Active");
+                next_state_turn.set(StateTurn::Active);
+                next_camera_state.set(StateCameraOrbitEntity::Ball)
+            }
         },
         StateGame::InGame => {
             next_level.set(StateLevel::MainMenu);

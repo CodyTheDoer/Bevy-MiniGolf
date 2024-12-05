@@ -29,11 +29,14 @@ use minigolf::{
     DatabaseConnection,
     Fonts,
     GameHandler,
+    GLBStorageID,
     LeaderBoard,
     HeartbeatTimer,
     OnlineStateChange,
     Party,
     RunTrigger,
+    UiUpdateEvent,
+    UiUpdateTimer,
     UpdateIdResource,
 };
 
@@ -41,6 +44,7 @@ use minigolf::{
 use minigolf::{
     database_handler::db_pipeline_init_local_player,
     level_handler::level_handler::{
+        level_handler_boot_protocals,
         level_handler_set_state_next_level,
         level_handler_set_state_next_map_set,
     },
@@ -86,6 +90,7 @@ use minigolf::{
         turn_handler::turn_handler_set_turn_next,
         user_interface::{
             setup_ui,
+            // ui_update_system,
             update_ui,
         },
     },
@@ -133,12 +138,16 @@ fn main() {
         .insert_state(StateMenu::MenuMainMenu)
         .insert_state(StateTurn::NotInGame)
 
+        // --- Timer Initialization --- //
+        .insert_resource(HeartbeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
+        .insert_resource(UiUpdateTimer(Timer::new(Duration::from_millis(250), TimerMode::Repeating)))
+
         // --- Resource Initialization --- //
         .insert_resource(DatabaseConnection::new("game_data.db"))
         .insert_resource(CameraHandler::new())
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
-        .insert_resource(HeartbeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
+        .insert_resource(GLBStorageID::new())
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
@@ -147,12 +156,12 @@ fn main() {
 
         // --- Event Initialization --- //
         .add_event::<OnlineStateChange>()    
+        .add_event::<UiUpdateEvent>()  
 
         // --- Startup Systems Initialization --- //
+        .add_systems(Startup, level_handler_boot_protocals)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, setup_ui)
-        
-        // Network - Startup //
         .add_systems(Startup, start_socket)
         .add_systems(Startup, db_pipeline_init_local_player)
         // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
@@ -167,6 +176,7 @@ fn main() {
         // Camera //
         .add_systems(Update, state_camera_orbit_entity_logic)
         .add_systems(Update, pan_orbit_camera)
+        // .add_systems(Update, ui_update_system)
         .add_systems(Update, update_ui)
 
         // Run Trigger Systems //        
@@ -205,8 +215,6 @@ fn main() {
         .add_systems(Update, heartbeat_system)
         .add_systems(Update, temp_interface);
 
-        // .add_systems(Update, devfn_receive_messages_map_set);
-
     app.run();
 }
 
@@ -241,19 +249,14 @@ fn temp_interface(
     };
     if keys.just_released(KeyCode::KeyC) {
         info!("just_released: KeyC");  
-        match state_game.get() {
-            StateGame::NotInGame => {},
-            StateGame::InGame => {
-                run_trigger.set_target("game_handler_cycle_state_camera", true);
-            },
-        };
+        run_trigger.set_target("camera_handler_cycle_state_camera", true);
     };
     if keys.just_released(KeyCode::KeyM) {
         info!("just_released: KeyM");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("game_handler_cycle_state_map_set", true);
+                run_trigger.set_target("level_handler_set_state_next_map_set", true);
             },
         };
     };
@@ -262,7 +265,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("game_handler_state_turn_next_player_turn", true);
+                run_trigger.set_target("turn_handler_set_turn_next", true);
             },
         };
     };
@@ -283,7 +286,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("game_handler_start_game_local", true);
+                run_trigger.set_target("game_handler_game_start", true);
             },
         };
     };
