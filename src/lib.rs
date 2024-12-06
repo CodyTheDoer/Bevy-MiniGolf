@@ -7,10 +7,8 @@ use rusqlite::Connection;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 
-// use std::fmt;
 use std::sync::Arc;
 use std::sync::Mutex;
-// use std::sync::MutexGuard;
 
 // Direct Imports
 pub mod network_handler;
@@ -326,7 +324,7 @@ pub struct Fonts {
 #[derive(Resource)]
 pub struct GameHandler {
     current_level: i32,
-    active_ball_location: Option<Vec3>,
+    active_ball_location: Arc<Mutex<Option<Vec3>>>,
     arrow_state: bool,
     network_server_connection: bool,
     remote_game: bool,
@@ -358,7 +356,7 @@ pub struct GLBStorageID {
 }
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
-pub struct GolfBallTag(pub usize);
+pub struct GolfBallTag(pub String);
 
 #[derive(Resource)]
 pub struct LeaderBoard {
@@ -370,12 +368,18 @@ pub struct LeaderBoard {
 pub struct RunTrigger{
     camera_handler_cycle_state_camera: bool,
     game_handler_game_start: bool,
-    game_handler_game_state_change_routines: bool,
+    game_handler_game_state_exit_routines: bool,
+    game_handler_game_state_start_routines: bool,
+    game_handler_update_players_manual_static_bonk_current_ball: bool,
     game_handler_update_players_ref_ball_locations: bool,
     game_handler_update_players_reset_ref_ball_locations: bool,
     game_handler_update_players_store_current_ball_locations_to_ref: bool,
+    golf_ball_handler_spawn_golf_balls_for_party_members: bool,
     leader_board_log_game: bool,
     leader_board_review_last_game: bool,
+    level_handler_init_level_game_handler_current_level: bool,
+    level_handler_next_turn_protocol: bool,
+    level_handler_purge_protocol: bool,
     level_handler_set_state_next_level: bool,
     level_handler_set_state_next_map_set: bool,
     network_get_client_state_game: bool,
@@ -388,6 +392,8 @@ pub struct RunTrigger{
     party_handler_new_player_remote: bool,
     party_handler_remove_ai: bool,
     party_handler_remove_last_player: bool,
+    turn_handler_end_game: bool,
+    turn_handler_next_round_prep: bool,
     turn_handler_set_turn_next: bool,
 }
 

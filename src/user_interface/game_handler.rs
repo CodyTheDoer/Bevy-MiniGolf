@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
 use uuid::Uuid;
 
 // States
@@ -16,18 +19,15 @@ use crate::{
 // Resources
 use crate::{
     GameHandler,
-    GLBStorageID,
     Party,
     RunTrigger,
 };
-
-use crate::level_handler::level_handler::level_handler_init_level_game_handler_current_level;
 
 impl GameHandler {
     pub fn new() -> Self {
         GameHandler {
             current_level: 0,
-            active_ball_location: None,
+            active_ball_location: Arc::new(Mutex::new(None)),
             arrow_state: false,
             network_server_connection: false,
             remote_game: false,
@@ -104,17 +104,17 @@ impl GameHandler {
     }
 
     pub fn active_player_ball_location_get(&mut self) -> Option<Vec3> {
-        if let Some(ball_location) = self.active_ball_location.clone() {
-            Some(ball_location)
+        if let Some(location) = self.active_ball_location.lock().unwrap().clone() {
+            Some(location)
         } else {
-            self.active_player_ball_location_set(Vec3::ZERO);
-            self.active_ball_location.clone()
+            None
         }
     }
 
     pub fn active_player_ball_location_set(&mut self, point: Vec3) {
         info!("function: active_player_ball_location_set: {:?}", point);
-        self.active_ball_location = Some(point);
+        let mut location = self.active_ball_location.lock().unwrap();
+        *location = Some(point);
     }
 
     pub fn current_level_set_tutorial(&mut self) {
@@ -193,53 +193,69 @@ pub fn game_handler_update_players_ref_ball_locations(
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
-    info!("function: game_handler_update_players_ref_ball_locations, active_player: {:?}", party.get_active_player_index()); 
-    game_handler.active_player_ball_location_set(party.active_player_get_ball_location());
+    info!("function: game_handler_update_players_ref_ball_locations"); 
+    {
+        info!("function: game_handler_update_players_ref_ball_locations, active_player: {:?}", party.get_active_player_index()); 
+        game_handler.active_player_ball_location_set(party.active_player_get_ball_location());
 
-    // game_handler.get_active_ball_location();
+        // game_handler.get_active_ball_location();
+    }
     run_trigger.set_target("game_handler_update_players_ref_ball_locations", false);
+    info!("post response: game_handler_update_players_ref_ball_locations: {}", run_trigger.get("game_handler_update_players_ref_ball_locations")); 
 }
 
-pub fn game_handler_update_players_reset_ref_ball_locations (
+pub fn game_handler_update_players_reset_ref_ball_locations(
     mut run_trigger: ResMut<RunTrigger>,
     // party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
-    info!("function: game_handler_update_players_reset_ref_ball_locations "); 
-    // let owned_active_player = party.get_active_player_index();
-    // // let owned_golf_ball = format!("ball{}", owned_active_player);
-    // if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
-    // }
-    
-    game_handler.active_player_ball_location_set(Vec3::new(0.0, 0.0, 0.0));
-    info!("game_handler.active_player_ball_location_get(): {:?}", game_handler.active_player_ball_location_get());
-    run_trigger.set_target("game_handler_update_players_reset_ref_ball_locations ", false);
+    info!("function: game_handler_update_players_reset_ref_ball_locations"); 
+    {
+        // let owned_active_player = party.get_active_player_index();
+        // // let owned_golf_ball = format!("ball{}", owned_active_player);
+        // if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
+        // }
+        
+        game_handler.active_player_ball_location_set(Vec3::new(0.0, 0.0, 0.0));
+        info!("game_handler.active_player_ball_location_get(): {:?}", game_handler.active_player_ball_location_get());
+    }
+    run_trigger.set_target("game_handler_update_players_reset_ref_ball_locations", false);
+    info!("post response: game_handler_update_players_reset_ref_ball_locations: {}", run_trigger.get("game_handler_update_players_reset_ref_ball_locations"));  
 }
 
-pub fn game_handler_update_players_store_current_ball_locations_to_ref (
+pub fn game_handler_update_players_store_current_ball_locations_to_ref(
     mut run_trigger: ResMut<RunTrigger>,
     // party: Res<Party>,
     mut game_handler: ResMut<GameHandler>,
     // scene_meshes: Query<(Entity, &Name, &Transform)>,
 ) {
     info!("function: game_handler_update_players_store_current_ball_locations_to_ref "); 
-    // let owned_active_player = party.get_active_player_index();
-    // let owned_golf_ball = format!("ball{}", owned_active_player);
-    if let Some(owned_golf_ball_location) = game_handler.active_player_ball_location_get() {
-        game_handler.active_player_ball_location_set(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
-        info!("{:?}", game_handler.active_player_ball_location_get());
+    {    
+        if let Some(owned_golf_ball_location) = game_handler.active_player_ball_location_get() {
+            game_handler.active_player_ball_location_set(owned_golf_ball_location);
+            info!("{:?}", game_handler.active_player_ball_location_get());
+        }
     }
+    run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", false);
+    info!("post response: game_handler_update_players_store_current_ball_locations_to_ref: {}", run_trigger.get("game_handler_update_players_store_current_ball_locations_to_ref"));  
+}
 
-    // for (entity, name, transform) in scene_meshes.iter() {
-    //     match name.as_str() {
-    //         owned_golf_ball => {
-    //             game_handler.set_active_ball_location(transform.translation);
-    //         },
-    //         _ => {},
-    //     }
-    // }
-    run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref ", false);
+pub fn game_handler_update_players_manual_static_bonk_current_ball(
+    mut run_trigger: ResMut<RunTrigger>,
+    // party: Res<Party>,
+    mut game_handler: ResMut<GameHandler>,
+    // scene_meshes: Query<(Entity, &Name, &Transform)>,
+) {
+    info!("function: game_handler_update_players_manual_static_bonk_current_ball "); 
+    {    
+        if let Some(owned_golf_ball_location) = game_handler.active_player_ball_location_get() {
+            game_handler.active_player_ball_location_set(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
+            info!("{:?}", game_handler.active_player_ball_location_get());
+        }
+    }
+    run_trigger.set_target("game_handler_update_players_manual_static_bonk_current_ball", false);
+    info!("post response: game_handler_update_players_manual_static_bonk_current_ball: {}", run_trigger.get("game_handler_update_players_manual_static_bonk_current_ball"));  
 }
 
 pub fn game_handler_game_start (
@@ -248,16 +264,12 @@ pub fn game_handler_game_start (
     mut run_trigger: ResMut<RunTrigger>,
     state_game: Res<State<StateGame>>,
     state_map_set: Res<State<StateMapSet>>,
-    il_asset_server: Res<AssetServer>,
-    il_commands_init: Commands,
-    il_commands_purge: Commands,
-    il_scene_meshes: Query<(Entity, &Name)>,
-    il_glb_storage: Res<GLBStorageID>,
 ) {
     info!("function: game_handler_game_start "); 
     if game_handler.remote_game_get() {
 
     } else {
+        run_trigger.set_target("game_handler_game_state_start_routines", true);
         match state_game.get() {
             StateGame::NotInGame => {
                 match state_map_set.get() {
@@ -279,16 +291,54 @@ pub fn game_handler_game_start (
                     },
                     StateMapSet::SelectAHole => {},
                 };
-                level_handler_init_level_game_handler_current_level(il_asset_server, il_commands_init, il_commands_purge, il_scene_meshes, il_glb_storage, game_handler);
-                run_trigger.set_target("game_handler_game_state_change_routines", true);
+                info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
+                run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
             },
-            StateGame::InGame => {},
+            StateGame::InGame => {
+                warn!("game_handler_game_start: FAILED! Game state already initiated!");
+            },
         };
         run_trigger.set_target("game_handler_game_start", false);
+        info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start"));  
     }
 }
 
-pub fn game_handler_game_state_change_routines(
+pub fn game_handler_game_state_start_routines(
+    mut run_trigger: ResMut<RunTrigger>,
+    game_handler: Res<GameHandler>,
+    state_game: Res<State<StateGame>>,
+    mut next_state_game: ResMut<NextState<StateGame>>,
+    mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
+    mut next_state_turn: ResMut<NextState<StateTurn>>,
+) {
+    info!("function: game_handler_game_state_start_routines"); 
+    {
+        info!("Current Game State: {:?}", state_game.get());
+        match state_game.get() {
+            StateGame::NotInGame => {
+                if game_handler.remote_game_get() {
+                    info!("StateGame::InGame");
+                    next_state_game.set(StateGame::InGame);
+                    info!("StateTurn::Idle");
+                    next_state_turn.set(StateTurn::Idle);
+                    next_camera_state.set(StateCameraOrbitEntity::Ball)
+                } else {
+                    info!("StateGame::InGame");
+                    next_state_game.set(StateGame::InGame);
+                    info!("StateTurn::Active");
+                    next_state_turn.set(StateTurn::Active);
+                    run_trigger.set_target("game_handler_update_players_reset_ref_ball_locations", true);
+                    next_camera_state.set(StateCameraOrbitEntity::Ball)
+                }
+            },
+            StateGame::InGame => {},
+        };
+    }
+    run_trigger.set_target("game_handler_game_state_start_routines", false);
+    info!("post response: game_handler_game_state_start_routines: {}", run_trigger.get("game_handler_game_state_start_routines"));  
+}
+
+pub fn game_handler_game_state_exit_routines(
     mut run_trigger: ResMut<RunTrigger>,
     mut game_handler: ResMut<GameHandler>,
     mut party: ResMut<Party>,
@@ -299,38 +349,29 @@ pub fn game_handler_game_state_change_routines(
     mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
 ) {
-    info!("function: game_handler_game_state_change_routines"); 
-    info!("Current Game State: {:?}", state_game.get());
-    match state_game.get() {
-        StateGame::NotInGame => {
-            if game_handler.remote_game_get() {
-                info!("StateGame::InGame");
-                next_state_game.set(StateGame::InGame);
-                info!("StateTurn::Idle");
-                next_state_turn.set(StateTurn::Idle);
-                next_camera_state.set(StateCameraOrbitEntity::Ball)
-            } else {
-                info!("StateGame::InGame");
-                next_state_game.set(StateGame::InGame);
-                info!("StateTurn::Active");
-                next_state_turn.set(StateTurn::Active);
-                next_camera_state.set(StateCameraOrbitEntity::Ball)
-            }
-        },
-        StateGame::InGame => {
-            next_level.set(StateLevel::MainMenu);
-            next_menu_state.set(StateMenu::MenuMainMenu);
-            next_camera_state.set(StateCameraOrbitEntity::Menu);
-            party.set_active_player(1);
-            info!("StateGame::NotInGame");
-            next_state_game.set(StateGame::NotInGame);
-            info!("StateTurn::NotInGame");
-            next_state_turn.set(StateTurn::NotInGame);
-            game_handler.game_exit_reset_level_and_ball_location();
-            party.game_completed();
-            run_trigger.set_target("leader_board_review_last_game", true);
-        },
-    };
-    run_trigger.set_target("game_handler_game_state_change_routines", false);
-    info!("post response: game_handler_game_state_change_routines: {}", run_trigger.get("game_handler_game_state_change_routines"));  
+    info!("function: game_handler_game_state_exit_routines"); 
+    {    
+        info!("Current Game State: {:?}", state_game.get());
+        match state_game.get() {
+            StateGame::NotInGame => {},
+            StateGame::InGame => {
+                run_trigger.set_target("level_handler_purge_protocol", true);
+                next_menu_state.set(StateMenu::MenuMainMenu);
+                next_camera_state.set(StateCameraOrbitEntity::Menu);
+                party.set_active_player(1);
+                info!("StateGame::NotInGame");
+                next_state_game.set(StateGame::NotInGame);
+                info!("StateTurn::NotInGame");
+                next_state_turn.set(StateTurn::NotInGame);
+                game_handler.current_level_set(0);
+                next_level.set(StateLevel::MainMenu);
+                game_handler.game_exit_reset_level_and_ball_location();
+                run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                party.game_completed();
+                run_trigger.set_target("leader_board_review_last_game", true);
+            },
+        };
+    }
+    run_trigger.set_target("game_handler_game_state_exit_routines", false);
+    info!("post response: game_handler_game_state_exit_routines: {}", run_trigger.get("game_handler_game_state_exit_routines"));  
 }

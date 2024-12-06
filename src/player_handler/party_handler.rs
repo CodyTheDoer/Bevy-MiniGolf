@@ -3,12 +3,7 @@ use bevy::prelude::*;
 use uuid::Uuid;
 
 // States
-use crate::{
-    StateGame, 
-    StateLevel, 
-    StateMapSet,
-    // StateMenu,
-};
+use crate::StateGame;
 
 // Resources
 use crate::{
@@ -36,7 +31,7 @@ impl Party {
         } 
     }
     
-    pub fn get_all_player_ids_and_scores(&mut self) -> (Vec<Uuid>, Vec<[i32; 18]>) {
+    pub fn get_all_player_ids_and_scores(&self) -> (Vec<Uuid>, Vec<[i32; 18]>) {
         let mut players: Vec<Uuid> = Vec::new();
         let mut scores: Vec<[i32; 18]> = Vec::new();
         let players_lock = self.players.lock().unwrap();
@@ -47,6 +42,13 @@ impl Party {
             scores.push(score);
         }
         (players, scores)
+    }
+    
+    pub fn get_active_player_scorecard(&self) -> [i32; 18] {
+        let players_lock = self.players.lock().unwrap();
+        let active_idx_lock = self.active_player.lock().unwrap().to_owned() - 1;
+        let scorecard = players_lock[active_idx_lock as usize].lock().unwrap().get_score();
+        scorecard
     }
     
     pub fn add_player(&self, player: Arc<Mutex<dyn Player + Send>>) {
@@ -112,6 +114,18 @@ impl Party {
             }
         }
         count
+    }
+
+    pub fn all_players_id_into_vec(&self) -> Vec<Uuid> {
+        let mut id_storage: Vec<Uuid> = Vec::new();
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        for player in 0..players_lock.len() {
+            let player_arc = &players_lock[player];
+            let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            let id = player.get_player_id();
+            id_storage.push(id);
+        }
+        id_storage
     }
 
     pub fn all_finished(&self) -> bool {
@@ -284,13 +298,22 @@ pub fn party_handler_active_player_add_bonk(
     mut run_trigger: ResMut<RunTrigger>,
     party: Res<Party>,
     game_handler: Res<GameHandler>,
+    game_state: Res<State<StateGame>>,
 ) {
     info!("function: party_handler_active_player_add_bonk"); 
-    run_trigger.set_target("party_handler_active_player_set_ball_location", true);
-    run_trigger.set_target("game_handler_set_active_ball_location", true);
-    let level = game_handler.current_level_get() as usize;
-    party.active_player_add_bonk(level);
+    {
+        match game_state.get() {
+            StateGame::InGame => {
+                let level = game_handler.current_level_get() as usize;
+                party.active_player_add_bonk(level);
+                run_trigger.set_target("game_handler_update_players_manual_static_bonk_current_ball", true);
+                run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
+            },
+            _ => {},
+        }
+    }
     run_trigger.set_target("party_handler_active_player_add_bonk", false);
+    info!("post response: party_handler_active_player_add_bonk");  
 }
 
 pub fn party_handler_active_player_set_ball_location(
@@ -300,20 +323,17 @@ pub fn party_handler_active_player_set_ball_location(
     // golf_ball_tag_query: Query<Entity, With<GolfBallTag>>,
 ) {
     info!("function: party_handler_active_player_set_ball_location"); 
-    // let owned_match = GolfBallTag(party.get_active_player_index().try_into().unwrap());
-    // for golf_ball in golf_ball_tag_query.iter_mut() {
-    //     owned_match => {
-    if let Some(current_ball_location) = game_handler.active_player_ball_location_get() {
-        info!("Setting active ball location: {:?}", current_ball_location);
-        party.active_player_set_ball_location(current_ball_location);
-    } else {
-        info!("No ball location set for the active player, setting default ZERO");
-        party.active_player_set_ball_location(Vec3::new(0.0, 0.0, 0.0));
+    {
+        if let Some(current_ball_location) = game_handler.active_player_ball_location_get() {
+            info!("Setting active ball location: {:?}", current_ball_location);
+            party.active_player_set_ball_location(current_ball_location);
+        } else {
+            info!("No ball location set for the active player, setting default ZERO");
+            party.active_player_set_ball_location(Vec3::new(0.0, 0.0, 0.0));
+        }
     }
-    //     },
-    //     _ => {},
-    // }
     run_trigger.set_target("party_handler_active_player_set_ball_location", false);
+    info!("post response: party_handler_active_player_set_ball_location");  
 }
 
 pub fn party_handler_active_player_set_hole_completion_state_true(
@@ -322,94 +342,83 @@ pub fn party_handler_active_player_set_hole_completion_state_true(
     mut party: ResMut<Party>,
 ) {
     info!("function: party_handler_active_player_set_hole_completion_state_true"); 
-    match state_game.get() {
-        StateGame::InGame => {
-            party.active_player_set_hole_completion_state(true);
-        },
-        StateGame::NotInGame => {},
-    };
+    {
+        match state_game.get() {
+            StateGame::InGame => {
+                party.active_player_set_hole_completion_state(true);
+            },
+            StateGame::NotInGame => {},
+        };
+    }
     run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", false);
+    info!("post response: party_handler_active_player_set_hole_completion_state_true");  
 }
 
 
-pub fn party_handler_cycle_active_player(
+pub fn party_handler_cycle_active_player( 
     mut run_trigger: ResMut<RunTrigger>,
-    mut game_handler: ResMut<GameHandler>,
     mut party: ResMut<Party>,
-    state_map_set: Res<State<StateMapSet>>,
-    state_level: Res<State<StateLevel>>,
 ) {
     info!("function: party_handler_cycle_active_player"); 
-    
-    let owned_finished_count = party.all_players_get_finished_count();
-    let owned_party_size = party.get_party_size();
-    info!("\n\n\n{:?} vs {:?}", owned_finished_count, owned_party_size);
-    if owned_finished_count == owned_party_size as i32 {
-        match state_map_set.get() {
-            StateMapSet::Tutorial => {
-                run_trigger.set_target("game_handler_game_state_change_routines", true);
-            },
-            StateMapSet::WholeCorse => {
-                match state_level.get() {
-                    StateLevel::Hole18 => {
-                        run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_game_state_change_routines", true);
-                    },
-                    _ => {
-                        party.next_round_prep();
-                        party.set_active_player(1);
-                        run_trigger.set_target("level_handler_set_state_next_level", true);
-                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
-                        game_handler.current_level_set_next_level();
-                    },
-                }
-            },
-            StateMapSet::FrontNine => {
-                match state_level.get() {
-                    StateLevel::Hole9 => {
-                        run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_game_state_change_routines", true);
-                    },
-                    _ => {
-                        party.next_round_prep();
-                        party.set_active_player(1);
-                        run_trigger.set_target("level_handler_set_state_next_level", true);
-                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
-                        game_handler.current_level_set_next_level();
-                    },
-                }
-            },
-            StateMapSet::BackNine => {
-                match state_level.get() {
-                    StateLevel::Hole18 => {
-                        run_trigger.set_target("leader_board_log_game", true);
-                        run_trigger.set_target("game_handler_game_state_change_routines", true);
-                    },
-                    _ => {
-                        party.next_round_prep();
-                        party.set_active_player(1);
-                        run_trigger.set_target("level_handler_set_state_next_level", true);
-                        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
-                        game_handler.current_level_set_next_level();
-                    },
-                }
-            },
-            StateMapSet::SelectAHole => {
-                run_trigger.set_target("game_handler_game_state_change_routines", true);
-            },
-        };
-    } else {
-        party.next_set_order_player();
+    {
         run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
+        party.next_set_order_player();
     }
     run_trigger.set_target("party_handler_cycle_active_player", false);
+    info!("post response: party_handler_cycle_active_player");  
+}
+
+pub fn party_handler_new_player_ai(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: party_handler_new_player_ai"); 
+    {
+        let new_player_ai = PlayerAi::new();
+        let new_player = Arc::new(Mutex::new(new_player_ai));
+        party.add_player(new_player);
+    }
+    run_trigger.set_target("party_handler_new_player_ai", false);
+    info!("post response: party_handler_new_player_ai");  
+}
+
+pub fn party_handler_new_player_local(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: party_handler_new_player_local"); 
+    {
+        let new_player_local = PlayerLocal::new();
+        let new_player = Arc::new(Mutex::new(new_player_local));
+        party.add_player(new_player);
+    }
+    run_trigger.set_target("party_handler_new_player_local", false);
+    info!("post response: party_handler_new_player_local");  
+}
+
+pub fn party_handler_new_player_remote(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: party_handler_new_player_local"); 
+    {
+        let new_player_remote = PlayerRemote::new();
+        let new_player = Arc::new(Mutex::new(new_player_remote));
+        party.add_player(new_player);
+    }
+    run_trigger.set_target("party_handler_new_player_local", false);
+    info!("post response: party_handler_new_player_local");  
+
 }
 
 pub fn party_handler_remove_ai(
     party: Res<Party>,
     mut run_trigger: ResMut<RunTrigger>,
 ) {
-    party.remove_ai();
+    info!("function: party_handler_remove_ai"); 
+    {
+        party.remove_ai();
+    }
     run_trigger.set_target("party_handler_remove_ai", false);
     info!("post response: party_handler_remove_ai: {}", run_trigger.get("party_handler_remove_ai"));  
 }
@@ -417,38 +426,12 @@ pub fn party_handler_remove_ai(
 pub fn party_handler_remove_last_player(
     party: Res<Party>,
     mut run_trigger: ResMut<RunTrigger>,
-) {
-    party.remove_last_player();
+) {    
+    info!("function: party_handler_remove_last_player"); 
+    {
+        party.remove_last_player();
+    }
     run_trigger.set_target("party_handler_remove_last_player", false);
     info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  
 }
 
-pub fn party_handler_new_player_local(
-    party: Res<Party>,
-    mut run_trigger: ResMut<RunTrigger>,
-) {
-    let new_player_local = PlayerLocal::new();
-    let new_player = Arc::new(Mutex::new(new_player_local));
-    party.add_player(new_player);
-    run_trigger.set_target("party_handler_new_player_local", false);
-}
-
-pub fn party_handler_new_player_ai(
-    party: Res<Party>,
-    mut run_trigger: ResMut<RunTrigger>,
-) {
-    let new_player_ai = PlayerAi::new();
-    let new_player = Arc::new(Mutex::new(new_player_ai));
-    party.add_player(new_player);
-    run_trigger.set_target("party_handler_new_player_ai", false);
-}
-
-pub fn party_handler_new_player_remote(
-    party: Res<Party>,
-    mut run_trigger: ResMut<RunTrigger>,
-) {
-    let new_player_remote = PlayerRemote::new();
-    let new_player = Arc::new(Mutex::new(new_player_remote));
-    party.add_player(new_player);
-    run_trigger.set_target("party_handler_new_player_local", false);
-}

@@ -24,7 +24,7 @@ impl LeaderBoard {
     pub fn log_game(
         &mut self, 
         mut game_handler: ResMut<GameHandler>,
-        mut party: ResMut<Party>,
+        party: ResMut<Party>,
     ) {
         let game_id = game_handler.game_id_get();
         let (players, scores) = party.get_all_player_ids_and_scores();

@@ -2,17 +2,36 @@ use bevy::prelude::*;
 
 use crate::RunTrigger;
 
+/*
+pub fn _______________________________(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: _______________________________"); 
+    {
+        
+    }
+    run_trigger.set_target("_______________________________", false);
+    info!("post response: _______________________________: [{}]", run_trigger.get("_______________________________"));  
+}
+*/ 
+
 impl RunTrigger {
     pub fn new() -> Self {
         Self{
             camera_handler_cycle_state_camera: false,
             game_handler_game_start: false,
-            game_handler_game_state_change_routines: false,
+            game_handler_game_state_exit_routines: false,
+            game_handler_game_state_start_routines: false,
+            game_handler_update_players_manual_static_bonk_current_ball: false,
             game_handler_update_players_ref_ball_locations: false,
-            game_handler_update_players_reset_ref_ball_locations : false,
+            game_handler_update_players_reset_ref_ball_locations: false,
             game_handler_update_players_store_current_ball_locations_to_ref: false,
+            golf_ball_handler_spawn_golf_balls_for_party_members: false,
             leader_board_log_game: false,
             leader_board_review_last_game: false,
+            level_handler_init_level_game_handler_current_level: false,
+            level_handler_next_turn_protocol: false,
+            level_handler_purge_protocol: false,
             level_handler_set_state_next_level: false,
             level_handler_set_state_next_map_set: false,
             network_get_client_state_game: false,
@@ -25,6 +44,8 @@ impl RunTrigger {
             party_handler_new_player_remote: false,
             party_handler_remove_ai: false,
             party_handler_remove_last_player: false,
+            turn_handler_end_game: false,
+            turn_handler_next_round_prep: false,
             turn_handler_set_turn_next: false,
         }
     }
@@ -37,23 +58,41 @@ impl RunTrigger {
             "game_handler_game_start" => {
                 self.game_handler_game_start
             },
-            "game_handler_game_state_change_routines" => {
-                self.game_handler_game_state_change_routines
+            "game_handler_game_state_exit_routines" => {
+                self.game_handler_game_state_exit_routines
+            },
+            "game_handler_game_state_start_routines" => {
+                self.game_handler_game_state_start_routines
+            },
+            "game_handler_update_players_manual_static_bonk_current_ball" => {
+                self.game_handler_update_players_manual_static_bonk_current_ball
             },
             "game_handler_update_players_ref_ball_locations" => {
                 self.game_handler_update_players_ref_ball_locations
             },
-            "game_handler_update_players_reset_ref_ball_locations " => {
+            "game_handler_update_players_reset_ref_ball_locations" => {
                 self.game_handler_update_players_reset_ref_ball_locations 
             },
-            "game_handler_update_players_store_current_ball_locations_to_ref " => {
+            "game_handler_update_players_store_current_ball_locations_to_ref" => {
                 self.game_handler_update_players_store_current_ball_locations_to_ref 
+            },
+            "golf_ball_handler_spawn_golf_balls_for_party_members" => {
+                self.golf_ball_handler_spawn_golf_balls_for_party_members 
             },
             "leader_board_log_game" => {
                 self.leader_board_log_game
             },
             "leader_board_review_last_game" => {
                 self.leader_board_review_last_game
+            },
+            "level_handler_init_level_game_handler_current_level" => {
+                self.level_handler_init_level_game_handler_current_level
+            },
+            "level_handler_next_turn_protocol" => {
+                self.level_handler_next_turn_protocol
+            },
+            "level_handler_purge_protocol" => {
+                self.level_handler_purge_protocol
             },
             "level_handler_set_state_next_level" => {
                 self.level_handler_set_state_next_level
@@ -91,6 +130,12 @@ impl RunTrigger {
             "party_handler_remove_last_player" => {
                 self.party_handler_remove_last_player
             },
+            "turn_handler_end_game" => {
+                self.turn_handler_end_game
+            },
+            "turn_handler_next_round_prep" => {
+                self.turn_handler_next_round_prep
+            },
             "turn_handler_set_turn_next" => {
                 self.turn_handler_set_turn_next
             },
@@ -108,21 +153,33 @@ impl RunTrigger {
                 self.game_handler_game_start = state;
                 info!("response: game_handler_game_start: {}", self.get("game_handler_game_start"));
             }
-            "game_handler_game_state_change_routines" => {
-                self.game_handler_game_state_change_routines = state;
-                info!("response: game_handler_game_state_change_routines: {}", self.get("game_handler_game_state_change_routines"));
+            "game_handler_game_state_exit_routines" => {
+                self.game_handler_game_state_exit_routines = state;
+                info!("response: game_handler_game_state_exit_routines: {}", self.get("game_handler_game_state_exit_routines"));
+            }
+            "game_handler_game_state_start_routines" => {
+                self.game_handler_game_state_start_routines = state;
+                info!("response: game_handler_game_state_start_routines: {}", self.get("game_handler_game_state_start_routines"));
+            }
+            "game_handler_update_players_manual_static_bonk_current_ball" => {
+                self.game_handler_update_players_manual_static_bonk_current_ball = state;
+                info!("response: game_handler_update_players_manual_static_bonk_current_ball: {}", self.get("game_handler_update_players_manual_static_bonk_current_ball"));
             }
             "game_handler_update_players_ref_ball_locations" => {
                 self.game_handler_update_players_ref_ball_locations = state;
                 info!("response: game_handler_update_players_ref_ball_locations: {}", self.get("game_handler_update_players_ref_ball_locations"));
             }
-            "game_handler_update_players_reset_ref_ball_locations " => {
-                self.game_handler_update_players_reset_ref_ball_locations  = state;
-                info!("response: game_handler_update_players_reset_ref_ball_locations : {}", self.get("game_handler_update_players_reset_ref_ball_locations "));
+            "game_handler_update_players_reset_ref_ball_locations" => {
+                self.game_handler_update_players_reset_ref_ball_locations = state;
+                info!("response: game_handler_update_players_reset_ref_ball_locations: {}", self.get("game_handler_update_players_reset_ref_ball_locations"));
             }
-            "game_handler_update_players_store_current_ball_locations_to_ref " => {
-                self.game_handler_update_players_store_current_ball_locations_to_ref  = state;
-                info!("response: game_handler_update_players_store_current_ball_locations_to_ref : {}", self.get("game_handler_update_players_store_current_ball_locations_to_ref "));
+            "game_handler_update_players_store_current_ball_locations_to_ref" => {
+                self.game_handler_update_players_store_current_ball_locations_to_ref = state;
+                info!("response: game_handler_update_players_store_current_ball_locations_to_ref: {}", self.get("game_handler_update_players_store_current_ball_locations_to_ref"));
+            }
+            "golf_ball_handler_spawn_golf_balls_for_party_members" => {
+                self.golf_ball_handler_spawn_golf_balls_for_party_members = state;
+                info!("response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", self.get("golf_ball_handler_spawn_golf_balls_for_party_members"));
             }
             "leader_board_log_game" => {
                 self.leader_board_log_game = state;
@@ -131,6 +188,18 @@ impl RunTrigger {
             "leader_board_review_last_game" => {
                 self.leader_board_review_last_game = state;
                 info!("response: leader_board_review_last_game: {}", self.get("leader_board_review_last_game"));
+            }
+            "level_handler_init_level_game_handler_current_level" => {
+                self.level_handler_init_level_game_handler_current_level = state;
+                info!("response: level_handler_init_level_game_handler_current_level: {}", self.get("level_handler_init_level_game_handler_current_level"));
+            }
+            "level_handler_next_turn_protocol" => {
+                self.level_handler_next_turn_protocol = state;
+                info!("response: level_handler_next_turn_protocol: {}", self.get("level_handler_next_turn_protocol"));
+            }
+            "level_handler_purge_protocol" => {
+                self.level_handler_purge_protocol = state;
+                info!("response: level_handler_purge_protocol: {}", self.get("level_handler_purge_protocol"));
             }
             "level_handler_set_state_next_level" => {
                 self.level_handler_set_state_next_level = state;
@@ -180,6 +249,14 @@ impl RunTrigger {
                 self.party_handler_remove_last_player = state;
                 info!("response: party_handler_remove_last_player: {}", self.get("party_handler_remove_last_player"));  
             },
+            "turn_handler_end_game" => {
+                self.turn_handler_end_game = state;
+                info!("response: turn_handler_end_game: {}", self.get("turn_handler_end_game"));
+            }
+            "turn_handler_next_round_prep" => {
+                self.turn_handler_next_round_prep = state;
+                info!("response: turn_handler_next_round_prep: {}", self.get("turn_handler_next_round_prep"));
+            }
             "turn_handler_set_turn_next" => {
                 self.turn_handler_set_turn_next = state;
                 info!("response: turn_handler_set_turn_next: {}", self.get("turn_handler_set_turn_next"));
@@ -198,20 +275,32 @@ impl RunTrigger {
         self.game_handler_game_start
     }
 
-    pub fn game_handler_game_state_change_routines(&self) -> bool {
-        self.game_handler_game_state_change_routines
+    pub fn game_handler_game_state_exit_routines(&self) -> bool {
+        self.game_handler_game_state_exit_routines
+    }
+
+    pub fn game_handler_game_state_start_routines(&self) -> bool {
+        self.game_handler_game_state_start_routines
+    }
+
+    pub fn game_handler_update_players_manual_static_bonk_current_ball(&self) -> bool {
+        self.game_handler_update_players_manual_static_bonk_current_ball
     }
 
     pub fn game_handler_update_players_ref_ball_locations(&self) -> bool {
         self.game_handler_update_players_ref_ball_locations
     }
 
-    pub fn game_handler_update_players_reset_ref_ball_locations (&self) -> bool {
+    pub fn game_handler_update_players_reset_ref_ball_locations(&self) -> bool {
         self.game_handler_update_players_reset_ref_ball_locations 
     }
 
-    pub fn game_handler_update_players_store_current_ball_locations_to_ref (&self) -> bool {
+    pub fn game_handler_update_players_store_current_ball_locations_to_ref(&self) -> bool {
         self.game_handler_update_players_store_current_ball_locations_to_ref 
+    }
+
+    pub fn golf_ball_handler_spawn_golf_balls_for_party_members(&self) -> bool {
+        self.golf_ball_handler_spawn_golf_balls_for_party_members 
     }
 
     pub fn leader_board_log_game(&self) -> bool {
@@ -220,6 +309,18 @@ impl RunTrigger {
 
     pub fn leader_board_review_last_game(&self) -> bool {
         self.leader_board_review_last_game
+    }
+
+    pub fn level_handler_init_level_game_handler_current_level(&self) -> bool {
+        self.level_handler_init_level_game_handler_current_level
+    }
+
+    pub fn level_handler_next_turn_protocol(&self) -> bool {
+        self.level_handler_next_turn_protocol
+    }
+
+    pub fn level_handler_purge_protocol(&self) -> bool {
+        self.level_handler_purge_protocol
     }
 
     pub fn level_handler_set_state_next_level(&self) -> bool {
@@ -268,6 +369,14 @@ impl RunTrigger {
 
     pub fn party_handler_remove_last_player(&self) -> bool {
         self.party_handler_remove_last_player
+    }
+
+    pub fn turn_handler_end_game(&self) -> bool {
+        self.turn_handler_end_game
+    }
+
+    pub fn turn_handler_next_round_prep(&self) -> bool {
+        self.turn_handler_next_round_prep
     }
 
     pub fn turn_handler_set_turn_next(&self) -> bool {

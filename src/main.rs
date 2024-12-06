@@ -43,10 +43,16 @@ use minigolf::{
 // --- User Camera World Import --- //
 use minigolf::{
     database_handler::db_pipeline_init_local_player,
-    level_handler::level_handler::{
-        level_handler_boot_protocals,
-        level_handler_set_state_next_level,
-        level_handler_set_state_next_map_set,
+    level_handler::{
+        level_handler::{
+            level_handler_boot_protocals,
+            level_handler_init_level_game_handler_current_level,
+            level_handler_next_turn_protocol,
+            level_handler_purge_protocol,
+            level_handler_set_state_next_level,
+            level_handler_set_state_next_map_set,
+        },
+        golf_ball_handler::golf_ball_handler_spawn_golf_balls_for_party_members,
     },
     player_handler::{
         leader_board_handler::{
@@ -82,12 +88,18 @@ use minigolf::{
         },
         game_handler::{
             game_handler_game_start,
-            game_handler_game_state_change_routines,
+            game_handler_game_state_exit_routines,
+            game_handler_game_state_start_routines,
+            game_handler_update_players_manual_static_bonk_current_ball,
             game_handler_update_players_ref_ball_locations,
             game_handler_update_players_reset_ref_ball_locations,
             game_handler_update_players_store_current_ball_locations_to_ref,
         },
-        turn_handler::turn_handler_set_turn_next,
+        turn_handler::{
+            turn_handler_end_game,
+            turn_handler_next_round_prep,
+            turn_handler_set_turn_next,
+        },
         user_interface::{
             setup_ui,
             // ui_update_system,
@@ -181,17 +193,24 @@ fn main() {
 
         // Run Trigger Systems //        
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-        
+
+        .add_systems(Update, game_handler_update_players_manual_static_bonk_current_ball.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_manual_static_bonk_current_ball()))
         .add_systems(Update, game_handler_update_players_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_ref_ball_locations()))
         .add_systems(Update, game_handler_update_players_reset_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_reset_ref_ball_locations()))
         .add_systems(Update, game_handler_update_players_store_current_ball_locations_to_ref.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_store_current_ball_locations_to_ref()))
         
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
-        .add_systems(Update, game_handler_game_state_change_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_change_routines()))
+        .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
+        .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_start_routines()))
+
+        .add_systems(Update, golf_ball_handler_spawn_golf_balls_for_party_members.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_spawn_golf_balls_for_party_members()))
 
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
         .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
         
+        .add_systems(Update, level_handler_init_level_game_handler_current_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_init_level_game_handler_current_level()))
+        .add_systems(Update, level_handler_next_turn_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_next_turn_protocol()))
+        .add_systems(Update, level_handler_purge_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_purge_protocol()))
         .add_systems(Update, level_handler_set_state_next_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_level()))
         .add_systems(Update, level_handler_set_state_next_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_map_set()))
 
@@ -210,6 +229,8 @@ fn main() {
         .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
         .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
 
+        .add_systems(Update, turn_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_end_game()))
+        .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
         .add_systems(Update, heartbeat_system)
