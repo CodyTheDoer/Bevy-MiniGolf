@@ -15,6 +15,7 @@ use crate::{
     Interactable,
     GameHandler,
     GLBStorageID,
+    GolfBall,
     Ground, 
     MapID,
     RunTrigger,
@@ -78,13 +79,16 @@ pub fn level_handler_boot_protocals(
 
 pub fn level_handler_purge_protocol(
     mut run_trigger: ResMut<RunTrigger>,
-    lhp_commands: Commands,
-    lhp_scene_meshes: Query<(Entity, &Name)>,
+    sm_commands: Commands,
+    scene_meshes: Query<(Entity, &Name)>,
+    gb_commands: Commands,
+    mut golf_balls: Query<Entity, With<GolfBall>>,
 ) {
     
     info!("function: level_handler_purge_protocol"); 
     {
-        level_handler_purge_glb_all(lhp_commands, lhp_scene_meshes);
+        level_handler_purge_env_glb_all(sm_commands, scene_meshes);
+        level_handler_purge_golf_ball_all(gb_commands, golf_balls);
     }
     run_trigger.set_target("level_handler_purge_protocol", false);
     info!("post response: level_handler_purge_protocol: [{}]", run_trigger.get("level_handler_purge_protocol"));  
@@ -101,7 +105,7 @@ pub fn level_handler_init_level_game_handler_current_level(
     info!("level_handler_init_level_game_handler_current_level: [{}]", gh.current_level);
     {
         run_trigger.set_target("level_handler_purge_protocol", true);
-        thread::sleep(Duration::from_millis(150)); 
+        thread::sleep(Duration::from_millis(100)); 
         level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level);
         match state_game.get() {
             StateGame::InGame => {
@@ -307,20 +311,31 @@ pub fn level_handler_purge_entity(
     entity: Entity,
 ) {
     // Access the rigid body from the physics world using its handle
-    if Some(entity).is_some()  {
-        commands.entity(entity).despawn_recursive()
-    };
-}        
+    if commands.get_entity(entity).is_some() {
+        commands.entity(entity).despawn();
+    }
+}
 
-pub fn level_handler_purge_glb_all(
+pub fn level_handler_purge_env_glb_all(
     mut commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
-    info!("\n\n\n[ PURGING ALL!!! ---  PURGING ALL!!! ---  PURGING ALL!!! ]\n\n");
+    info!("\n[ PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ]");
     for (entity, _) in scene_meshes.iter() {
         // Access the rigid body from the physics world using its handle
         level_handler_purge_entity(&mut commands, entity);
-    }        
+    }
+}
+
+pub fn level_handler_purge_golf_ball_all(
+    mut commands: Commands,
+    mut golf_balls: Query<Entity, With<GolfBall>>, 
+) {
+    info!("\n[ PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ]");
+    for entity in golf_balls.iter_mut() {
+        info!("Entity: [{:?}]", entity);
+        level_handler_purge_entity(&mut commands, entity);
+    }
 }
 
 // pub fn level_handler_purge_rigid_bodies(

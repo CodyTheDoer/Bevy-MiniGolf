@@ -18,7 +18,6 @@ use crate::{
     CameraUi,
     Fonts,
     GameHandler,
-    GolfBallHandler,
     LeaderBoard,
     Party,
     RunTrigger,
@@ -126,7 +125,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..27 {
+    for _ in 0..26 {
         commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -205,7 +204,6 @@ pub fn update_ui(
     state_turn: Res<State<StateTurn>>,
     party: Res<Party>,
     game_handler: ResMut<GameHandler>,
-    golf_ball_handler: Res<GolfBallHandler>,
     leader_board: Res<LeaderBoard>,
     mut query: Query<&mut Text, With<TextState>>,
     run_trigger: Res<RunTrigger>,
@@ -226,19 +224,17 @@ pub fn update_ui(
         format!("Active Player: {:?}", party.get_active_player_index()),                                                                    // 13 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
-        format!("Active Player: Ball Location: {:?}", golf_ball_handler.position_get(&party.active_player_get_player_id())),                // 16 
-        format!("Active Player: Last Location: {:?}", golf_ball_handler.last_position_get(&party.active_player_get_player_id())),           // 17
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 18
-        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 19
-        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 20
-        format!("Active Player Scorecard: {:?}", party.get_active_player_scorecard()),                                                      // 21
-        format!("______________________________________________________________________"),                                                  // 22  
-        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 23
-        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 24
-        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 25    
-        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                                            // 26     
-        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 27   
-        format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 28   
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 16
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 17
+        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 18
+        format!("Active Player Scorecard: {:?}", party.get_active_player_scorecard()),                                                      // 19
+        format!("______________________________________________________________________"),                                                  // 20  
+        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 21
+        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 22
+        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 23    
+        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                                            // 24     
+        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 25   
+        format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 26   
     ];
 
     let state_texts_right = vec![

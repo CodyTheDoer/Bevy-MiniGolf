@@ -7,7 +7,6 @@ use rusqlite::Connection;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -180,13 +179,123 @@ pub enum StateUpdateRef {
     StateTurn(StateTurn),
 }
 
+#[derive(Clone, Debug, Resource)] 
+pub struct BonkHandler {
+    pub direction: Vec3,
+    pub power: f32,
+    pub cursor_origin_position: BonkMouseXY,
+    pub cursor_origin_position_updated: bool,
+    pub cursor_bonk_position: BonkMouseXY,
+    pub cursor_bonk_position_updated: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct BonkMouseXY {
+    pub x: f32,
+    pub y: f32, 
+}
+
+#[derive(Debug, Resource)]
+pub struct CameraHandler {
+    current_coords: Vec3,
+}
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraUi;
+
+#[derive(Asset, Component, TypePath)]
+pub struct CameraWorld;
+
 #[derive(Resource)]
 pub struct HeartbeatTimer(pub Timer);
 
-// World //
+#[derive(Asset, Clone, Component, Debug, TypePath)]
+pub struct Interactable; 
+
+#[derive(Resource)]
+pub struct Fonts {
+    pub fonts: Vec<TextStyle>,
+}
+
+#[derive(Resource)]
+pub struct GameHandler {
+    current_level: i32,
+    arrow_state: bool,
+    network_server_connection: bool,
+    remote_game: bool,
+    remotely_pushed_state: Option<StateUpdateRef>,
+    game_id: Option<Uuid>,
+}
+
+#[derive(Clone, Resource)]
+pub struct GameRecord{
+    game_id: Uuid,
+    players: Vec<Uuid>,
+    scores: Vec<[i32; 18]>,
+}
+
+#[derive(Clone, Debug, Resource)]
+pub struct GLBStorageID {
+    glb: Arc<[MapID]>,
+}
+
+#[derive(Asset, Clone, Component, Debug, TypePath)]
+pub struct GolfBall (pub GolfBallPosition);
+
+#[derive(Clone, Debug)]
+pub struct GolfBallPosition {
+    pub uuid: Uuid,
+    pub position: Vec3,
+    pub last_position: Vec3,
+}
 
 #[derive(Component)]
 pub struct Ground;
+
+#[derive(Resource)]
+pub struct LeaderBoard {
+    current_scores: [i32; 18],
+    past_games: Vec<GameRecord>,
+}
+
+#[derive(Debug)]
+pub struct MapID {
+    map: &'static str,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MapSet {
+    pub map_set_id: Uuid,
+    pub map_set_name: String,
+    pub created: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
+    pub last_updated: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
+    pub hole_range_start: i32,
+    pub hole_range_end: i32,
+    pub file_path_level_1: Option<String>,
+    pub file_path_level_2: Option<String>,
+    pub file_path_level_3: Option<String>,
+    pub file_path_level_4: Option<String>,
+    pub file_path_level_5: Option<String>,
+    pub file_path_level_6: Option<String>,
+    pub file_path_level_7: Option<String>,
+    pub file_path_level_8: Option<String>,
+    pub file_path_level_9: Option<String>,
+    pub file_path_level_10: Option<String>,
+    pub file_path_level_11: Option<String>,
+    pub file_path_level_12: Option<String>,
+    pub file_path_level_13: Option<String>,
+    pub file_path_level_14: Option<String>,
+    pub file_path_level_15: Option<String>,
+    pub file_path_level_16: Option<String>,
+    pub file_path_level_17: Option<String>,
+    pub file_path_level_18: Option<String>,
+}
+
+#[derive(Resource)]
+pub struct Party {
+    players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
+    active_player: Arc<Mutex<i32>>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PanOrbitAction {
@@ -225,28 +334,6 @@ pub struct PanOrbitSettings {
     pub scroll_pixel_sensitivity: f32,
 }
 
-// The internal state of the pan-orbit controller
-#[derive(Component, Debug)]
-pub struct StatePanOrbit {
-    pub center: Vec3,
-    pub radius: f32,
-    pub upside_down: bool,
-    pub pitch: f32,
-    pub yaw: f32,
-}
-
-#[derive(Asset, Component, TypePath)]
-pub struct CameraUi;
-
-// Define marker components to find the entities later
-#[derive(Component)]
-pub struct TextState;
-
-#[derive(Component)]
-pub struct TextTitle;
-
-// --- Player Handler --- //
-
 pub trait Player {
     fn new() -> Self where Self: Sized;
     fn start_game(&mut self);
@@ -264,6 +351,9 @@ pub trait Player {
     fn get_ball_location(&self) -> Vec3;
     fn set_ball_location(&mut self, location: Vec3);
 }
+
+#[derive(Resource)]
+pub struct PhysicsHandler;
 
 #[derive(Clone, Resource)]
 pub struct PlayerLocal {
@@ -293,88 +383,6 @@ pub struct PlayerRemote {
 	pub ball_material: Color, // For now custom material/shaders planned
 	pub ball_location: Vec3,
 	pub score: [i32; 18],
-}
-
-// --- Party Handler --- //
-
-#[derive(Resource)]
-pub struct Party {
-    players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
-    active_player: Arc<Mutex<i32>>,
-}
-
-// --- Camera --- //
-
-#[derive(Debug, Resource)]
-pub struct CameraHandler {
-    current_coords: Vec3,
-}
-
-#[derive(Asset, Component, TypePath)]
-pub struct CameraWorld;
-
-// --- User Interface --- //
-
-#[derive(Asset, Clone, Component, Debug, TypePath)]
-pub struct Interactable; 
-
-#[derive(Resource)]
-pub struct Fonts {
-    pub fonts: Vec<TextStyle>,
-}
-
-#[derive(Resource)]
-pub struct GameHandler {
-    current_level: i32,
-    arrow_state: bool,
-    network_server_connection: bool,
-    remote_game: bool,
-    remotely_pushed_state: Option<StateUpdateRef>,
-    game_id: Option<Uuid>,
-}
-
-#[derive(Clone, Resource)]
-pub struct GameRecord{
-    game_id: Uuid,
-    players: Vec<Uuid>,
-    scores: Vec<[i32; 18]>,
-}
-
-impl GameRecord {
-    pub fn unwrap(&self) -> (Uuid, Vec<Uuid>, Vec<[i32; 18]>) {
-        (self.game_id, self.players.clone(), self.scores.clone())
-    } 
-}
-
-#[derive(Debug)]
-pub struct MapID {
-    map: &'static str,
-}
-
-#[derive(Clone, Debug, Resource)]
-pub struct GLBStorageID {
-    glb: Arc<[MapID]>,
-}
-
-#[derive(Asset, Clone, Component, Debug, TypePath)]
-pub struct GolfBall(pub String);
-
-#[derive(Debug, Resource)]
-pub struct GolfBallHandler {
-    golf_balls: Arc<Mutex<Vec<GolfBallPosition>>>
-}
-
-#[derive(Clone, Debug)]
-pub struct GolfBallPosition {
-    pub uuid: Uuid,
-    pub position: Vec3,
-    pub last_position: Vec3,
-}
-
-#[derive(Resource)]
-pub struct LeaderBoard {
-    current_scores: [i32; 18],
-    past_games: Vec<GameRecord>,
 }
 
 #[derive(Resource)]
@@ -409,38 +417,25 @@ pub struct RunTrigger{
     turn_handler_set_turn_next: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct MapSet {
-    pub map_set_id: Uuid,
-    pub map_set_name: String,
-    pub created: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
-    pub last_updated: OffsetDateTime, // Use time crate's OffsetDateTime to handle timestamp values
-    pub hole_range_start: i32,
-    pub hole_range_end: i32,
-    pub file_path_level_1: Option<String>,
-    pub file_path_level_2: Option<String>,
-    pub file_path_level_3: Option<String>,
-    pub file_path_level_4: Option<String>,
-    pub file_path_level_5: Option<String>,
-    pub file_path_level_6: Option<String>,
-    pub file_path_level_7: Option<String>,
-    pub file_path_level_8: Option<String>,
-    pub file_path_level_9: Option<String>,
-    pub file_path_level_10: Option<String>,
-    pub file_path_level_11: Option<String>,
-    pub file_path_level_12: Option<String>,
-    pub file_path_level_13: Option<String>,
-    pub file_path_level_14: Option<String>,
-    pub file_path_level_15: Option<String>,
-    pub file_path_level_16: Option<String>,
-    pub file_path_level_17: Option<String>,
-    pub file_path_level_18: Option<String>,
-}
-
 #[derive(Event)]
 pub struct SceneInstanceSpawnedEvent {
     pub entity: Entity,
 }
+
+#[derive(Component, Debug)]
+pub struct StatePanOrbit {
+    pub center: Vec3,
+    pub radius: f32,
+    pub upside_down: bool,
+    pub pitch: f32,
+    pub yaw: f32,
+}
+
+#[derive(Component)]
+pub struct TextState;
+
+#[derive(Component)]
+pub struct TextTitle;
 
 pub struct UserInterface {}
 

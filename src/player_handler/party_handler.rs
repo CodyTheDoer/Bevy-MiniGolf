@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
 use uuid::Uuid;
 
 // States
@@ -8,6 +11,10 @@ use crate::StateGame;
 // Resources
 use crate::{
     GameHandler,
+    GLBStorageID, 
+    GolfBall,
+    GolfBallPosition,
+    Interactable, 
     Party,
     Player,
     PlayerAi,
@@ -16,18 +23,15 @@ use crate::{
     RunTrigger,
 };
 
-use std::sync::{Arc, MutexGuard};
-use std::sync::Mutex;
-
 impl Party {
     pub fn new() -> Self {
         let players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>> = Arc::new(Mutex::new(vec![Arc::new(Mutex::new(PlayerLocal::new()))]));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
-        // let active_level: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
-        // let remote_count: Arc<Mutex<i32>> = Arc::new(Mutex::new(0));
+        // let golf_balls: Arc<Mutex<Vec<GolfBallPosition>>> = Arc::new(Mutex::new(Vec::new()));
         Party {
             players,
             active_player,
+            // golf_balls,
         } 
     }
     
@@ -43,6 +47,18 @@ impl Party {
         }
         (players, scores)
     }
+
+    pub fn get_all_player_ids(&self) -> Vec<Uuid> {
+        let mut id_storage: Vec<Uuid> = Vec::new();
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        for player in 0..players_lock.len() {
+            let player_arc = &players_lock[player];
+            let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            let id = player.get_player_id();
+            id_storage.push(id);
+        }
+        id_storage
+    }
     
     pub fn get_active_player_scorecard(&self) -> [i32; 18] {
         let players_lock = self.players.lock().unwrap();
@@ -50,8 +66,8 @@ impl Party {
         let scorecard = players_lock[active_idx_lock as usize].lock().unwrap().get_score();
         scorecard
     }
-    
-    pub fn add_player(&self, player: Arc<Mutex<dyn Player + Send>>) {
+
+    pub fn players_add_player(&self, player: Arc<Mutex<dyn Player + Send>>) {
         let mut players_lock = self.players.lock().unwrap();
         if players_lock.len() < 6 {
             players_lock.push(player);
@@ -60,7 +76,7 @@ impl Party {
         }
     }
 
-    pub fn remove_player(&self, player_id: Uuid) {
+    pub fn players_remove_player(&self, player_id: Uuid) {
         let mut players_lock = self.players.lock().unwrap();
         
         // Proceed only if we have more than one player in the vector
@@ -72,7 +88,7 @@ impl Party {
         }
     }
     
-    pub fn remove_ai(&self) {
+    pub fn players_remove_ai(&self) {
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
     
         // Iterate through players and find the index of the first occurrence of "PlayerAi".
@@ -85,7 +101,7 @@ impl Party {
         }
     }
     
-    pub fn remove_last_player(&self) {
+    pub fn players_remove_last_player(&self) {
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
         
         // Only pop if we have more than one player
@@ -114,18 +130,6 @@ impl Party {
             }
         }
         count
-    }
-
-    pub fn all_players_id_into_vec(&self) -> Vec<Uuid> {
-        let mut id_storage: Vec<Uuid> = Vec::new();
-        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
-        for player in 0..players_lock.len() {
-            let player_arc = &players_lock[player];
-            let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
-            let id = player.get_player_id();
-            id_storage.push(id);
-        }
-        id_storage
     }
 
     pub fn all_finished(&self) -> bool {
@@ -368,7 +372,7 @@ pub fn party_handler_new_player_ai(
     {
         let new_player_ai = PlayerAi::new();
         let new_player = Arc::new(Mutex::new(new_player_ai));
-        party.add_player(new_player);
+        party.players_add_player(new_player);
     }
     run_trigger.set_target("party_handler_new_player_ai", false);
     info!("post response: party_handler_new_player_ai");  
@@ -382,7 +386,7 @@ pub fn party_handler_new_player_local(
     {
         let new_player_local = PlayerLocal::new();
         let new_player = Arc::new(Mutex::new(new_player_local));
-        party.add_player(new_player);
+        party.players_add_player(new_player);
     }
     run_trigger.set_target("party_handler_new_player_local", false);
     info!("post response: party_handler_new_player_local");  
@@ -396,7 +400,7 @@ pub fn party_handler_new_player_remote(
     {
         let new_player_remote = PlayerRemote::new();
         let new_player = Arc::new(Mutex::new(new_player_remote));
-        party.add_player(new_player);
+        party.players_add_player(new_player);
     }
     run_trigger.set_target("party_handler_new_player_local", false);
     info!("post response: party_handler_new_player_local");  
@@ -409,7 +413,7 @@ pub fn party_handler_remove_ai(
 ) {
     info!("function: party_handler_remove_ai"); 
     {
-        party.remove_ai();
+        party.players_remove_ai();
     }
     run_trigger.set_target("party_handler_remove_ai", false);
     info!("post response: party_handler_remove_ai: {}", run_trigger.get("party_handler_remove_ai"));  
@@ -421,7 +425,7 @@ pub fn party_handler_remove_last_player(
 ) {    
     info!("function: party_handler_remove_last_player"); 
     {
-        party.remove_last_player();
+        party.players_remove_last_player();
     }
     run_trigger.set_target("party_handler_remove_last_player", false);
     info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  

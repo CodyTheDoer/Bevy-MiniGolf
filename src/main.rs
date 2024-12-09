@@ -8,7 +8,15 @@ use bevy_rapier3d::prelude::*;
 
 // --- States --- //
 use minigolf::{ 
-    level_handler::golf_ball_handler, player_handler::party_handler, StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
+    StateArrow, 
+    StateCameraOrbitEntity, 
+    StateEngineConnection, 
+    StateGame, 
+    StateGamePlayStyle, 
+    StateLevel, 
+    StateMapSet, 
+    StateMenu, 
+    StateTurn,
 };
 
 // --- Resources --- //
@@ -20,12 +28,12 @@ use minigolf::{
     GameHandler,
     GLBStorageID,
     GolfBall,
-    GolfBallHandler,
     LeaderBoard,
     HeartbeatTimer,
     OnlineStateChange,
     Party,
-    PurgeEntityEvent,
+    PhysicsHandler,
+    player_handler::party_handler, 
     RunTrigger,
     UiUpdateEvent,
     UiUpdateTimer,
@@ -49,7 +57,8 @@ use minigolf::{
             level_handler_set_state_next_level,
             level_handler_set_state_next_map_set,
         },
-        golf_ball_handler::{
+        physics_handler::{
+            add_physics_query_and_update_scene,
             golf_ball_handler_active_player_manual_bonk,
             golf_ball_handler_end_game,
             golf_ball_handler_party_store_locations,
@@ -133,7 +142,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-        // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //
@@ -157,17 +166,16 @@ fn main() {
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
         .insert_resource(GLBStorageID::new())
-        .insert_resource(GolfBallHandler::new())
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
+        .insert_resource(PhysicsHandler::new())
         .insert_resource(RunTrigger::new())
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
-        .add_event::<PurgeEntityEvent>()
         .add_event::<OnlineStateChange>()
-        .add_event::<UiUpdateEvent>()
+        .add_event::<UiUpdateEvent>()  
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, level_handler_boot_protocals)
@@ -234,9 +242,26 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_pressed(KeyCode::KeyI)))
+        .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyO)))
+        .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
         .add_systems(Update, temp_interface);
 
     app.run();
+}
+
+fn golf_ball_query(
+    mut gb_query: Query<&GolfBall>,
+) {
+    for golf_ball in gb_query.iter_mut() {
+        info!("golf_ball: [{:?}]", golf_ball.0);
+    }
+}
+
+fn party_query(
+    mut party: Res<Party>,
+) {
+    info!("Party ID's and Scores: [{:?}]", party.get_all_player_ids_and_scores());
 }
 
 //-----------------------------------------------------------------------------------//

@@ -17,6 +17,7 @@ use crate::{
 // Resources
 use crate::{
     GameHandler,
+    GameRecord,
     Party,
     RunTrigger,
 };
@@ -165,6 +166,12 @@ impl GameHandler {
     }
 }
 
+impl GameRecord {
+    pub fn unwrap(&self) -> (Uuid, Vec<Uuid>, Vec<[i32; 18]>) {
+        (self.game_id, self.players.clone(), self.scores.clone())
+    } 
+}
+
 pub fn game_handler_game_start (
     mut game_handler: ResMut<GameHandler>,
     mut next_level: ResMut<NextState<StateLevel>>,
@@ -231,7 +238,6 @@ pub fn game_handler_game_state_start_routines(
                 } else {
                     info!("StateTurn::Active");
                     next_state_turn.set(StateTurn::Active);
-                    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
                 }
                 info!("StateGame::InGame");
                 next_state_game.set(StateGame::InGame);
@@ -267,6 +273,7 @@ pub fn game_handler_game_state_exit_routines(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
+                run_trigger.set_target("golf_ball_handler_end_game", true);
                 run_trigger.set_target("level_handler_purge_protocol", true);
                 next_menu_state.set(StateMenu::MenuMainMenu);
                 next_camera_state.set(StateCameraOrbitEntity::Menu);
