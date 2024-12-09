@@ -16,7 +16,7 @@ use crate::{
     RunTrigger,
 };
 
-use std::sync::Arc;
+use std::sync::{Arc, MutexGuard};
 use std::sync::Mutex;
 
 impl Party {
@@ -240,9 +240,10 @@ impl Party {
 
     pub fn next_set_order_player(&mut self) {
         let mut active_player_index = self.active_player.lock().unwrap();
-        let players_count = self.players.lock().unwrap().len() as i32;
-        *active_player_index = (*active_player_index % players_count) + 1; // Wraps to 1 after reaching the last player
-        info!("post function: next_set_order_player"); 
+        let players_len = self.players.lock().unwrap().len() as i32;
+
+        *active_player_index = (*active_player_index % players_len) + 1; // Wraps to 1 after reaching the last player
+        info!("post function: next_set_order_player");
     }
 
     pub fn get_active_player_index(&self) -> i32 {
@@ -304,36 +305,14 @@ pub fn party_handler_active_player_add_bonk(
     {
         match game_state.get() {
             StateGame::InGame => {
-                let level = game_handler.current_level_get() as usize;
-                party.active_player_add_bonk(level);
-                run_trigger.set_target("game_handler_update_players_manual_static_bonk_current_ball", true);
-                run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
+                party.active_player_add_bonk(game_handler.current_level_get() as usize);
+                run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", true);
             },
             _ => {},
         }
     }
     run_trigger.set_target("party_handler_active_player_add_bonk", false);
     info!("post response: party_handler_active_player_add_bonk");  
-}
-
-pub fn party_handler_active_player_set_ball_location(
-    mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
-    mut game_handler: ResMut<GameHandler>
-    // golf_ball_tag_query: Query<Entity, With<GolfBallTag>>,
-) {
-    info!("function: party_handler_active_player_set_ball_location"); 
-    {
-        if let Some(current_ball_location) = game_handler.active_player_ball_location_get() {
-            info!("Setting active ball location: {:?}", current_ball_location);
-            party.active_player_set_ball_location(current_ball_location);
-        } else {
-            info!("No ball location set for the active player, setting default ZERO");
-            party.active_player_set_ball_location(Vec3::new(0.0, 0.0, 0.0));
-        }
-    }
-    run_trigger.set_target("party_handler_active_player_set_ball_location", false);
-    info!("post response: party_handler_active_player_set_ball_location");  
 }
 
 pub fn party_handler_active_player_set_hole_completion_state_true(
@@ -354,15 +333,28 @@ pub fn party_handler_active_player_set_hole_completion_state_true(
     info!("post response: party_handler_active_player_set_hole_completion_state_true");  
 }
 
-
 pub fn party_handler_cycle_active_player( 
     mut run_trigger: ResMut<RunTrigger>,
     mut party: ResMut<Party>,
 ) {
     info!("function: party_handler_cycle_active_player"); 
     {
-        run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", true);
-        party.next_set_order_player();
+        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
+
+        let finished_count = party.all_players_get_finished_count() as usize;
+        let party_size = party.get_party_size();
+        if finished_count != party_size {
+            loop {
+                party.next_set_order_player();
+                let players = party.players.lock().unwrap();
+                let ref_idx = (party.get_active_player_index() - 1) as usize;
+                if let Some(player) = players.get(ref_idx) {
+                    if !player.lock().unwrap().get_hole_completion_state() {
+                        break;
+                    }
+                }
+            }
+        }
     }
     run_trigger.set_target("party_handler_cycle_active_player", false);
     info!("post response: party_handler_cycle_active_player");  
@@ -434,4 +426,8 @@ pub fn party_handler_remove_last_player(
     run_trigger.set_target("party_handler_remove_last_player", false);
     info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  
 }
+
+
+
+
 

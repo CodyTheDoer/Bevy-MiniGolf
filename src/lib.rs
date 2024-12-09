@@ -7,12 +7,14 @@ use rusqlite::Connection;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
 // Direct Imports
-pub mod network_handler;
 pub mod database_handler;
+pub mod game_handler;
+pub mod network_handler;
 
 // Directory Imports
 pub mod level_handler;
@@ -313,7 +315,7 @@ pub struct CameraWorld;
 
 // --- User Interface --- //
 
-#[derive(Asset, Component, Debug, TypePath)]
+#[derive(Asset, Clone, Component, Debug, TypePath)]
 pub struct Interactable; 
 
 #[derive(Resource)]
@@ -324,7 +326,6 @@ pub struct Fonts {
 #[derive(Resource)]
 pub struct GameHandler {
     current_level: i32,
-    active_ball_location: Arc<Mutex<Option<Vec3>>>,
     arrow_state: bool,
     network_server_connection: bool,
     remote_game: bool,
@@ -356,7 +357,19 @@ pub struct GLBStorageID {
 }
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
-pub struct GolfBallTag(pub String);
+pub struct GolfBall(pub String);
+
+#[derive(Debug, Resource)]
+pub struct GolfBallHandler {
+    golf_balls: Arc<Mutex<Vec<GolfBallPosition>>>
+}
+
+#[derive(Clone, Debug)]
+pub struct GolfBallPosition {
+    pub uuid: Uuid,
+    pub position: Vec3,
+    pub last_position: Vec3,
+}
 
 #[derive(Resource)]
 pub struct LeaderBoard {
@@ -370,10 +383,10 @@ pub struct RunTrigger{
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
     game_handler_game_state_start_routines: bool,
-    game_handler_update_players_manual_static_bonk_current_ball: bool,
-    game_handler_update_players_ref_ball_locations: bool,
-    game_handler_update_players_reset_ref_ball_locations: bool,
-    game_handler_update_players_store_current_ball_locations_to_ref: bool,
+    golf_ball_handler_active_player_manual_bonk: bool,
+    golf_ball_handler_end_game: bool,
+    golf_ball_handler_party_store_locations: bool,
+    golf_ball_handler_reset_golf_ball_locations: bool,
     golf_ball_handler_spawn_golf_balls_for_party_members: bool,
     leader_board_log_game: bool,
     leader_board_review_last_game: bool,
@@ -384,7 +397,6 @@ pub struct RunTrigger{
     level_handler_set_state_next_map_set: bool,
     network_get_client_state_game: bool,
     party_handler_active_player_add_bonk: bool,
-    party_handler_active_player_set_ball_location: bool,
     party_handler_active_player_set_hole_completion_state_true: bool,
     party_handler_cycle_active_player: bool,
     party_handler_new_player_ai: bool,

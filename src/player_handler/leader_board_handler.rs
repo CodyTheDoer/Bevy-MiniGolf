@@ -21,6 +21,23 @@ impl LeaderBoard {
         self.current_scores = [0; 18];
     }
 
+    pub async fn asycn_log_game<'a>(
+        &mut self, 
+        mut game_handler: ResMut<'a, GameHandler>,
+        party: ResMut<'a, Party>,
+    ) {
+        let game_id = game_handler.game_id_get();
+        let (players, scores) = party.get_all_player_ids_and_scores();
+        let record = GameRecord {
+            game_id,
+            players,
+            scores,
+        };
+        self.past_games.push(record);
+        self.reset_current_scores();
+        game_handler.game_id_clear();
+    }
+
     pub fn log_game(
         &mut self, 
         mut game_handler: ResMut<GameHandler>,

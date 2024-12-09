@@ -18,6 +18,7 @@ use crate::{
     CameraUi,
     Fonts,
     GameHandler,
+    GolfBallHandler,
     LeaderBoard,
     Party,
     RunTrigger,
@@ -167,7 +168,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..21 {
+    for _ in 0..26 {
         commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -203,7 +204,8 @@ pub fn update_ui(
     state_menu: Res<State<StateMenu>>,
     state_turn: Res<State<StateTurn>>,
     party: Res<Party>,
-    mut game_handler: ResMut<GameHandler>,
+    game_handler: ResMut<GameHandler>,
+    golf_ball_handler: Res<GolfBallHandler>,
     leader_board: Res<LeaderBoard>,
     mut query: Query<&mut Text, With<TextState>>,
     run_trigger: Res<RunTrigger>,
@@ -224,34 +226,39 @@ pub fn update_ui(
         format!("Active Player: {:?}", party.get_active_player_index()),                                                                    // 13 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
-        format!("Active Player: Ball Location: {:?}", game_handler.active_player_ball_location_get()),                                      // 16 
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 17
-        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 18
-        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 19
-        format!("Active Player Scorecard: {:?}", party.get_active_player_scorecard()),                                                      // 20
-        format!("______________________________________________________________________"),                                                  // 21  
-        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 22
-        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 23
-        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 24    
-        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                                            // 25     
-        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 26   
-        format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 27   
+        format!("Active Player: Ball Location: {:?}", golf_ball_handler.position_get(&party.active_player_get_player_id())),                // 16 
+        format!("Active Player: Last Location: {:?}", golf_ball_handler.last_position_get(&party.active_player_get_player_id())),           // 17
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 18
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 19
+        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 20
+        format!("Active Player Scorecard: {:?}", party.get_active_player_scorecard()),                                                      // 21
+        format!("______________________________________________________________________"),                                                  // 22  
+        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 23
+        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 24
+        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 25    
+        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                                            // 26     
+        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 27   
+        format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 28   
     ];
 
-    let state_texts_right = vec![    
+    let state_texts_right = vec![
         format!("camera_handler_cycle_state_camera: {:?}", run_trigger.get("camera_handler_cycle_state_camera")),
         format!("game_handler_game_start: {:?}", run_trigger.get("game_handler_game_start")),
-        format!("game_handler_game_state_change_routines: {:?}", run_trigger.get("game_handler_game_state_change_routines")),
-        format!("game_handler_update_players_ref_ball_locations: {:?}", run_trigger.get("game_handler_update_players_ref_ball_locations")),
-        format!("game_handler_update_players_reset_ref_ball_locations : {:?}", run_trigger.get("game_handler_update_players_reset_ref_ball_locations")),
-        format!("game_handler_update_players_store_current_ball_locations_to_ref: {:?}", run_trigger.get("game_handler_update_players_store_current_ball_locations_to_ref")),
+        format!("game_handler_game_state_exit_routines: {:?}", run_trigger.get("game_handler_game_state_exit_routines")),
+        format!("game_handler_game_state_start_routines: {:?}", run_trigger.get("game_handler_game_state_start_routines")),
+        format!("golf_ball_handler_active_player_manual_bonk: {:?}", run_trigger.get("golf_ball_handler_active_player_manual_bonk")),
+        format!("golf_ball_handler_party_store_locations: {:?}", run_trigger.get("golf_ball_handler_party_store_locations")),
+        format!("golf_ball_handler_reset_golf_ball_locations: {:?}", run_trigger.get("golf_ball_handler_reset_golf_ball_locations")),
+        format!("golf_ball_handler_spawn_golf_balls_for_party_members: {:?}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members")),
         format!("leader_board_log_game: {:?}", run_trigger.get("leader_board_log_game")),
         format!("leader_board_review_last_game: {:?}", run_trigger.get("leader_board_review_last_game")),
+        format!("level_handler_init_level_game_handler_current_level: {:?}", run_trigger.get("level_handler_init_level_game_handler_current_level")),
+        format!("level_handler_next_turn_protocol: {:?}", run_trigger.get("level_handler_next_turn_protocol")),
+        format!("level_handler_purge_protocol: {:?}", run_trigger.get("level_handler_purge_protocol")),
         format!("level_handler_set_state_next_level: {:?}", run_trigger.get("level_handler_set_state_next_level")),
         format!("level_handler_set_state_next_map_set: {:?}", run_trigger.get("level_handler_set_state_next_map_set")),
         format!("network_get_client_state_game: {:?}", run_trigger.get("network_get_client_state_game")),
         format!("party_handler_active_player_add_bonk: {:?}", run_trigger.get("party_handler_active_player_add_bonk")),
-        format!("party_handler_active_player_set_ball_location: {:?}", run_trigger.get("party_handler_active_player_set_ball_location")),
         format!("party_handler_active_player_set_hole_completion_state_true: {:?}", run_trigger.get("party_handler_active_player_set_hole_completion_state_true")),
         format!("party_handler_cycle_active_player: {:?}", run_trigger.get("party_handler_cycle_active_player")),
         format!("party_handler_new_player_ai: {:?}", run_trigger.get("party_handler_new_player_ai")),
@@ -259,6 +266,8 @@ pub fn update_ui(
         format!("party_handler_new_player_remote: {:?}", run_trigger.get("party_handler_new_player_remote")),
         format!("party_handler_remove_ai: {:?}", run_trigger.get("party_handler_remove_ai")),
         format!("party_handler_remove_last_player: {:?}", run_trigger.get("party_handler_remove_last_player")),
+        format!("turn_handler_end_game: {:?}", run_trigger.get("turn_handler_end_game")),
+        format!("turn_handler_next_round_prep: {:?}", run_trigger.get("turn_handler_next_round_prep")),
         format!("turn_handler_set_turn_next: {:?}", run_trigger.get("turn_handler_set_turn_next")),
     ];
     

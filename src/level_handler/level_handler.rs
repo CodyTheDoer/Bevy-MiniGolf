@@ -49,7 +49,7 @@ impl GLBStorageID {
             "glb/menu/menu_online.glb",         // 22
             "glb/menu/menu_preferences.glb",    // 23
             "glb/menu/menu_player.glb",         // 24
-            "glb/map/golf_ball.glb",            // 25
+            "glb/entities/golf_ball.glb",       // 25
         ];
         let map_ids: Vec<MapID> = map_paths
             .iter()
@@ -109,6 +109,7 @@ pub fn level_handler_init_level_game_handler_current_level(
             },
             StateGame::NotInGame => {},
         }
+        info!("{:?}", state_game.get());
     }
     run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
     info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
@@ -126,6 +127,7 @@ fn level_handler_init_level(
         let scene_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(scene_glb_file.map),
         );
+        info!("level_handler_init_level: Loading: [{:?}]", scene_handle);
         let _scene_entities = commands
             .spawn(SceneBundle {
                 scene: scene_handle.clone(),
@@ -314,7 +316,7 @@ pub fn level_handler_purge_glb_all(
     mut commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
-    info!("\n\n[ PURGING ALL!!! ---  PURGING ALL!!! ---  PURGING ALL!!! ]\n\n");
+    info!("\n\n\n[ PURGING ALL!!! ---  PURGING ALL!!! ---  PURGING ALL!!! ]\n\n");
     for (entity, _) in scene_meshes.iter() {
         // Access the rigid body from the physics world using its handle
         level_handler_purge_entity(&mut commands, entity);
@@ -330,3 +332,7 @@ pub fn level_handler_purge_glb_all(
 //         commands.entity(entity).despawn_recursive();
 //     }      
 // }
+
+
+
+

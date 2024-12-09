@@ -22,10 +22,10 @@ impl RunTrigger {
             game_handler_game_start: false,
             game_handler_game_state_exit_routines: false,
             game_handler_game_state_start_routines: false,
-            game_handler_update_players_manual_static_bonk_current_ball: false,
-            game_handler_update_players_ref_ball_locations: false,
-            game_handler_update_players_reset_ref_ball_locations: false,
-            game_handler_update_players_store_current_ball_locations_to_ref: false,
+            golf_ball_handler_active_player_manual_bonk: false,
+            golf_ball_handler_end_game: false,
+            golf_ball_handler_party_store_locations: false,
+            golf_ball_handler_reset_golf_ball_locations: false,
             golf_ball_handler_spawn_golf_balls_for_party_members: false,
             leader_board_log_game: false,
             leader_board_review_last_game: false,
@@ -36,7 +36,6 @@ impl RunTrigger {
             level_handler_set_state_next_map_set: false,
             network_get_client_state_game: false,
             party_handler_active_player_add_bonk: false,
-            party_handler_active_player_set_ball_location: false,
             party_handler_active_player_set_hole_completion_state_true: false,
             party_handler_cycle_active_player: false,
             party_handler_new_player_ai: false,
@@ -64,17 +63,17 @@ impl RunTrigger {
             "game_handler_game_state_start_routines" => {
                 self.game_handler_game_state_start_routines
             },
-            "game_handler_update_players_manual_static_bonk_current_ball" => {
-                self.game_handler_update_players_manual_static_bonk_current_ball
+            "golf_ball_handler_end_game" => {
+                self.golf_ball_handler_end_game 
             },
-            "game_handler_update_players_ref_ball_locations" => {
-                self.game_handler_update_players_ref_ball_locations
+            "golf_ball_handler_active_player_manual_bonk" => {
+                self.golf_ball_handler_active_player_manual_bonk 
             },
-            "game_handler_update_players_reset_ref_ball_locations" => {
-                self.game_handler_update_players_reset_ref_ball_locations 
+            "golf_ball_handler_party_store_locations" => {
+                self.golf_ball_handler_party_store_locations 
             },
-            "game_handler_update_players_store_current_ball_locations_to_ref" => {
-                self.game_handler_update_players_store_current_ball_locations_to_ref 
+            "golf_ball_handler_reset_golf_ball_locations" => {
+                self.golf_ball_handler_reset_golf_ball_locations 
             },
             "golf_ball_handler_spawn_golf_balls_for_party_members" => {
                 self.golf_ball_handler_spawn_golf_balls_for_party_members 
@@ -105,9 +104,6 @@ impl RunTrigger {
             },
             "party_handler_active_player_add_bonk" => {
                 self.party_handler_active_player_add_bonk
-            },
-            "party_handler_active_player_set_ball_location" => {
-                self.party_handler_active_player_set_ball_location
             },
             "party_handler_active_player_set_hole_completion_state_true" => {
                 self.party_handler_active_player_set_hole_completion_state_true
@@ -161,21 +157,21 @@ impl RunTrigger {
                 self.game_handler_game_state_start_routines = state;
                 info!("response: game_handler_game_state_start_routines: {}", self.get("game_handler_game_state_start_routines"));
             }
-            "game_handler_update_players_manual_static_bonk_current_ball" => {
-                self.game_handler_update_players_manual_static_bonk_current_ball = state;
-                info!("response: game_handler_update_players_manual_static_bonk_current_ball: {}", self.get("game_handler_update_players_manual_static_bonk_current_ball"));
+            "golf_ball_handler_end_game" => {
+                self.golf_ball_handler_end_game = state;
+                info!("response: golf_ball_handler_end_game: {}", self.get("golf_ball_handler_end_game"));
             }
-            "game_handler_update_players_ref_ball_locations" => {
-                self.game_handler_update_players_ref_ball_locations = state;
-                info!("response: game_handler_update_players_ref_ball_locations: {}", self.get("game_handler_update_players_ref_ball_locations"));
+            "golf_ball_handler_active_player_manual_bonk" => {
+                self.golf_ball_handler_active_player_manual_bonk = state;
+                info!("response: golf_ball_handler_active_player_manual_bonk: {}", self.get("golf_ball_handler_active_player_manual_bonk"));
             }
-            "game_handler_update_players_reset_ref_ball_locations" => {
-                self.game_handler_update_players_reset_ref_ball_locations = state;
-                info!("response: game_handler_update_players_reset_ref_ball_locations: {}", self.get("game_handler_update_players_reset_ref_ball_locations"));
+            "golf_ball_handler_party_store_locations" => {
+                self.golf_ball_handler_party_store_locations = state;
+                info!("response: golf_ball_handler_party_store_locations: {}", self.get("golf_ball_handler_party_store_locations"));
             }
-            "game_handler_update_players_store_current_ball_locations_to_ref" => {
-                self.game_handler_update_players_store_current_ball_locations_to_ref = state;
-                info!("response: game_handler_update_players_store_current_ball_locations_to_ref: {}", self.get("game_handler_update_players_store_current_ball_locations_to_ref"));
+            "golf_ball_handler_reset_golf_ball_locations" => {
+                self.golf_ball_handler_reset_golf_ball_locations = state;
+                info!("response: golf_ball_handler_reset_golf_ball_locations: {}", self.get("golf_ball_handler_reset_golf_ball_locations"));
             }
             "golf_ball_handler_spawn_golf_balls_for_party_members" => {
                 self.golf_ball_handler_spawn_golf_balls_for_party_members = state;
@@ -216,10 +212,6 @@ impl RunTrigger {
             "party_handler_active_player_add_bonk" => {
                 self.party_handler_active_player_add_bonk = state;
                 info!("response: party_handler_active_player_add_bonk: {}", self.get("party_handler_active_player_add_bonk"));  
-            },
-            "party_handler_active_player_set_ball_location" => {
-                self.party_handler_active_player_set_ball_location = state;
-                info!("response: party_handler_active_player_set_ball_location: {}", self.get("party_handler_active_player_set_ball_location"));  
             },
             "party_handler_active_player_set_hole_completion_state_true" => {
                 self.party_handler_active_player_set_hole_completion_state_true = state;
@@ -283,20 +275,20 @@ impl RunTrigger {
         self.game_handler_game_state_start_routines
     }
 
-    pub fn game_handler_update_players_manual_static_bonk_current_ball(&self) -> bool {
-        self.game_handler_update_players_manual_static_bonk_current_ball
+    pub fn golf_ball_handler_end_game(&self) -> bool {
+        self.golf_ball_handler_end_game 
     }
 
-    pub fn game_handler_update_players_ref_ball_locations(&self) -> bool {
-        self.game_handler_update_players_ref_ball_locations
+    pub fn golf_ball_handler_active_player_manual_bonk(&self) -> bool {
+        self.golf_ball_handler_active_player_manual_bonk 
     }
 
-    pub fn game_handler_update_players_reset_ref_ball_locations(&self) -> bool {
-        self.game_handler_update_players_reset_ref_ball_locations 
+    pub fn golf_ball_handler_party_store_locations(&self) -> bool {
+        self.golf_ball_handler_party_store_locations 
     }
 
-    pub fn game_handler_update_players_store_current_ball_locations_to_ref(&self) -> bool {
-        self.game_handler_update_players_store_current_ball_locations_to_ref 
+    pub fn golf_ball_handler_reset_golf_ball_locations(&self) -> bool {
+        self.golf_ball_handler_reset_golf_ball_locations 
     }
 
     pub fn golf_ball_handler_spawn_golf_balls_for_party_members(&self) -> bool {
@@ -337,10 +329,6 @@ impl RunTrigger {
 
     pub fn party_handler_active_player_add_bonk(&self) -> bool {
         self.party_handler_active_player_add_bonk
-    }
-
-    pub fn party_handler_active_player_set_ball_location(&self) -> bool {
-        self.party_handler_active_player_set_ball_location
     }
 
     pub fn party_handler_active_player_set_hole_completion_state_true(&self) -> bool {

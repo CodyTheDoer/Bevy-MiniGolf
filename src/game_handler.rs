@@ -1,8 +1,5 @@
 use bevy::prelude::*;
 
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use uuid::Uuid;
 
 // States
@@ -12,6 +9,7 @@ use crate::{
     StateLevel, 
     StateMapSet, 
     StateMenu, 
+    StatePanOrbit,
     StateTurn, 
     StateUpdateRef
 };
@@ -27,7 +25,6 @@ impl GameHandler {
     pub fn new() -> Self {
         GameHandler {
             current_level: 0,
-            active_ball_location: Arc::new(Mutex::new(None)),
             arrow_state: false,
             network_server_connection: false,
             remote_game: false,
@@ -90,31 +87,12 @@ impl GameHandler {
     }
 
     // Level Handling logic
-    pub fn game_exit_reset_level_and_ball_location(&mut self) {
-        self.current_level_set(0);
-        self.active_player_ball_location_set(Vec3::ZERO);
-    }
-
     pub fn current_level_get(&self) -> i32 {
         self.current_level
     }
 
     pub fn current_level_set(&mut self, level: i32) {
         self.current_level = level;
-    }
-
-    pub fn active_player_ball_location_get(&mut self) -> Option<Vec3> {
-        if let Some(location) = self.active_ball_location.lock().unwrap().clone() {
-            Some(location)
-        } else {
-            None
-        }
-    }
-
-    pub fn active_player_ball_location_set(&mut self, point: Vec3) {
-        info!("function: active_player_ball_location_set: {:?}", point);
-        let mut location = self.active_ball_location.lock().unwrap();
-        *location = Some(point);
     }
 
     pub fn current_level_set_tutorial(&mut self) {
@@ -187,77 +165,6 @@ impl GameHandler {
     }
 }
 
-pub fn game_handler_update_players_ref_ball_locations(
-    mut run_trigger: ResMut<RunTrigger>,
-    party: Res<Party>,
-    mut game_handler: ResMut<GameHandler>,
-    // scene_meshes: Query<(Entity, &Name, &Transform)>,
-) {
-    info!("function: game_handler_update_players_ref_ball_locations"); 
-    {
-        info!("function: game_handler_update_players_ref_ball_locations, active_player: {:?}", party.get_active_player_index()); 
-        game_handler.active_player_ball_location_set(party.active_player_get_ball_location());
-
-        // game_handler.get_active_ball_location();
-    }
-    run_trigger.set_target("game_handler_update_players_ref_ball_locations", false);
-    info!("post response: game_handler_update_players_ref_ball_locations: {}", run_trigger.get("game_handler_update_players_ref_ball_locations")); 
-}
-
-pub fn game_handler_update_players_reset_ref_ball_locations(
-    mut run_trigger: ResMut<RunTrigger>,
-    // party: Res<Party>,
-    mut game_handler: ResMut<GameHandler>,
-    // scene_meshes: Query<(Entity, &Name, &Transform)>,
-) {
-    info!("function: game_handler_update_players_reset_ref_ball_locations"); 
-    {
-        // let owned_active_player = party.get_active_player_index();
-        // // let owned_golf_ball = format!("ball{}", owned_active_player);
-        // if let Some(owned_golf_ball_location) = game_handler.get_active_ball_location() {
-        // }
-        
-        game_handler.active_player_ball_location_set(Vec3::new(0.0, 0.0, 0.0));
-        info!("game_handler.active_player_ball_location_get(): {:?}", game_handler.active_player_ball_location_get());
-    }
-    run_trigger.set_target("game_handler_update_players_reset_ref_ball_locations", false);
-    info!("post response: game_handler_update_players_reset_ref_ball_locations: {}", run_trigger.get("game_handler_update_players_reset_ref_ball_locations"));  
-}
-
-pub fn game_handler_update_players_store_current_ball_locations_to_ref(
-    mut run_trigger: ResMut<RunTrigger>,
-    // party: Res<Party>,
-    mut game_handler: ResMut<GameHandler>,
-    // scene_meshes: Query<(Entity, &Name, &Transform)>,
-) {
-    info!("function: game_handler_update_players_store_current_ball_locations_to_ref "); 
-    {    
-        if let Some(owned_golf_ball_location) = game_handler.active_player_ball_location_get() {
-            game_handler.active_player_ball_location_set(owned_golf_ball_location);
-            info!("{:?}", game_handler.active_player_ball_location_get());
-        }
-    }
-    run_trigger.set_target("game_handler_update_players_store_current_ball_locations_to_ref", false);
-    info!("post response: game_handler_update_players_store_current_ball_locations_to_ref: {}", run_trigger.get("game_handler_update_players_store_current_ball_locations_to_ref"));  
-}
-
-pub fn game_handler_update_players_manual_static_bonk_current_ball(
-    mut run_trigger: ResMut<RunTrigger>,
-    // party: Res<Party>,
-    mut game_handler: ResMut<GameHandler>,
-    // scene_meshes: Query<(Entity, &Name, &Transform)>,
-) {
-    info!("function: game_handler_update_players_manual_static_bonk_current_ball "); 
-    {    
-        if let Some(owned_golf_ball_location) = game_handler.active_player_ball_location_get() {
-            game_handler.active_player_ball_location_set(owned_golf_ball_location + Vec3::new(5.0, 5.0, 5.0));
-            info!("{:?}", game_handler.active_player_ball_location_get());
-        }
-    }
-    run_trigger.set_target("game_handler_update_players_manual_static_bonk_current_ball", false);
-    info!("post response: game_handler_update_players_manual_static_bonk_current_ball: {}", run_trigger.get("game_handler_update_players_manual_static_bonk_current_ball"));  
-}
-
 pub fn game_handler_game_start (
     mut game_handler: ResMut<GameHandler>,
     mut next_level: ResMut<NextState<StateLevel>>,
@@ -293,6 +200,7 @@ pub fn game_handler_game_start (
                 };
                 info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
                 run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
             },
             StateGame::InGame => {
                 warn!("game_handler_game_start: FAILED! Game state already initiated!");
@@ -310,6 +218,7 @@ pub fn game_handler_game_state_start_routines(
     mut next_state_game: ResMut<NextState<StateGame>>,
     mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
+    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {
     info!("function: game_handler_game_state_start_routines"); 
     {
@@ -317,19 +226,22 @@ pub fn game_handler_game_state_start_routines(
         match state_game.get() {
             StateGame::NotInGame => {
                 if game_handler.remote_game_get() {
-                    info!("StateGame::InGame");
-                    next_state_game.set(StateGame::InGame);
                     info!("StateTurn::Idle");
                     next_state_turn.set(StateTurn::Idle);
-                    next_camera_state.set(StateCameraOrbitEntity::Ball)
                 } else {
-                    info!("StateGame::InGame");
-                    next_state_game.set(StateGame::InGame);
                     info!("StateTurn::Active");
                     next_state_turn.set(StateTurn::Active);
-                    run_trigger.set_target("game_handler_update_players_reset_ref_ball_locations", true);
-                    next_camera_state.set(StateCameraOrbitEntity::Ball)
+                    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
                 }
+                info!("StateGame::InGame");
+                next_state_game.set(StateGame::InGame);
+                next_camera_state.set(StateCameraOrbitEntity::Ball);
+                for mut state in pan_orbit_camera_query.iter_mut() {
+                    info!("{:?}", state);
+                    state.radius = 2.75;
+                    state.pitch = -15.0f32.to_radians();
+                    state.yaw = 0.0f32.to_radians();
+                };
             },
             StateGame::InGame => {},
         };
@@ -365,7 +277,7 @@ pub fn game_handler_game_state_exit_routines(
                 next_state_turn.set(StateTurn::NotInGame);
                 game_handler.current_level_set(0);
                 next_level.set(StateLevel::MainMenu);
-                game_handler.game_exit_reset_level_and_ball_location();
+                game_handler.current_level_set_menu_main();
                 run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                 party.game_completed();
                 run_trigger.set_target("leader_board_review_last_game", true);
@@ -375,3 +287,6 @@ pub fn game_handler_game_state_exit_routines(
     run_trigger.set_target("game_handler_game_state_exit_routines", false);
     info!("post response: game_handler_game_state_exit_routines: {}", run_trigger.get("game_handler_game_state_exit_routines"));  
 }
+
+
+

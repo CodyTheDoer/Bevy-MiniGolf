@@ -1,8 +1,5 @@
 // --- Internal Bevy Plugins --- //
-use bevy::{prelude::*,
-    time::common_conditions::on_timer, 
-    utils::Duration,
-    window::{PresentMode, WindowTheme},
+use bevy::{input::common_conditions::{input_just_pressed, input_just_released}, prelude::*, time::common_conditions::on_timer, utils::Duration, window::{PresentMode, WindowTheme}
 };
 
 // --- External Plugins --- //
@@ -11,15 +8,7 @@ use bevy_rapier3d::prelude::*;
 
 // --- States --- //
 use minigolf::{ 
-    StateArrow, 
-    StateCameraOrbitEntity, 
-    StateGame, 
-    StateEngineConnection, 
-    StateGamePlayStyle, 
-    StateLevel, 
-    StateMapSet, 
-    StateMenu, 
-    StateTurn,
+    level_handler::golf_ball_handler, player_handler::party_handler, StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
 };
 
 // --- Resources --- //
@@ -30,10 +19,13 @@ use minigolf::{
     Fonts,
     GameHandler,
     GLBStorageID,
+    GolfBall,
+    GolfBallHandler,
     LeaderBoard,
     HeartbeatTimer,
     OnlineStateChange,
     Party,
+    PurgeEntityEvent,
     RunTrigger,
     UiUpdateEvent,
     UiUpdateTimer,
@@ -43,6 +35,11 @@ use minigolf::{
 // --- User Camera World Import --- //
 use minigolf::{
     database_handler::db_pipeline_init_local_player,
+    game_handler::{
+        game_handler_game_start,
+        game_handler_game_state_exit_routines,
+        game_handler_game_state_start_routines,
+    },
     level_handler::{
         level_handler::{
             level_handler_boot_protocals,
@@ -52,7 +49,13 @@ use minigolf::{
             level_handler_set_state_next_level,
             level_handler_set_state_next_map_set,
         },
-        golf_ball_handler::golf_ball_handler_spawn_golf_balls_for_party_members,
+        golf_ball_handler::{
+            golf_ball_handler_active_player_manual_bonk,
+            golf_ball_handler_end_game,
+            golf_ball_handler_party_store_locations,
+            golf_ball_handler_reset_golf_ball_locations,
+            golf_ball_handler_spawn_golf_balls_for_party_members,
+        },
     },
     player_handler::{
         leader_board_handler::{
@@ -61,7 +64,6 @@ use minigolf::{
         },
         party_handler::{
             party_handler_active_player_add_bonk,
-            party_handler_active_player_set_ball_location,
             party_handler_active_player_set_hole_completion_state_true,
             party_handler_cycle_active_player,
             party_handler_new_player_ai,
@@ -86,23 +88,18 @@ use minigolf::{
             pan_orbit_camera, 
             state_camera_orbit_entity_logic,
         },
-        game_handler::{
-            game_handler_game_start,
-            game_handler_game_state_exit_routines,
-            game_handler_game_state_start_routines,
-            game_handler_update_players_manual_static_bonk_current_ball,
-            game_handler_update_players_ref_ball_locations,
-            game_handler_update_players_reset_ref_ball_locations,
-            game_handler_update_players_store_current_ball_locations_to_ref,
-        },
         turn_handler::{
             turn_handler_end_game,
             turn_handler_next_round_prep,
             turn_handler_set_turn_next,
         },
+        ray_system_handler::{
+            draw_cursor,
+            ray_fire,
+            ray_release,
+        },
         user_interface::{
             setup_ui,
-            // ui_update_system,
             update_ui,
         },
     },
@@ -160,6 +157,7 @@ fn main() {
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
         .insert_resource(GLBStorageID::new())
+        .insert_resource(GolfBallHandler::new())
         .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
@@ -167,42 +165,46 @@ fn main() {
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
-        .add_event::<OnlineStateChange>()    
-        .add_event::<UiUpdateEvent>()  
+        .add_event::<PurgeEntityEvent>()
+        .add_event::<OnlineStateChange>()
+        .add_event::<UiUpdateEvent>()
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, level_handler_boot_protocals)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, setup_ui)
-        .add_systems(Startup, start_socket)
+        // .add_systems(Startup, start_socket)
         .add_systems(Startup, db_pipeline_init_local_player)
-        // .add_systems(Update, first_time_boot_setup_map_set.run_if(input_just_released(KeyCode::ShiftLeft)))
 
         // Network - Update //
-        .add_systems(Update, receive_messages)
-        .add_systems(Update, remote_state_change_monitor)
-        .add_systems(Update, auth_server_handshake
-            .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
-            .run_if(on_timer(Duration::from_millis(500))))
+        // .add_systems(Update, auth_server_handshake
+            // .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
+            // .run_if(on_timer(Duration::from_millis(500))))
+        // .add_systems(Update, heartbeat_system)
+        // .add_systems(Update, receive_messages)
+        // .add_systems(Update, remote_state_change_monitor)
 
         // Camera //
         .add_systems(Update, state_camera_orbit_entity_logic)
         .add_systems(Update, pan_orbit_camera)
-        // .add_systems(Update, ui_update_system)
+
+        // User Interface //
+        .add_systems(Update, draw_cursor)
+        .add_systems(Update, ray_fire.run_if(input_just_pressed(MouseButton::Left)))
+        .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, update_ui)
 
         // Run Trigger Systems //        
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-
-        .add_systems(Update, game_handler_update_players_manual_static_bonk_current_ball.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_manual_static_bonk_current_ball()))
-        .add_systems(Update, game_handler_update_players_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_ref_ball_locations()))
-        .add_systems(Update, game_handler_update_players_reset_ref_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_reset_ref_ball_locations()))
-        .add_systems(Update, game_handler_update_players_store_current_ball_locations_to_ref.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_update_players_store_current_ball_locations_to_ref()))
-        
+      
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
         .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
         .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_start_routines()))
 
+        .add_systems(Update, golf_ball_handler_active_player_manual_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_active_player_manual_bonk()))
+        .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_end_game()))
+        .add_systems(Update, golf_ball_handler_party_store_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_party_store_locations()))
+        .add_systems(Update, golf_ball_handler_reset_golf_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_reset_golf_ball_locations()))
         .add_systems(Update, golf_ball_handler_spawn_golf_balls_for_party_members.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_spawn_golf_balls_for_party_members()))
 
         .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
@@ -216,7 +218,6 @@ fn main() {
 
         .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
         
-        .add_systems(Update, party_handler_active_player_set_ball_location.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_ball_location()))
         .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
         .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
         
@@ -233,7 +234,6 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
-        .add_systems(Update, heartbeat_system)
         .add_systems(Update, temp_interface);
 
     app.run();
