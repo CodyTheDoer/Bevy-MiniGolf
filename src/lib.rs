@@ -387,6 +387,7 @@ pub struct PlayerRemote {
 
 #[derive(Resource)]
 pub struct RunTrigger{
+    add_physics_query_and_update_scene:bool,
     camera_handler_cycle_state_camera: bool,
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
@@ -417,8 +418,8 @@ pub struct RunTrigger{
     turn_handler_set_turn_next: bool,
 }
 
-#[derive(Event)]
-pub struct SceneInstanceSpawnedEvent {
+#[derive(Debug, Event)]
+pub struct SceneInstanceSpawned {
     pub entity: Entity,
 }
 

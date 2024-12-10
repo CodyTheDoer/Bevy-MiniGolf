@@ -106,6 +106,8 @@ pub fn turn_handler_set_turn_next(
                     if load_next_level == true {
                         game_handler.current_level_set_next_level();
                         run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                        thread::sleep(Duration::from_millis(100)); 
+                        run_trigger.set_target("add_physics_query_and_update_scene", true);
                     }         
                 }
             },

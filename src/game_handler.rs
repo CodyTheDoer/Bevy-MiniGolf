@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+use std::thread;
+use std::time::Duration;
+
 use uuid::Uuid;
 
 // States
@@ -208,6 +211,8 @@ pub fn game_handler_game_start (
                 info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
                 run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                 run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
+                thread::sleep(Duration::from_millis(250)); 
+                run_trigger.set_target("add_physics_query_and_update_scene", true);
             },
             StateGame::InGame => {
                 warn!("game_handler_game_start: FAILED! Game state already initiated!");

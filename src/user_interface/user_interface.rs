@@ -200,7 +200,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..28 {
+    for _ in 0..29 {
         commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -311,7 +311,8 @@ pub fn update_ui(
         format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 25   
         format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 26   
         format!("KeyU: golf_ball_query, KeyI: add_physics_query_and_update_scene"),                                                         // 27
-        format!("KeyO: debug_names_query, KeyP: party_query"),                                                                                    // 28
+        format!("KeyO: debug_names_query, KeyP: party_query"),                                                                              // 28
+        format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world"),                                         // 29
     ];
 
     let state_texts_right = vec![

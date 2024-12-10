@@ -18,6 +18,7 @@ pub fn _______________________________(
 impl RunTrigger {
     pub fn new() -> Self {
         Self{
+            add_physics_query_and_update_scene: false,
             camera_handler_cycle_state_camera: false,
             game_handler_game_start: false,
             game_handler_game_state_exit_routines: false,
@@ -51,6 +52,9 @@ impl RunTrigger {
 
     pub fn get(&self, target: &str) -> bool {
         match target {
+            "add_physics_query_and_update_scene" => {
+                self.add_physics_query_and_update_scene
+            },
             "camera_handler_cycle_state_camera" => {
                 self.camera_handler_cycle_state_camera
             },
@@ -141,6 +145,10 @@ impl RunTrigger {
 
     pub fn set_target(&mut self, target: &str, state: bool) {
         match target {
+            "add_physics_query_and_update_scene" => {
+                self.add_physics_query_and_update_scene = state;
+                info!("response: add_physics_query_and_update_scene: {}", self.get("add_physics_query_and_update_scene"));  
+            },
             "camera_handler_cycle_state_camera" => {
                 self.camera_handler_cycle_state_camera = state;
                 info!("response: camera_handler_cycle_state_camera: {}", self.get("camera_handler_cycle_state_camera"));  
@@ -257,6 +265,10 @@ impl RunTrigger {
                 info!("Unrecognized Input: RunTrigger: {:?}", target);
             },
         }
+    }
+
+    pub fn add_physics_query_and_update_scene(&self) -> bool {
+        self.add_physics_query_and_update_scene
     }
 
     pub fn camera_handler_cycle_state_camera(&self) -> bool {

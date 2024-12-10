@@ -23,7 +23,7 @@ use minigolf::{
     StateLevel, 
     StateMapSet, 
     StateMenu, 
-    StateTurn,
+    StateTurn
 };
 
 // --- Resources --- //
@@ -42,6 +42,7 @@ use minigolf::{
     Party,
     PhysicsHandler,
     RunTrigger,
+    SceneInstanceSpawned,
     UiUpdateEvent,
     UiUpdateTimer,
     UpdateIdResource,
@@ -139,7 +140,7 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Minigolf".into(),
                         name: Some("bevy.app".into()),
-                        resolution: (1280., 720.).into(),
+                        resolution: (1280. * 1.35, 720. * 1.35).into(),
                         resizable: true,
                         enabled_buttons: bevy::window::EnabledButtons {
                             maximize: true,
@@ -192,6 +193,7 @@ fn main() {
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
+        .add_event::<SceneInstanceSpawned>()
         .add_event::<OnlineStateChange>()
         .add_event::<UiUpdateEvent>()  
 
@@ -227,7 +229,9 @@ fn main() {
         .add_systems(Update, bonk_gizmo.run_if(in_state(StateArrow::DrawingArrow)))
         .add_systems(Update, update_ui)
 
-        // Run Trigger Systems //        
+        // Run Trigger Systems //
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))
+
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
       
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
@@ -267,13 +271,24 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
+        .add_systems(Update, last_game_record.run_if(input_just_pressed(KeyCode::KeyY)))
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
-        .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_pressed(KeyCode::KeyI)))
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
+        .add_systems(Update, listening_function_spawned_golf_ball_events)
         .add_systems(Update, temp_interface);
 
     app.run();
+}
+
+fn listening_function_spawned_golf_ball_events(
+    mut asset_event_reader: EventReader<SceneInstanceSpawned>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    for event in asset_event_reader.read() {
+        info!("Entity: [{:?}]", event);
+        run_trigger.set_target("add_physics_query_and_update_scene", true);
+    }
 }
 
 fn debug_names_query(query: Query<(&Name, &GolfBall)>) {
@@ -294,6 +309,12 @@ fn party_query(
     party: Res<Party>,
 ) {
     info!("Party ID's and Scores: [{:?}]", party.get_all_player_ids_and_scores());
+}
+
+fn last_game_record(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    run_trigger.set_target("leader_board_review_last_game", true);
 }
 
 //-----------------------------------------------------------------------------------//
@@ -328,6 +349,10 @@ fn temp_interface(
     if keys.just_released(KeyCode::KeyC) {
         info!("just_released: KeyC");  
         run_trigger.set_target("camera_handler_cycle_state_camera", true);
+    };
+    if keys.just_released(KeyCode::KeyI) {
+        info!("just_released: KeyI");  
+        run_trigger.set_target("add_physics_query_and_update_scene", true);
     };
     if keys.just_released(KeyCode::KeyM) {
         info!("just_released: KeyM");  
