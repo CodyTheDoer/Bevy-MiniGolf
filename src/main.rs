@@ -4,8 +4,7 @@ use bevy::{prelude::*,
         input_just_pressed, 
         input_just_released,
         input_pressed,
-    },  
-    time::common_conditions::on_timer, 
+    },
     utils::Duration, 
     window::{PresentMode, WindowTheme},
 };
@@ -42,7 +41,6 @@ use minigolf::{
     OnlineStateChange,
     Party,
     PhysicsHandler,
-    player_handler::party_handler, 
     RunTrigger,
     UiUpdateEvent,
     UiUpdateTimer,
@@ -99,14 +97,15 @@ use minigolf::{
             party_handler_remove_last_player,
         },
     },
-    network_handler::{
-        auth_server_handshake,
-        heartbeat_system,
-        network_get_client_state_game,
-        start_socket,
-        receive_messages,
-        remote_state_change_monitor,
-    },
+    network_handler::network_get_client_state_game,
+    // network_handler::{
+    //     auth_server_handshake,
+    //     heartbeat_system,
+    //     network_get_client_state_game,
+    //     start_socket,
+    //     receive_messages,
+    //     remote_state_change_monitor,
+    // },
     user_interface::{
         camera_handler::{
             camera_handler_cycle_state_camera,
@@ -160,7 +159,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-        // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //
@@ -292,7 +291,7 @@ fn golf_ball_query(
 }
 
 fn party_query(
-    mut party: Res<Party>,
+    party: Res<Party>,
 ) {
     info!("Party ID's and Scores: [{:?}]", party.get_all_player_ids_and_scores());
 }

@@ -1,25 +1,18 @@
 use bevy::prelude::*;
 
-use bevy_mod_raycast::prelude::*;
 use bevy_rapier3d::{parry::shape::SharedShape, prelude::*};
 use bevy_render::mesh::{Indices, VertexAttributeValues};
 
 use uuid::Uuid;
 
 // States
-use crate::{
-    StateArrow, 
-    StateLevel,
-    StateTurn,
-};
+use crate::StateArrow;
 
 // Resources
 use crate::{
     BonkHandler,
     BonkMouseXY,
-    CameraWorld,
     GameHandler,
-    Ground,
     GLBStorageID,
     GolfBall,
     GolfBallPosition,
@@ -104,21 +97,19 @@ impl PhysicsHandler {
 pub fn add_physics_query_and_update_scene(
     party: Res<Party>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>, &Transform)>,
-    ground_query: Query<(Entity, &Handle<Mesh>), With<Ground>>,
+    meshes: ResMut<Assets<Mesh>>,
+    scene_meshes: Query<(Entity, &Name, &Handle<Mesh>)>,
     mut gb_query: Query<(Entity, &mut GolfBall)>,
 ) {
-    let ground_sensor = commands
+    commands
         .spawn(Collider::cylinder(0.1, 2000.0))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Sensor)
-        .insert(Name::new("ground_sensor"))
-        .id();
+        .insert(Name::new("ground_sensor"));
 
     let players = party.get_all_player_ids();
-    for (idx, (mut entity, mut golf_ball)) in gb_query.iter_mut().enumerate() {
+    for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
         for player in &players {
             if player == &golf_ball.0.uuid {
                 let collider = Collider::ball(0.022);
@@ -141,7 +132,7 @@ pub fn add_physics_query_and_update_scene(
     }
 
     // iterate over all meshes in the scene and match them by their name.
-    for (entity, name, mesh_handle, transform) in scene_meshes.iter() {
+    for (entity, name, mesh_handle) in scene_meshes.iter() {
         if name.as_str() == "cup" {
             // Create the collider from the mesh.
             let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -303,7 +294,7 @@ pub fn golf_ball_handler_reset_golf_ball_locations(
 pub fn golf_ball_handler_end_game(
     commands: Commands,
     mut run_trigger: ResMut<RunTrigger>,
-    mut golf_balls: Query<Entity, With<GolfBall>>,
+    golf_balls: Query<Entity, With<GolfBall>>,
 ) {
     info!("function: golf_ball_handler_end_game "); 
     {
@@ -330,7 +321,7 @@ pub fn golf_ball_handler_party_store_locations(
 
 pub fn golf_ball_handler_active_player_manual_bonk(
     mut run_trigger: ResMut<RunTrigger>,
-    mut party: ResMut<Party>,
+    party: ResMut<Party>,
     mut gb_query: Query<&mut GolfBall>,
 ) {
     info!("function: golf_ball_handler_active_player_manual_bonk "); 
@@ -379,9 +370,9 @@ pub fn bonk(
 pub fn bonk_step_start( // set's bonk start xy
     windows: Query<&Window>,
     mut bonk: ResMut<BonkHandler>,
-    mut gh: ResMut<GameHandler>,
-    mut arrow_state: ResMut<State<StateArrow>>,
-    mut next_arrow_state: ResMut<NextState<StateArrow>>,
+    gh: ResMut<GameHandler>,
+    arrow_state: ResMut<State<StateArrow>>,
+    next_arrow_state: ResMut<NextState<StateArrow>>,
 ) {
     let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
     let Some(position) = windows.single().cursor_position() else {
@@ -400,10 +391,10 @@ pub fn bonk_step_start( // set's bonk start xy
 pub fn bonk_step_mid( // Determines bonks power by measuring the difference between origin and current mouse xy
     mut bonk_res: ResMut<BonkHandler>,
     windows: Query<&Window>,
-    mut golf_balls: Query<(Entity, &GolfBall)>,
+    mut golf_balls: Query<&GolfBall>,
     party: Res<Party>,
 ) {
-    for (mut entity, mut golf_ball) in golf_balls.iter_mut() {
+    for golf_ball in golf_balls.iter_mut() {
         info!("Searching for match: [{}]", golf_ball.0.uuid);
         if golf_ball.0.uuid == party.active_player_get_player_id() {
             let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
@@ -449,14 +440,14 @@ pub fn bonk_step_mid( // Determines bonks power by measuring the difference betw
 
 pub fn bonk_step_end( // Fires bonk 
     buttons: Res<ButtonInput<MouseButton>>,
-    mut gh: ResMut<GameHandler>,
-    mut arrow_state: ResMut<State<StateArrow>>,
-    mut next_arrow_state: ResMut<NextState<StateArrow>>,
+    gh: ResMut<GameHandler>,
+    arrow_state: ResMut<State<StateArrow>>,
+    next_arrow_state: ResMut<NextState<StateArrow>>,
     bonk_res: Res<BonkHandler>,
     rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+    rigid_body_query: Query<&RapierRigidBodyHandle>,
     mut golf_balls: Query<(Entity, &GolfBall)>,
-    mut commands: Commands,
+    commands: Commands,
     party: Res<Party>,
 ) {
     if gh.arrow_state_get() {
@@ -464,18 +455,20 @@ pub fn bonk_step_end( // Fires bonk
     }
 
     let mut target_entity: Option<Entity> = None;
-
-    for (mut entity, mut golf_ball) in golf_balls.iter_mut() {
+    let player = party.active_player_get_player_id();
+    for (entity, golf_ball) in golf_balls.iter_mut() {
         if buttons.just_released(MouseButton::Right) {
-            let owned_bonk_power = bonk_res.power.clone();
-            if owned_bonk_power != 0.0 {
-                target_entity = Some(entity);
-            }
+            if player == golf_ball.0.uuid{
+                let owned_bonk_power = bonk_res.power.clone();
+                if owned_bonk_power != 0.0 {
+                    target_entity = Some(entity);
+                }
+            };
         }
     }
 
     if target_entity.is_some() {
-        if golf_ball_is_asleep(rapier_context, rigid_body_query, party) {
+        if golf_ball_is_asleep(rapier_context, rigid_body_query) {
             bonk(target_entity.unwrap(), commands, bonk_res.into());
         }
     }
@@ -530,11 +523,10 @@ pub fn bonk_step_end( // Fires bonk
 
 pub fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
-    query: Query<(Entity, &RapierRigidBodyHandle)>,
-    party: Res<Party>,
+    query: Query<&RapierRigidBodyHandle>,
 ) -> bool {
     let mut results = false;
-    for (entity, rb_handle) in query.iter() {
+    for rb_handle in query.iter() {
         // Access the rigid body from the physics world using its handle
         if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
             // Check if the rigid body is currently sleeping
@@ -549,7 +541,7 @@ pub fn golf_ball_is_asleep(
 
 fn toggle_arrow_state(
     mut gh: ResMut<GameHandler>,
-    mut state: ResMut<State<StateArrow>>,
+    state: ResMut<State<StateArrow>>,
     mut next_state: ResMut<NextState<StateArrow>>,
 ) {
     match state.get() {

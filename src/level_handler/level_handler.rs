@@ -82,7 +82,7 @@ pub fn level_handler_purge_protocol(
     sm_commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
     gb_commands: Commands,
-    mut golf_balls: Query<Entity, With<GolfBall>>,
+    golf_balls: Query<Entity, With<GolfBall>>,
 ) {
     
     info!("function: level_handler_purge_protocol"); 

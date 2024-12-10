@@ -11,10 +11,6 @@ use crate::StateGame;
 // Resources
 use crate::{
     GameHandler,
-    GLBStorageID, 
-    GolfBall,
-    GolfBallPosition,
-    Interactable, 
     Party,
     Player,
     PlayerAi,

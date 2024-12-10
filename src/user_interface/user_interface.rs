@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use bevy_mod_raycast::prelude::Raycast;
 
 use crate::level_handler::physics_handler::golf_ball_is_asleep;
 
@@ -74,18 +73,15 @@ pub fn apply_rotation_matrix_camera_yaw(
 
 pub fn bonk_gizmo(
     mut gizmos: Gizmos,
-    mut raycast: Raycast,
     mut bonk: ResMut<BonkHandler>,
-    party_asleep: Res<Party>,
     party: Res<Party>,
     golf_balls: Query<(&Transform, &GolfBall)>,
     windows: Query<&Window>,
     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
     rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
-    sleeping_party: Res<Party>,
+    rigid_body_query: Query<&RapierRigidBodyHandle>,
 ) {
-    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, sleeping_party) {
+    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query) {
         Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
     } else {
         Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
@@ -102,8 +98,8 @@ pub fn bonk_gizmo(
            let ball_position = transform.translation;
             
             // Calculate the direction from the ball to the intersection point.
-            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
-            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
+            let direction_x = bonk.cursor_origin_position.x - cursor_position.x;
+            let direction_y = bonk.cursor_origin_position.y - cursor_position.y;
 
             let bonk_magnitude: f32 = 2.5;
             let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
