@@ -271,6 +271,7 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
+        .add_systems(Update, debug_with_optional_parent.run_if(input_just_pressed(KeyCode::KeyT)))
         .add_systems(Update, last_game_record.run_if(input_just_pressed(KeyCode::KeyY)))
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
@@ -279,6 +280,16 @@ fn main() {
         .add_systems(Update, temp_interface);
 
     app.run();
+}
+
+fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
+    for (golf_ball, parent) in query.iter() {
+        info!(
+            "GolfBall UUID: {:?}, Parent: {:?}",
+            golf_ball.0.uuid,
+            parent.map(|p| p.get())
+        );
+    }
 }
 
 fn listening_function_spawned_golf_ball_events(

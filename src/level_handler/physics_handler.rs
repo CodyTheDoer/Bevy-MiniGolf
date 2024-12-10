@@ -1,3 +1,4 @@
+use bevy::ecs::entity;
 use bevy::prelude::*;
 
 use bevy_rapier3d::{parry::shape::SharedShape, prelude::*};
@@ -9,6 +10,7 @@ use uuid::Uuid;
 use crate::{
     StateArrow, 
     StateGamePlayStyle,
+    StateTurn,
 };
 
 // Resources
@@ -243,13 +245,13 @@ fn golf_ball_handler_init_golf_ball_uuid(
         );
         let name = format!("golf_ball_{}", player_id.to_string());
         info!("Generated Name: {}", name);
-        let golf_ball = commands
+        let spawned_golf_ball = commands
             .spawn((
                 SceneBundle {
                     scene: basic_golf_ball_handle.clone(),
                     ..default()
                 },
-                Name::new(name),
+                Name::new(name.clone()),
             ))
             .insert(Interactable)
             .insert(GolfBall(GolfBallPosition{
@@ -258,10 +260,10 @@ fn golf_ball_handler_init_golf_ball_uuid(
                 last_position: Vec3::ZERO,
             }))
             .id();
-            
+
             // Emit a custom AssetEvent for this asset
             asset_event_writer.send(SceneInstanceSpawned {
-                    entity: golf_ball,
+                    entity: spawned_golf_ball,
                 }
             );
     } else {
@@ -276,6 +278,8 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
     asset_server: Res<AssetServer>,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     mut asset_event_writer: EventWriter<SceneInstanceSpawned>,
+    gb_query: Query<(Entity, &Name)>,
+    golf_balls: Query<(Entity, &GolfBall)>,
 ) {
     {
         for player in party.get_all_player_ids().iter() {
@@ -287,8 +291,30 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
                 &player,
                 &mut asset_event_writer,
             );
+
+            /*
+            level_handler::physics_handler: Building Golf Ball for player: [01938dc7-1def-7eb3-a771-000436e79280]
+            level_handler::physics_handler: Generated Name: golf_ball_01938dc7-1def-7eb3-a771-000436e79280
+            level_handler::physics_handler: name: ["ball"], Entity: [Entity { index: 210, generation: 1 }]
+
+            ray_system_handler: Name: "ball" Entity: Entity { index: 374, generation: 2 }
+            */
+
+            for (golf_ball, name) in gb_query.iter() {
+                if name.as_str() == "ball" {
+                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
+                    commands.entity(golf_ball).insert(Name::new(format!("ball_{}", player.to_string())));
+                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
+                }
+            };
+            
             // party.golf_ball_build_player(&player);
         };
+
+        // info!("\n\nPlayer: [{:?}], Golf Ball: [{:?}]", player_id.to_owned(), golf_ball.0);
+                        // commands.entity(spawned_golf_ball).push_children(&[entity]);
+                        // commands.entity(parent.unwrap().get()).insert(Name::new(name.clone()));
+        
     }
     run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", false);
     info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  
@@ -490,52 +516,52 @@ pub fn bonk_step_end( // Fires bonk
     }
 }
 
-// pub fn collision_events_listener(
-//     mut collision_events: EventReader<CollisionEvent>,
-//     scene_meshes: Query<(Entity, &Name)>,
-//     mut next_turn_state: ResMut<NextState<StateTurn>>,
-// ) {
-//     for collision_event in collision_events.read() {
-//         match collision_event {
-//             CollisionEvent::Started(entity1, entity2, _flags) => {
-//                 // info!("Collision started between {:?} and {:?}", entity1, entity2);
-//                 for (entity, name) in &scene_meshes {
-//                     let owned_name = name.as_str();
-//                     if *entity1 == entity {
-//                         match owned_name {
-//                             "cup_sensor" => {
-//                                 info!("1: Cups baby!!!!");
-//                                 next_turn_state.set(StateTurn::HoleComplete);
-//                             },
-//                             "ground_sensor" => {
-//                                 info!("1: Ooof grounded...");
-//                                 next_turn_state.set(StateTurn::TurnReset);
-//                             },
-//                             _ => {},
-//                         }
-//                     }
-//                     if *entity2 == entity {
-//                         match owned_name {
-//                             "cup_sensor" => {
-//                                 info!("1: Cups baby!!!!");
-//                                 next_turn_state.set(StateTurn::HoleComplete);
-//                             },
-//                             "ground_sensor" => {
-//                                 info!("1: Ooof grounded...");
-//                                 next_turn_state.set(StateTurn::TurnReset);
-//                             },
-//                             _ => {},
-//                         }
-//                     }
+pub fn collision_events_listener(
+    mut collision_events: EventReader<CollisionEvent>,
+    scene_meshes: Query<(Entity, &Name)>,
+    // mut next_turn_state: ResMut<NextState<StateTurn>>,
+) {
+    for collision_event in collision_events.read() {
+        match collision_event {
+            CollisionEvent::Started(entity1, entity2, _flags) => {
+                // info!("Collision started between {:?} and {:?}", entity1, entity2);
+                for (entity, name) in &scene_meshes {
+                    let owned_name = name.as_str();
+                    if *entity1 == entity {
+                        match owned_name {
+                            "cup_sensor" => {
+                                info!("1: Cups baby!!!!");
+                                // next_turn_state.set(StateTurn::HoleComplete);
+                            },
+                            "ground_sensor" => {
+                                info!("1: Ooof grounded...");
+                                // next_turn_state.set(StateTurn::TurnReset);
+                            },
+                            _ => {},
+                        }
+                    }
+                    if *entity2 == entity {
+                        match owned_name {
+                            "cup_sensor" => {
+                                info!("1: Cups baby!!!!");
+                                // next_turn_state.set(StateTurn::HoleComplete);
+                            },
+                            "ground_sensor" => {
+                                info!("1: Ooof grounded...");
+                                // next_turn_state.set(StateTurn::TurnReset);
+                            },
+                            _ => {},
+                        }
+                    }
                     
-//                 }
-//             }
-//             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-//                 // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
-//             }
-//         }
-//     }
-// }
+                }
+            }
+            CollisionEvent::Stopped(entity1, entity2, _flags) => {
+                // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+            }
+        }
+    }
+}
 
 pub fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
