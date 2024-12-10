@@ -1,4 +1,8 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
+use bevy_mod_raycast::prelude::Raycast;
+
+use crate::level_handler::physics_handler::golf_ball_is_asleep;
 
 // --- State Imports --- //
 use crate::{
@@ -15,9 +19,13 @@ use crate::{
 
 // --- resource Imports --- //
 use crate::{
+    BonkHandler,
+    BonkMouseXY,
+    CameraWorld,
     CameraUi,
     Fonts,
     GameHandler,
+    GolfBall,
     LeaderBoard,
     Party,
     RunTrigger,
@@ -43,6 +51,77 @@ impl UserInterface {
         target
     }
 }
+
+pub fn apply_rotation_matrix_camera_yaw(
+    camera_yaw: &f32, // Query only for CameraWorld's Transform
+    direction_x: f32,
+    direction_y: f32,
+) -> BonkMouseXY {
+    // 2D rotation matrix
+    let rotation_matrix = vec![
+        [camera_yaw.cos(), camera_yaw.sin()],
+        [-camera_yaw.sin(), camera_yaw.cos()],
+    ];
+
+    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
+    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
+
+    BonkMouseXY {
+        x: rotated_x,
+        y: rotated_y,
+    }
+}
+
+pub fn bonk_gizmo(
+    mut gizmos: Gizmos,
+    mut raycast: Raycast,
+    mut bonk: ResMut<BonkHandler>,
+    party_asleep: Res<Party>,
+    party: Res<Party>,
+    golf_balls: Query<(&Transform, &GolfBall)>,
+    windows: Query<&Window>,
+    camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
+    rapier_context: Res<RapierContext>,
+    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+    sleeping_party: Res<Party>,
+) {
+    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query, sleeping_party) {
+        Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
+    } else {
+        Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
+    };
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+    let camera = camera_query.get_single();
+    // Extract the yaw rotation around the y-axis from the camera's quaternion
+    let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
+    for (transform, golf_ball) in golf_balls.iter() {
+        if golf_ball.0.uuid == party.active_player_get_player_id() { // && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
+           let ball_position = transform.translation;
+            
+            // Calculate the direction from the ball to the intersection point.
+            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
+            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
+
+            let bonk_magnitude: f32 = 2.5;
+            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
+
+            // Localize arrow to a flat xz plane 
+            let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
+            bonk.update_direction(&direction_xyz);
+
+            // Draw an arrow from the ball in the direction toward the cursor.
+            gizmos.arrow(
+                ball_position,            // Start position of the arrow (at the ball)
+                ball_position + direction_xyz, // End position, 12 units away from the cursor
+                arrow_color.clone(),
+            );
+        }
+    }
+} 
+
 
 pub fn setup_ui(
     asset_server: Res<AssetServer>,
@@ -285,82 +364,3 @@ pub fn update_ui(
         }
     }
 }
-
-/*
-
-pub fn bonk_gizmo(
-    mut gizmos: Gizmos,
-    mut raycast: Raycast,
-    mut bonk: ResMut<BonkHandler>,
-    party_asleep: Res<Party>,
-    party: Res<Party>,
-    scene_meshes: Query<(&Name, &Transform)>,
-    windows: Query<&Window>,
-    camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
-    rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
-    scene_meshes_asleep: Query<(Entity, &Name)>,
-) {
-    let arrow_color = if golf_ball_is_asleep() {
-        Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
-    } else {
-        Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
-    };
-
-    let Some(cursor_position) = windows.single().cursor_position() else {
-        return;
-    };
-    let camera = camera_query.get_single();
-    // Extract the yaw rotation around the y-axis from the camera's quaternion
-    let camera_yaw = camera.unwrap().rotation.to_euler(EulerRot::YXZ).0; // Theta in the rotation vec
-    for (name, transform) in scene_meshes.iter() {
-        let active_player: usize = party.get_active_player_index().try_into().unwrap();
-        if *name.as_str() == *format!("ball{}", active_player).as_str()  && transform.translation != Vec3::new(0.0, 0.0, 0.0) {
-            let ball_position = transform.translation;
-            
-            // Calculate the direction from the ball to the intersection point.
-            let mut direction_x = bonk.cursor_origin_position.x - cursor_position.x;
-            let mut direction_y = bonk.cursor_origin_position.y - cursor_position.y;
-
-            let bonk_magnitude: f32 = 2.5;
-            let adjusted_xy = apply_rotation_matrix_camera_yaw(&camera_yaw, direction_x, direction_y);
-
-            // Localize arrow to a flat xz plane 
-            let direction_xyz: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * (bonk_magnitude * bonk.power);
-            bonk.update_direction(&direction_xyz);
-
-            // Draw an arrow from the ball in the direction toward the cursor.
-            gizmos.arrow(
-                ball_position,            // Start position of the arrow (at the ball)
-                ball_position + direction_xyz, // End position, 12 units away from the cursor
-                arrow_color.clone(),
-            );
-        }
-    } 
-}
-
-fn golf_ball_is_asleep() {
-    todo!();
-}
-
-fn apply_rotation_matrix_camera_yaw(
-    camera_yaw: &f32, // Query only for CameraWorld's Transform
-    direction_x: f32,
-    direction_y: f32,
-) -> BonkMouseXY {
-    // 2D rotation matrix
-    let rotation_matrix = vec![
-        [camera_yaw.cos(), camera_yaw.sin()],
-        [-camera_yaw.sin(), camera_yaw.cos()],
-    ];
-
-    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
-    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
-
-    BonkMouseXY {
-        x: rotated_x,
-        y: rotated_y,
-    }
-}
-
-*/

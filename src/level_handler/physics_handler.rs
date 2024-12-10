@@ -241,18 +241,22 @@ fn golf_ball_handler_init_golf_ball_uuid(
         let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(basic_golf_ball.map),
         );
-        let golf_ball = commands
-            .spawn(SceneBundle {
-                scene: basic_golf_ball_handle.clone(),
-                ..default()
-            })
+        let name = format!("golf_ball_{}", player_id.to_string());
+        info!("Generated Name: {}", name);
+        commands
+            .spawn((
+                SceneBundle {
+                    scene: basic_golf_ball_handle.clone(),
+                    ..default()
+                },
+                Name::new(name),
+            ))
             .insert(Interactable)
             .insert(GolfBall(GolfBallPosition{
                 uuid: *player_id,
                 position: Vec3::ZERO,
                 last_position: Vec3::ZERO,
-            }))
-            .id();         
+            }));
     } else {
         warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
     };
@@ -342,4 +346,237 @@ pub fn golf_ball_handler_active_player_manual_bonk(
     }
     run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", false);
     info!("post response: golf_ball_handler_active_player_manual_bonk: {}", run_trigger.get("golf_ball_handler_active_player_manual_bonk"));  
+}
+
+pub fn bonk(
+    entity: Entity,
+    mut commands: Commands,
+    bonk: Res<BonkHandler>,
+) {
+    let scaled_bonk = bonk.power * 0.00025;
+    info!("bonk: [{}]", scaled_bonk);
+    commands.entity(entity)
+        .insert(ExternalImpulse {
+            impulse: bonk.direction * scaled_bonk,
+            torque_impulse: Vec3::new(0.0, 0.0, 0.0),
+        }
+    );    
+    // let active_player_id = party.active_player_get_player_id();
+    // for (mut entity, mut golf_ball) in golf_balls.iter_mut() {
+    //     info!("Searching for match: [{}]", golf_ball.0.uuid);
+    //     if golf_ball.0.uuid == active_player_id {
+    //         info!("ID Match = [{}]: Entity [{}]", &active_player_id, &entity);
+    //         commands.entity(entity)
+    //             .insert(ExternalImpulse {
+    //                 impulse: bonk.direction * scaled_bonk,
+    //                 torque_impulse: Vec3::new(0.0, 0.0, 0.0),
+    //             }
+    //         );
+    //     }
+    // }
+}
+
+pub fn bonk_step_start( // set's bonk start xy
+    windows: Query<&Window>,
+    mut bonk: ResMut<BonkHandler>,
+    mut gh: ResMut<GameHandler>,
+    mut arrow_state: ResMut<State<StateArrow>>,
+    mut next_arrow_state: ResMut<NextState<StateArrow>>,
+) {
+    let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
+    let Some(position) = windows.single().cursor_position() else {
+        return;
+    };
+    cursor_xy.set(position.x, position.y);
+    bonk.update_cursor_origin_position(cursor_xy);
+    match arrow_state.get() {
+        StateArrow::Idle => {
+            toggle_arrow_state(gh, arrow_state, next_arrow_state);
+        },
+        _ => {},
+    }
+}
+
+pub fn bonk_step_mid( // Determines bonks power by measuring the difference between origin and current mouse xy
+    mut bonk_res: ResMut<BonkHandler>,
+    windows: Query<&Window>,
+    mut golf_balls: Query<(Entity, &GolfBall)>,
+    party: Res<Party>,
+) {
+    for (mut entity, mut golf_ball) in golf_balls.iter_mut() {
+        info!("Searching for match: [{}]", golf_ball.0.uuid);
+        if golf_ball.0.uuid == party.active_player_get_player_id() {
+            let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
+            let Some(position) = windows.single().cursor_position() else {
+                return;
+            };
+            let window_width: f32 = windows.single().width();
+            let window_height: f32 = windows.single().height();
+            cursor_xy.set(position.x, position.y);
+            bonk_res.update_cursor_bonk_position(cursor_xy);
+        
+            // find length of pixels from origin to release
+            let difference_x = bonk_res.cursor_origin_position.x - bonk_res.cursor_bonk_position.x;
+            let difference_y = bonk_res.cursor_origin_position.y - bonk_res.cursor_bonk_position.y;
+        
+            // Compute Euclidean distance between origin and current cursor position
+            let distance = (difference_x.powi(2) + difference_y.powi(2)).sqrt();
+        
+            // Calculate the maximum possible distance (screen diagonal)
+            let max_distance = (window_width.powi(2) + window_height.powi(2)).sqrt();
+        
+            // Normalize power based on distance ratio
+            let mut bonk_power = distance / max_distance;
+            
+            // adjust bonk power to always deliver a positive value
+            if bonk_power < 0.0 {
+                bonk_power *= -1.0;
+            };
+        
+            // shrinking the drag length to set power by doubling the value, 
+            // anything drag 50% of the screen or over will deliver 100%
+            if bonk_power >= 0.25 {
+                bonk_power = 1.0;
+            } else {
+                bonk_power *= 4.0;
+            };
+            
+            bonk_res.power = bonk_power;
+            bonk_res.set_cursor_updated();      
+        }
+    }
+}
+
+pub fn bonk_step_end( // Fires bonk 
+    buttons: Res<ButtonInput<MouseButton>>,
+    mut gh: ResMut<GameHandler>,
+    mut arrow_state: ResMut<State<StateArrow>>,
+    mut next_arrow_state: ResMut<NextState<StateArrow>>,
+    bonk_res: Res<BonkHandler>,
+    rapier_context: Res<RapierContext>,
+    rigid_body_query: Query<(Entity, &RapierRigidBodyHandle)>,
+    mut golf_balls: Query<(Entity, &GolfBall)>,
+    mut commands: Commands,
+    party: Res<Party>,
+) {
+    if gh.arrow_state_get() {
+        toggle_arrow_state(gh, arrow_state, next_arrow_state);
+    }
+
+    let mut target_entity: Option<Entity> = None;
+
+    for (mut entity, mut golf_ball) in golf_balls.iter_mut() {
+        if buttons.just_released(MouseButton::Right) {
+            let owned_bonk_power = bonk_res.power.clone();
+            if owned_bonk_power != 0.0 {
+                target_entity = Some(entity);
+            }
+        }
+    }
+
+    if target_entity.is_some() {
+        if golf_ball_is_asleep(rapier_context, rigid_body_query, party) {
+            bonk(target_entity.unwrap(), commands, bonk_res.into());
+        }
+    }
+}
+
+// pub fn collision_events_listener(
+//     mut collision_events: EventReader<CollisionEvent>,
+//     scene_meshes: Query<(Entity, &Name)>,
+//     mut next_turn_state: ResMut<NextState<StateTurn>>,
+// ) {
+//     for collision_event in collision_events.read() {
+//         match collision_event {
+//             CollisionEvent::Started(entity1, entity2, _flags) => {
+//                 // info!("Collision started between {:?} and {:?}", entity1, entity2);
+//                 for (entity, name) in &scene_meshes {
+//                     let owned_name = name.as_str();
+//                     if *entity1 == entity {
+//                         match owned_name {
+//                             "cup_sensor" => {
+//                                 info!("1: Cups baby!!!!");
+//                                 next_turn_state.set(StateTurn::HoleComplete);
+//                             },
+//                             "ground_sensor" => {
+//                                 info!("1: Ooof grounded...");
+//                                 next_turn_state.set(StateTurn::TurnReset);
+//                             },
+//                             _ => {},
+//                         }
+//                     }
+//                     if *entity2 == entity {
+//                         match owned_name {
+//                             "cup_sensor" => {
+//                                 info!("1: Cups baby!!!!");
+//                                 next_turn_state.set(StateTurn::HoleComplete);
+//                             },
+//                             "ground_sensor" => {
+//                                 info!("1: Ooof grounded...");
+//                                 next_turn_state.set(StateTurn::TurnReset);
+//                             },
+//                             _ => {},
+//                         }
+//                     }
+                    
+//                 }
+//             }
+//             CollisionEvent::Stopped(entity1, entity2, _flags) => {
+//                 // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+//             }
+//         }
+//     }
+// }
+
+pub fn golf_ball_is_asleep(
+    rapier_context: Res<RapierContext>,
+    query: Query<(Entity, &RapierRigidBodyHandle)>,
+    party: Res<Party>,
+) -> bool {
+    let mut results = false;
+    for (entity, rb_handle) in query.iter() {
+        // Access the rigid body from the physics world using its handle
+        if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
+            // Check if the rigid body is currently sleeping
+            if rigid_body.is_sleeping() {
+                // println!("Entity {:?} is sleeping", entity);
+                results = true;
+            }
+        }
+    }       
+    results
+}
+
+fn toggle_arrow_state(
+    mut gh: ResMut<GameHandler>,
+    mut state: ResMut<State<StateArrow>>,
+    mut next_state: ResMut<NextState<StateArrow>>,
+) {
+    match state.get() {
+        StateArrow::DrawingArrow => {
+            info!("Entering StateArrow::Idle");
+            gh.arrow_state_set_false();
+            next_state.set(StateArrow::Idle);
+        },
+        StateArrow::Idle => {
+            info!("Entering StateArrow::DrawingArrow");
+            gh.arrow_state_set_true();
+            next_state.set(StateArrow::DrawingArrow);
+        },
+    }
+}
+
+pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
+    // Set fixed timestep mode
+    rapier_config.timestep_mode = TimestepMode::Fixed {
+        dt: 1.0 / 60.0,       // Physics update rate
+        substeps: 4,          // Number of physics steps per frame
+    };
+
+    // Enable/disable physics systems
+    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
+    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
+    
+    // Gravity configuration
+    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
 }

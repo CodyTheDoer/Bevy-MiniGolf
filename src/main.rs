@@ -1,5 +1,13 @@
 // --- Internal Bevy Plugins --- //
-use bevy::{input::common_conditions::{input_just_pressed, input_just_released}, prelude::*, time::common_conditions::on_timer, utils::Duration, window::{PresentMode, WindowTheme}
+use bevy::{prelude::*,
+    input::common_conditions::{
+        input_just_pressed, 
+        input_just_released,
+        input_pressed,
+    },  
+    time::common_conditions::on_timer, 
+    utils::Duration, 
+    window::{PresentMode, WindowTheme},
 };
 
 // --- External Plugins --- //
@@ -7,7 +15,7 @@ use bevy_rapier3d::prelude::*;
 // use bevy_matchbox::prelude::*;
 
 // --- States --- //
-use minigolf::{ 
+use minigolf::{
     StateArrow, 
     StateCameraOrbitEntity, 
     StateEngineConnection, 
@@ -21,6 +29,7 @@ use minigolf::{
 
 // --- Resources --- //
 use minigolf::{
+    BonkHandler,
     CameraHandler,
     ClientProtocol,
     DatabaseConnection,
@@ -59,11 +68,19 @@ use minigolf::{
         },
         physics_handler::{
             add_physics_query_and_update_scene,
+
             golf_ball_handler_active_player_manual_bonk,
             golf_ball_handler_end_game,
             golf_ball_handler_party_store_locations,
             golf_ball_handler_reset_golf_ball_locations,
             golf_ball_handler_spawn_golf_balls_for_party_members,
+
+            bonk_step_start,
+            bonk_step_mid,
+            bonk_step_end,
+            // collision_events_listener,
+            
+            performance_physics_setup,
         },
     },
     player_handler::{
@@ -108,6 +125,7 @@ use minigolf::{
             ray_release,
         },
         user_interface::{
+            bonk_gizmo,
             setup_ui,
             update_ui,
         },
@@ -142,7 +160,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //
@@ -161,6 +179,7 @@ fn main() {
         .insert_resource(UiUpdateTimer(Timer::new(Duration::from_millis(250), TimerMode::Repeating)))
 
         // --- Resource Initialization --- //
+        .insert_resource(BonkHandler::new())
         .insert_resource(DatabaseConnection::new("game_data.db"))
         .insert_resource(CameraHandler::new())
         .insert_resource(ClientProtocol::new())
@@ -181,8 +200,9 @@ fn main() {
         .add_systems(Startup, level_handler_boot_protocals)
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, setup_ui)
-        // .add_systems(Startup, start_socket)
         .add_systems(Startup, db_pipeline_init_local_player)
+        .add_systems(Startup, performance_physics_setup)
+        // .add_systems(Startup, start_socket)
 
         // Network - Update //
         // .add_systems(Update, auth_server_handshake
@@ -192,6 +212,11 @@ fn main() {
         // .add_systems(Update, receive_messages)
         // .add_systems(Update, remote_state_change_monitor)
 
+        // Physics //
+        .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
+        .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Right)))
+        .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
+
         // Camera //
         .add_systems(Update, state_camera_orbit_entity_logic)
         .add_systems(Update, pan_orbit_camera)
@@ -200,6 +225,7 @@ fn main() {
         .add_systems(Update, draw_cursor)
         .add_systems(Update, ray_fire.run_if(input_just_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
+        .add_systems(Update, bonk_gizmo.run_if(in_state(StateArrow::DrawingArrow)))
         .add_systems(Update, update_ui)
 
         // Run Trigger Systems //        
@@ -242,21 +268,34 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
+        .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_pressed(KeyCode::KeyI)))
-        .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyO)))
+        .add_systems(Update, debug_names.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
         .add_systems(Update, temp_interface);
 
     app.run();
 }
 
-fn golf_ball_query(
-    mut gb_query: Query<&GolfBall>,
-) {
-    for golf_ball in gb_query.iter_mut() {
-        info!("golf_ball: [{:?}]", golf_ball.0);
+fn debug_names(query: Query<(&Name, &GolfBall)>) {
+    for (name, golf_ball) in query.iter() {
+        info!("Entity Name: {}, GolfBall UUID: {}", name.as_str(), golf_ball.0.uuid);
     }
 }
+
+fn golf_ball_query(
+    golf_balls: Query<(Entity, &GolfBall)>,
+) {
+    for (entity, golf_ball) in golf_balls.iter() {
+        info!("Entity: {:?}, GolfBall: {:?}", entity, golf_ball.0);
+    }
+}
+
+    // golf_balls: Query<(&Transform, &GolfBall)>,
+    // for (transform, golf_ball) in golf_balls.iter() {
+    //     info!("golf_ball: {:?}", golf_ball);
+    //     info!("transform: {:?}", transform);
+    // }
 
 fn party_query(
     mut party: Res<Party>,
