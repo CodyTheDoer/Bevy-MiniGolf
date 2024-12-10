@@ -270,14 +270,14 @@ fn main() {
 
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, add_physics_query_and_update_scene.run_if(input_just_pressed(KeyCode::KeyI)))
-        .add_systems(Update, debug_names.run_if(input_just_pressed(KeyCode::KeyO)))
+        .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
         .add_systems(Update, temp_interface);
 
     app.run();
 }
 
-fn debug_names(query: Query<(&Name, &GolfBall)>) {
+fn debug_names_query(query: Query<(&Name, &GolfBall)>) {
     for (name, golf_ball) in query.iter() {
         info!("Entity Name: {}, GolfBall UUID: {}", name.as_str(), golf_ball.0.uuid);
     }
@@ -290,12 +290,6 @@ fn golf_ball_query(
         info!("Entity: {:?}, GolfBall: {:?}", entity, golf_ball.0);
     }
 }
-
-    // golf_balls: Query<(&Transform, &GolfBall)>,
-    // for (transform, golf_ball) in golf_balls.iter() {
-    //     info!("golf_ball: {:?}", golf_ball);
-    //     info!("transform: {:?}", transform);
-    // }
 
 fn party_query(
     mut party: Res<Party>,
