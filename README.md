@@ -35,21 +35,34 @@ The Daily Bonk is a modern ECS driven Golf Game
 ### Tech Stack
 
 ```
+ECS: Bevy
+
 Language:
     Rust
-    ECS: 
-        Bevy
-        Plugins:
-            bevy_mod_raycast = "0.18.0"
-            bevy_editor_pls = "0.9"
-            bevy_render = "0.14.2"
-            bevy_matchbox = "0.10.0"
-            bevy_rapier3d = "0.27.0"
+
+The Cargo Manifest:
+    bevy = {version = "0.14.2", features = ["mp3"]}
+    bevy_editor_pls = "0.9"
+    bevy_matchbox = "0.10"
+    bevy_mod_raycast = "0.18.0"
+    bevy-tokio-tasks = "0.14.0"
+    bevy_rapier3d = "0.27.0"
+    bevy_render = "0.14.2"
+    dotenv = "0.15.0"
+    time = { version = "0.3.36", features = [ "local-offset", "serde" ] }
+    serde = { version = "1.0.215", features = ["derive"] }
+    rmp-serde = "1.3.0"
+    rusqlite = { version = "0.29.0", features = ["bundled"] }
+    uuid = { version = "1.11.0",  features = [ "v4",  "v7", "fast-rng", "macro-diagnostics" ] }
+    regex = "1.11.1"
+    serde_json = "1.0.133"
 
 CAD: 
     Blender
 IDE:
     VSCode
+Database Manager:
+    DBeaver
 Sound: 
     Audacity
 ```
