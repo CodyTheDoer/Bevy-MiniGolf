@@ -17,7 +17,7 @@ pub fn _______________________________(
 
 impl RunTrigger {
     pub fn new() -> Self {
-        Self{
+        RunTrigger{
             add_physics_query_and_update_scene: false,
             camera_handler_cycle_state_camera: false,
             game_handler_game_start: false,
@@ -35,6 +35,7 @@ impl RunTrigger {
             level_handler_purge_protocol: false,
             level_handler_set_state_next_level: false,
             level_handler_set_state_next_map_set: false,
+            network_get_client_state_all: false,
             network_get_client_state_game: false,
             party_handler_active_player_add_bonk: false,
             party_handler_active_player_set_hole_completion_state_true: false,
@@ -102,6 +103,9 @@ impl RunTrigger {
             },
             "level_handler_set_state_next_map_set" => {
                 self.level_handler_set_state_next_map_set
+            },
+            "network_get_client_state_all" => {
+                self.network_get_client_state_all
             },
             "network_get_client_state_game" => {
                 self.network_get_client_state_game
@@ -213,6 +217,10 @@ impl RunTrigger {
                 self.level_handler_set_state_next_map_set = state;
                 info!("response: level_handler_set_state_next_map_set: {}", self.get("level_handler_set_state_next_map_set"));
             }
+            "network_get_client_state_all" => {
+                self.network_get_client_state_all = state;
+                info!("response: network_get_client_state_all: {}", self.get("network_get_client_state_all"));  
+            },
             "network_get_client_state_game" => {
                 self.network_get_client_state_game = state;
                 info!("response: network_get_client_state_game: {}", self.get("network_get_client_state_game"));  
@@ -333,6 +341,10 @@ impl RunTrigger {
 
     pub fn level_handler_set_state_next_map_set(&self) -> bool {
         self.level_handler_set_state_next_map_set
+    }
+
+    pub fn network_get_client_state_all(&self) -> bool {
+        self.network_get_client_state_all
     }
 
     pub fn network_get_client_state_game(&self) -> bool {

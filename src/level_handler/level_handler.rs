@@ -5,8 +5,8 @@ use std::time::Duration;
 
 // States
 use crate::{
-    StateGame,
-    StateLevel,
+    StateGame, 
+    StateLevel, 
     StateMapSet,
 };
 
@@ -18,7 +18,10 @@ use crate::{
     GolfBall,
     Ground, 
     MapID,
+    PurgeHandler,
     RunTrigger,
+    SceneInstancePurgedEnvironment,
+    SceneInstancePurgedGolfBalls,
 };
 
 impl GLBStorageID {
@@ -83,12 +86,15 @@ pub fn level_handler_purge_protocol(
     scene_meshes: Query<(Entity, &Name)>,
     gb_commands: Commands,
     golf_balls: Query<Entity, With<GolfBall>>,
+    purge_event_writer_environment: EventWriter<SceneInstancePurgedEnvironment>,
+    purge_event_writer_golf_ball: EventWriter<SceneInstancePurgedGolfBalls>,
+    mut purge_handler: ResMut<PurgeHandler>,
 ) {
     
     info!("function: level_handler_purge_protocol"); 
     {
-        level_handler_purge_env_glb_all(sm_commands, scene_meshes);
-        level_handler_purge_golf_ball_all(gb_commands, golf_balls);
+        level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment, &mut purge_handler);
+        level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball, &mut purge_handler);
     }
     run_trigger.set_target("level_handler_purge_protocol", false);
     info!("post response: level_handler_purge_protocol: [{}]", run_trigger.get("level_handler_purge_protocol"));  
@@ -101,22 +107,28 @@ pub fn level_handler_init_level_game_handler_current_level(
     glb_storage: Res<GLBStorageID>,
     gh: ResMut<GameHandler>,
     state_game: Res<State<StateGame>>,
+    mut purge_handler: ResMut<PurgeHandler>,
 ) {
     info!("level_handler_init_level_game_handler_current_level: [{}]", gh.current_level);
     {
-        run_trigger.set_target("level_handler_purge_protocol", true);
-        thread::sleep(Duration::from_millis(100)); 
-        level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level);
-        match state_game.get() {
-            StateGame::InGame => {
-                run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
-            },
-            StateGame::NotInGame => {},
+        info!("Purge Handler: Environment: [{}] Golf Balls [{}]", purge_handler.get("environment_purged"), purge_handler.get("golf_balls_purged"));
+        // Write in testing for purge states:
+        if purge_handler.get("environment_purged") && purge_handler.get("golf_balls_purged") {
+            run_trigger.set_target("level_handler_purge_protocol", true);
+            level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level);
+            match state_game.get() {
+                StateGame::InGame => {
+                    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
+                    purge_handler.set_target("golf_balls_purged", false);
+                },
+                StateGame::NotInGame => {},
+            }
+            info!("{:?}", state_game.get());
+            purge_handler.set_target("environment_purged", false);
+            run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
+            info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
         }
-        info!("{:?}", state_game.get());
     }
-    run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
-    info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
 }
 
 // Helper: level_handler_init_level_game_handler
@@ -268,28 +280,30 @@ pub fn level_handler_set_state_next_map_set(
     mut next_state_map_set: ResMut<NextState<StateMapSet>>,
 ){
     info!("function: level_handler_set_state_next_map_set"); 
-    match state_map_set.get() {
-        StateMapSet::Tutorial => {
-            info!("StateMapSet::WholeCorse");
-            next_state_map_set.set(StateMapSet::WholeCorse);
-        },
-        StateMapSet::WholeCorse => {
-            info!("StateMapSet::FrontNine");
-            next_state_map_set.set(StateMapSet::FrontNine);
-        },
-        StateMapSet::FrontNine => {
-            info!("StateMapSet::BackNine");
-            next_state_map_set.set(StateMapSet::BackNine);
-        },
-        StateMapSet::BackNine => {
-            info!("StateMapSet::SelectAHole");
-            next_state_map_set.set(StateMapSet::SelectAHole);
-        },
-        StateMapSet::SelectAHole => {
-            info!("StateMapSet::Tutorial");
-            next_state_map_set.set(StateMapSet::Tutorial);
-        },
-    };
+    {
+        match state_map_set.get() {
+            StateMapSet::Tutorial => {
+                info!("StateMapSet::WholeCorse");
+                next_state_map_set.set(StateMapSet::WholeCorse);
+            },
+            StateMapSet::WholeCorse => {
+                info!("StateMapSet::FrontNine");
+                next_state_map_set.set(StateMapSet::FrontNine);
+            },
+            StateMapSet::FrontNine => {
+                info!("StateMapSet::BackNine");
+                next_state_map_set.set(StateMapSet::BackNine);
+            },
+            StateMapSet::BackNine => {
+                info!("StateMapSet::SelectAHole");
+                next_state_map_set.set(StateMapSet::SelectAHole);
+            },
+            StateMapSet::SelectAHole => {
+                info!("StateMapSet::Tutorial");
+                next_state_map_set.set(StateMapSet::Tutorial);
+            },
+        };
+    }
     run_trigger.set_target("level_handler_set_state_next_map_set", false);
     info!("post response: level_handler_set_state_next_map_set: {}", run_trigger.get("level_handler_set_state_next_map_set"));  
 }
@@ -319,35 +333,76 @@ pub fn level_handler_purge_entity(
 pub fn level_handler_purge_env_glb_all(
     mut commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
+    mut purge_event_writer: EventWriter<SceneInstancePurgedEnvironment>,
+    purge_handler: &mut ResMut<PurgeHandler>,
 ) {
     info!("\n[ PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ]");
     for (entity, _) in scene_meshes.iter() {
-        // Access the rigid body from the physics world using its handle
+        info!("Entity: [{:?}]", entity);
         level_handler_purge_entity(&mut commands, entity);
     }
+    purge_event_writer.send(SceneInstancePurgedEnvironment{});
+    purge_handler.set_target("environment_purged", true);
 }
 
 pub fn level_handler_purge_golf_ball_all(
     mut commands: Commands,
     mut golf_balls: Query<Entity, With<GolfBall>>, 
+    mut purge_event_writer: EventWriter<SceneInstancePurgedGolfBalls>,
+    purge_handler: &mut ResMut<PurgeHandler>,
 ) {
     info!("\n[ PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ]");
     for entity in golf_balls.iter_mut() {
         info!("Entity: [{:?}]", entity);
         level_handler_purge_entity(&mut commands, entity);
     }
+    purge_event_writer.send(SceneInstancePurgedGolfBalls{});
+    purge_handler.set_target("golf_balls_purged", true);
 }
 
-// pub fn level_handler_purge_rigid_bodies(
-//     mut commands: Commands,
-//     rigid_bodies: Query<(Entity, &RapierRigidBodyHandle)>,
-// ) {
-//     for (entity, _) in rigid_bodies.iter() {
-//         // Access the rigid body from the physics world using its handle
-//         commands.entity(entity).despawn_recursive();
-//     }      
-// }
+impl PurgeHandler {
+    pub fn new() -> Self {
+        PurgeHandler{
+            environment_purged: true,
+            golf_balls_purged: true,
+        }
+    }
+    
+    pub fn get(&self, target: &str) -> bool {
+        match target {
+            "environment_purged" => {
+                self.environment_purged
+            },
+            "golf_balls_purged" => {
+                self.golf_balls_purged
+            },
+            _ => {false},
+        }
+    }
 
+    pub fn set_target(&mut self, target: &str, state: bool) {
+        match target {
+            "environment_purged" => {
+                self.environment_purged = state;
+                info!("response: environment_purged: {}", self.get("environment_purged"));  
+            },
+            "golf_balls_purged" => {
+                self.golf_balls_purged = state;
+                info!("response: golf_balls_purged: {}", self.get("golf_balls_purged"));  
+            },
+            _ => {
+                info!("Unrecognized Input: PurgeHandler: {:?}", target);
+            },
+        }
+    }
 
+    pub fn environment_purged(&self) -> bool {
+        self.environment_purged
+    }
+
+    pub fn golf_balls_purged(&self) -> bool {
+        self.golf_balls_purged
+    }
+}
 
 

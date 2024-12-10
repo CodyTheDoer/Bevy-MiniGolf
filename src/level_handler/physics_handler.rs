@@ -24,7 +24,9 @@ use crate::{
     Interactable,
     Party,
     PhysicsHandler,
+    PurgeHandler,
     RunTrigger,
+    SceneInstancePurgedGolfBalls,
     SceneInstanceSpawned,
 };
 
@@ -48,20 +50,9 @@ impl BonkHandler {
         }
     }
 
-    pub fn update_direction(&mut self, direction: &Vec3) {
-        self.direction = *direction;
-    }
-
-    pub fn update_power(&mut self, power: f32) {
-        self.power = power;
-    }
-
-    pub fn update_cursor_origin_position(
-        &mut self, 
-        bonk_coords: BonkMouseXY
-    ) {
-        self.cursor_origin_position = bonk_coords;
-        self.cursor_origin_position_updated = true;
+    pub fn set_cursor_updated(&mut self) {
+        self.cursor_origin_position_updated = false;
+        self.cursor_bonk_position_updated = false;
     }
 
     pub fn update_cursor_bonk_position(
@@ -72,9 +63,20 @@ impl BonkHandler {
         self.cursor_bonk_position_updated = true;
     }
 
-    pub fn set_cursor_updated(&mut self) {
-        self.cursor_origin_position_updated = false;
-        self.cursor_bonk_position_updated = false;
+    pub fn update_cursor_origin_position(
+        &mut self, 
+        bonk_coords: BonkMouseXY
+    ) {
+        self.cursor_origin_position = bonk_coords;
+        self.cursor_origin_position_updated = true;
+    }
+
+    pub fn update_direction(&mut self, direction: &Vec3) {
+        self.direction = *direction;
+    }
+
+    pub fn update_power(&mut self, power: f32) {
+        self.power = power;
     }
 }
 
@@ -116,7 +118,7 @@ pub fn add_physics_query_and_update_scene(
         .insert(Sensor)
         .insert(Name::new("ground_sensor"));
 
-    let players = party.get_all_player_ids();
+    let players = party.all_players_get_ids();
     for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
         for player in &players {
             if player == &golf_ball.0.uuid {
@@ -191,196 +193,6 @@ pub fn add_physics_query_and_update_scene(
     }
     run_trigger.set_target("add_physics_query_and_update_scene", false);
     info!("post response: add_physics_query_and_update_scene: [{}]", run_trigger.get("add_physics_query_and_update_scene"));  
-}
-
-// Helper function for ^^^add_physics_query_and_update_scene^^^
-fn extract_mesh_vertices_indices( 
-    mesh: &Mesh,
-) -> Option<(
-    Vec<bevy_rapier3d::na::Point3<bevy_rapier3d::prelude::Real>>,
-    Vec<[u32; 3]>,
-)> {
-    use bevy_rapier3d::math::Real;
-    use bevy_rapier3d::na::Point3;
-
-    let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
-    let indices = mesh.indices()?;
-
-    let vtx: Vec<_> = match vertices {
-        VertexAttributeValues::Float32(vtx) => Some(
-            vtx.chunks(3)
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
-                .collect(),
-        ),
-        VertexAttributeValues::Float32x3(vtx) => Some(
-            vtx.iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
-                .collect(),
-        ),
-        _ => None,
-    }?;
-
-    let idx = match indices {
-        Indices::U16(idx) => idx
-            .chunks_exact(3)
-            .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
-            .collect(),
-        Indices::U32(idx) => idx.chunks_exact(3).map(|i| [i[0], i[1], i[2]]).collect(),
-    };
-
-    Some((vtx, idx))
-}
-
-// Helper: golf_ball_handler_spawn_golf_balls_for_party_members
-fn golf_ball_handler_init_golf_ball_uuid(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    glb_storage: &Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
-    player_id: &Uuid,
-    asset_event_writer: &mut EventWriter<SceneInstanceSpawned>,
-) {
-    if let Some(basic_golf_ball) = glb_storage.glb.get(25) {
-        let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
-            GltfAssetLabel::Scene(0).from_asset(basic_golf_ball.map),
-        );
-        let name = format!("golf_ball_{}", player_id.to_string());
-        info!("Generated Name: {}", name);
-        let spawned_golf_ball = commands
-            .spawn((
-                SceneBundle {
-                    scene: basic_golf_ball_handle.clone(),
-                    ..default()
-                },
-                Name::new(name.clone()),
-            ))
-            .insert(Interactable)
-            .insert(GolfBall(GolfBallPosition{
-                uuid: *player_id,
-                position: Vec3::ZERO,
-                last_position: Vec3::ZERO,
-            }))
-            .id();
-
-            // Emit a custom AssetEvent for this asset
-            asset_event_writer.send(SceneInstanceSpawned {
-                    entity: spawned_golf_ball,
-                }
-            );
-    } else {
-        warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
-    };
-}
-
-pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
-    mut commands: Commands,
-    mut run_trigger: ResMut<RunTrigger>,
-    party: ResMut<Party>,
-    asset_server: Res<AssetServer>,
-    glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
-    mut asset_event_writer: EventWriter<SceneInstanceSpawned>,
-    gb_query: Query<(Entity, &Name)>,
-    golf_balls: Query<(Entity, &GolfBall)>,
-) {
-    {
-        for player in party.get_all_player_ids().iter() {
-            info!("Building Golf Ball for player: [{:?}]", &player);
-            golf_ball_handler_init_golf_ball_uuid(
-                &mut commands,
-                &asset_server,
-                &glb_storage,
-                &player,
-                &mut asset_event_writer,
-            );
-
-            /*
-            level_handler::physics_handler: Building Golf Ball for player: [01938dc7-1def-7eb3-a771-000436e79280]
-            level_handler::physics_handler: Generated Name: golf_ball_01938dc7-1def-7eb3-a771-000436e79280
-            level_handler::physics_handler: name: ["ball"], Entity: [Entity { index: 210, generation: 1 }]
-
-            ray_system_handler: Name: "ball" Entity: Entity { index: 374, generation: 2 }
-            */
-
-            for (golf_ball, name) in gb_query.iter() {
-                if name.as_str() == "ball" {
-                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
-                    commands.entity(golf_ball).insert(Name::new(format!("ball_{}", player.to_string())));
-                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
-                }
-            };
-            
-            // party.golf_ball_build_player(&player);
-        };
-
-        // info!("\n\nPlayer: [{:?}], Golf Ball: [{:?}]", player_id.to_owned(), golf_ball.0);
-                        // commands.entity(spawned_golf_ball).push_children(&[entity]);
-                        // commands.entity(parent.unwrap().get()).insert(Name::new(name.clone()));
-        
-    }
-    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", false);
-    info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  
-}
-
-pub fn golf_ball_handler_reset_golf_ball_locations(
-    mut run_trigger: ResMut<RunTrigger>,
-    mut gb_query: Query<&mut GolfBall>,
-) {
-    info!("function: golf_ball_handler_reset_golf_ball_locations "); 
-    {
-        for mut golf_ball in gb_query.iter_mut() {
-            info!("golf_ball: [{:?}]", golf_ball.0);
-            golf_ball.0.position = golf_ball.0.last_position;
-        };
-    }
-    run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", false);
-    info!("post response: golf_ball_handler_reset_golf_ball_locations: {}", run_trigger.get("golf_ball_handler_reset_golf_ball_locations"));  
-}
-
-pub fn golf_ball_handler_end_game(
-    commands: Commands,
-    mut run_trigger: ResMut<RunTrigger>,
-    golf_balls: Query<Entity, With<GolfBall>>,
-) {
-    info!("function: golf_ball_handler_end_game "); 
-    {
-        level_handler_purge_golf_ball_all(commands, golf_balls);
-    }
-    run_trigger.set_target("golf_ball_handler_end_game", false);
-    info!("post response: golf_ball_handler_end_game: {}", run_trigger.get("golf_ball_handler_end_game"));  
-}
-
-pub fn golf_ball_handler_party_store_locations(
-    mut run_trigger: ResMut<RunTrigger>,
-    mut gb_query: Query<&mut GolfBall>,
-) {
-    info!("function: golf_ball_handler_party_store_locations "); 
-    {
-        for mut golf_ball in gb_query.iter_mut() {
-            golf_ball.0.last_position = golf_ball.0.position;
-            info!("golf_ball: [{:?}]", golf_ball.0);
-        };
-    }
-    run_trigger.set_target("golf_ball_handler_party_store_locations", false);
-    info!("post response: golf_ball_handler_party_store_locations: {}", run_trigger.get("golf_ball_handler_party_store_locations"));  
-}
-
-pub fn golf_ball_handler_active_player_manual_bonk(
-    mut run_trigger: ResMut<RunTrigger>,
-    party: ResMut<Party>,
-    mut gb_query: Query<&mut GolfBall>,
-) {
-    info!("function: golf_ball_handler_active_player_manual_bonk "); 
-    {
-        let player_id = party.active_player_get_player_id();
-        for mut golf_ball in gb_query.iter_mut() {
-            if golf_ball.0.uuid == player_id {
-                golf_ball.0.position = golf_ball.0.position + Vec3::new(5.0, 5.0, 5.0);
-            };
-            info!("golf_ball: [{:?}]", golf_ball.0);
-        };
-        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
-    }
-    run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", false);
-    info!("post response: golf_ball_handler_active_player_manual_bonk: {}", run_trigger.get("golf_ball_handler_active_player_manual_bonk"));  
 }
 
 pub fn bonk(
@@ -563,6 +375,199 @@ pub fn collision_events_listener(
     }
 }
 
+// Helper function for ^^^add_physics_query_and_update_scene^^^
+fn extract_mesh_vertices_indices( 
+    mesh: &Mesh,
+) -> Option<(
+    Vec<bevy_rapier3d::na::Point3<bevy_rapier3d::prelude::Real>>,
+    Vec<[u32; 3]>,
+)> {
+    use bevy_rapier3d::math::Real;
+    use bevy_rapier3d::na::Point3;
+
+    let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+    let indices = mesh.indices()?;
+
+    let vtx: Vec<_> = match vertices {
+        VertexAttributeValues::Float32(vtx) => Some(
+            vtx.chunks(3)
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect(),
+        ),
+        VertexAttributeValues::Float32x3(vtx) => Some(
+            vtx.iter()
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect(),
+        ),
+        _ => None,
+    }?;
+
+    let idx = match indices {
+        Indices::U16(idx) => idx
+            .chunks_exact(3)
+            .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
+            .collect(),
+        Indices::U32(idx) => idx.chunks_exact(3).map(|i| [i[0], i[1], i[2]]).collect(),
+    };
+
+    Some((vtx, idx))
+}
+
+pub fn golf_ball_handler_active_player_manual_bonk(
+    mut run_trigger: ResMut<RunTrigger>,
+    party: ResMut<Party>,
+    mut gb_query: Query<&mut GolfBall>,
+) {
+    info!("function: golf_ball_handler_active_player_manual_bonk "); 
+    {
+        let player_id = party.active_player_get_player_id();
+        for mut golf_ball in gb_query.iter_mut() {
+            if golf_ball.0.uuid == player_id {
+                golf_ball.0.position = golf_ball.0.position + Vec3::new(5.0, 5.0, 5.0);
+            };
+            info!("golf_ball: [{:?}]", golf_ball.0);
+        };
+        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
+    }
+    run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", false);
+    info!("post response: golf_ball_handler_active_player_manual_bonk: {}", run_trigger.get("golf_ball_handler_active_player_manual_bonk"));  
+}
+
+pub fn golf_ball_handler_end_game(
+    commands: Commands,
+    mut run_trigger: ResMut<RunTrigger>,
+    golf_balls: Query<Entity, With<GolfBall>>,
+    purge_event_writer: EventWriter<SceneInstancePurgedGolfBalls>,
+    mut purge_handler: ResMut<PurgeHandler>,
+) {
+    info!("function: golf_ball_handler_end_game "); 
+    {
+        level_handler_purge_golf_ball_all(commands, golf_balls, purge_event_writer, &mut purge_handler);
+    }
+    run_trigger.set_target("golf_ball_handler_end_game", false);
+    info!("post response: golf_ball_handler_end_game: {}", run_trigger.get("golf_ball_handler_end_game"));  
+}
+
+// Helper: golf_ball_handler_spawn_golf_balls_for_party_members
+fn golf_ball_handler_init_golf_ball_uuid(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    glb_storage: &Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
+    player_id: &Uuid,
+    asset_event_writer: &mut EventWriter<SceneInstanceSpawned>,
+) {
+    if let Some(basic_golf_ball) = glb_storage.glb.get(25) {
+        let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset(basic_golf_ball.map),
+        );
+        let name = format!("golf_ball_{}", player_id.to_string());
+        info!("Generated Name: {}", name);
+        let spawned_golf_ball = commands
+            .spawn((
+                SceneBundle {
+                    scene: basic_golf_ball_handle.clone(),
+                    ..default()
+                },
+                Name::new(name.clone()),
+            ))
+            .insert(Interactable)
+            .insert(GolfBall(GolfBallPosition{
+                uuid: *player_id,
+                position: Vec3::ZERO,
+                last_position: Vec3::ZERO,
+            }))
+            .id();
+
+            // Emit a custom AssetEvent for this asset
+            asset_event_writer.send(SceneInstanceSpawned {
+                    entity: spawned_golf_ball,
+                }
+            );
+    } else {
+        warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
+    };
+}
+
+pub fn golf_ball_handler_party_store_locations(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut gb_query: Query<&mut GolfBall>,
+) {
+    info!("function: golf_ball_handler_party_store_locations "); 
+    {
+        for mut golf_ball in gb_query.iter_mut() {
+            golf_ball.0.last_position = golf_ball.0.position;
+            info!("golf_ball: [{:?}]", golf_ball.0);
+        };
+    }
+    run_trigger.set_target("golf_ball_handler_party_store_locations", false);
+    info!("post response: golf_ball_handler_party_store_locations: {}", run_trigger.get("golf_ball_handler_party_store_locations"));  
+}
+
+pub fn golf_ball_handler_reset_golf_ball_locations(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut gb_query: Query<&mut GolfBall>,
+) {
+    info!("function: golf_ball_handler_reset_golf_ball_locations "); 
+    {
+        for mut golf_ball in gb_query.iter_mut() {
+            info!("golf_ball: [{:?}]", golf_ball.0);
+            golf_ball.0.position = golf_ball.0.last_position;
+        };
+    }
+    run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", false);
+    info!("post response: golf_ball_handler_reset_golf_ball_locations: {}", run_trigger.get("golf_ball_handler_reset_golf_ball_locations"));  
+}
+
+pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
+    mut commands: Commands,
+    mut run_trigger: ResMut<RunTrigger>,
+    party: ResMut<Party>,
+    asset_server: Res<AssetServer>,
+    glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
+    mut asset_event_writer: EventWriter<SceneInstanceSpawned>,
+    gb_query: Query<(Entity, &Name)>,
+    golf_balls: Query<(Entity, &GolfBall)>,
+) {
+    info!("function: golf_ball_handler_spawn_golf_balls_for_party_members"); 
+    {
+        for player in party.all_players_get_ids().iter() {
+            info!("Building Golf Ball for player: [{:?}]", &player);
+            golf_ball_handler_init_golf_ball_uuid(
+                &mut commands,
+                &asset_server,
+                &glb_storage,
+                &player,
+                &mut asset_event_writer,
+            );
+
+            /*
+            level_handler::physics_handler: Building Golf Ball for player: [01938dc7-1def-7eb3-a771-000436e79280]
+            level_handler::physics_handler: Generated Name: golf_ball_01938dc7-1def-7eb3-a771-000436e79280
+            level_handler::physics_handler: name: ["ball"], Entity: [Entity { index: 210, generation: 1 }]
+
+            ray_system_handler: Name: "ball" Entity: Entity { index: 374, generation: 2 }
+            */
+
+            for (golf_ball, name) in gb_query.iter() {
+                if name.as_str() == "ball" {
+                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
+                    commands.entity(golf_ball).insert(Name::new(format!("ball_{}", player.to_string())));
+                    info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
+                }
+            };
+            
+            // party.golf_ball_build_player(&player);
+        };
+
+        // info!("\n\nPlayer: [{:?}], Golf Ball: [{:?}]", player_id.to_owned(), golf_ball.0);
+                        // commands.entity(spawned_golf_ball).push_children(&[entity]);
+                        // commands.entity(parent.unwrap().get()).insert(Name::new(name.clone()));
+        
+    }
+    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", false);
+    info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  
+}
+
 pub fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
     query: Query<&RapierRigidBodyHandle>,
@@ -579,6 +584,21 @@ pub fn golf_ball_is_asleep(
         }
     }       
     results
+}
+
+pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
+    // Set fixed timestep mode
+    rapier_config.timestep_mode = TimestepMode::Fixed {
+        dt: 1.0 / 60.0,       // Physics update rate
+        substeps: 4,          // Number of physics steps per frame
+    };
+
+    // Enable/disable physics systems
+    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
+    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
+    
+    // Gravity configuration
+    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
 }
 
 fn toggle_arrow_state(
@@ -598,19 +618,4 @@ fn toggle_arrow_state(
             next_state.set(StateArrow::DrawingArrow);
         },
     }
-}
-
-pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
-    // Set fixed timestep mode
-    rapier_config.timestep_mode = TimestepMode::Fixed {
-        dt: 1.0 / 60.0,       // Physics update rate
-        substeps: 4,          // Number of physics steps per frame
-    };
-
-    // Enable/disable physics systems
-    rapier_config.physics_pipeline_active = true;  // Enable physics simulation
-    rapier_config.query_pipeline_active = true;    // Enable collision detection queries
-    
-    // Gravity configuration
-    rapier_config.gravity = Vec3::new(0.0, -9.81, 0.0); // Standard gravity
 }

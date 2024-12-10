@@ -295,14 +295,14 @@ pub fn update_ui(
         format!("state_turn: {:?}", *state_turn),                                                                                           // 9
         format!("Remote Game: {:?}", game_handler.remote_game_get()),                                                                       // 10
         format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 11
-        format!("Party Size: {:?}", party.get_party_size()),                                                                                // 12
-        format!("Active Player: {:?}", party.get_active_player_index()),                                                                    // 13 
+        format!("Party Size: {:?}", party.party_size()),                                                                                // 12
+        format!("Active Player: {:?}", party.active_player_get_index()),                                                                    // 13 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
         format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 16
         format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 17
         format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 18
-        format!("Active Player Scorecard: {:?}", party.get_active_player_scorecard()),                                                      // 19
+        format!("Active Player Scorecard: {:?}", party.active_player_get_score()),                                                      // 19
         format!("______________________________________________________________________"),                                                  // 20  
         format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 21
         format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 22

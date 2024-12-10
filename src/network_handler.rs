@@ -111,70 +111,73 @@ pub fn network_get_client_state_all(
     state_turn: Res<State<StateTurn>>,
     client_protocol: Res<ClientProtocol>,
 ) {
-    let peers: Vec<_> = socket.connected_peers().collect();
+    info!("function: network_get_client_state_all"); 
+    {
+        let peers: Vec<_> = socket.connected_peers().collect();
     
-    let player_id = format!("{:?}", party.main_player_get_player_id());
-    let state_game = format!("{:?}", state_game.get());
-    let state_cam_orbit_entity = format!("{:?}", state_cam_orbit_entity.get());
-    let state_game_play_style = format!("{:?}", state_game_play_style.get());
-    let state_level = format!("{:?}", state_level.get());
-    let state_map_set = format!("{:?}", state_map_set.get());
-    let state_menu = format!("{:?}", state_menu.get());
-    let state_turn = format!("{:?}", state_turn.get());
-    
-    let player_id = player_id.as_str();
-    let state_game = state_game.as_str();
-    let state_cam_orbit_entity = state_cam_orbit_entity.as_str();
-    let state_game_play_style = state_game_play_style.as_str();
-    let state_level = state_level.as_str();
-    let state_map_set = state_map_set.as_str();
-    let state_menu = state_menu.as_str();
-    let state_turn = state_turn.as_str();
+        let player_id = format!("{:?}", party.main_player_get_player_id());
+        let state_game = format!("{:?}", state_game.get());
+        let state_cam_orbit_entity = format!("{:?}", state_cam_orbit_entity.get());
+        let state_game_play_style = format!("{:?}", state_game_play_style.get());
+        let state_level = format!("{:?}", state_level.get());
+        let state_map_set = format!("{:?}", state_map_set.get());
+        let state_menu = format!("{:?}", state_menu.get());
+        let state_turn = format!("{:?}", state_turn.get());
+        
+        let player_id = player_id.as_str();
+        let state_game = state_game.as_str();
+        let state_cam_orbit_entity = state_cam_orbit_entity.as_str();
+        let state_game_play_style = state_game_play_style.as_str();
+        let state_level = state_level.as_str();
+        let state_map_set = state_map_set.as_str();
+        let state_menu = state_menu.as_str();
+        let state_turn = state_turn.as_str();
 
 
-    // Create an instance of PacketAllStates struct with the current state values.
-    let all_states = PacketAllStates {
-        player_id,
-        state_game,
-        state_cam_orbit_entity,
-        state_game_play_style,
-        state_level,
-        state_map_set,
-        state_menu,
-        state_turn,
-    };
+        // Create an instance of PacketAllStates struct with the current state values.
+        let all_states = PacketAllStates {
+            player_id,
+            state_game,
+            state_cam_orbit_entity,
+            state_game_play_style,
+            state_level,
+            state_map_set,
+            state_menu,
+            state_turn,
+        };
 
-    // Convert the PacketAllStates to JSON format for easy text-based parsing later
-    let packet_json = match serde_json::to_string(&all_states) {
-        Ok(json) => json,
-        Err(err) => {
-            error!("Failed to convert PacketAllStates to JSON: {:?}", err);
-            return;
+        // Convert the PacketAllStates to JSON format for easy text-based parsing later
+        let packet_json = match serde_json::to_string(&all_states) {
+            Ok(json) => json,
+            Err(err) => {
+                error!("Failed to convert PacketAllStates to JSON: {:?}", err);
+                return;
+            }
+        };
+        
+        let message = format!{
+            "({}, ({}))",
+            client_protocol.all_states_packet(),
+            packet_json,
+        };
+        info!("Pretty: PacketAllStates: {:#?}", &message);
+
+        // Serialize the PacketAllStates instance to MessagePack format
+        let serialized_message = match encode::to_vec(&message) {
+            Ok(bytes) => bytes,
+            Err(err) => {
+                error!("Failed to serialize PacketAllStates: {:?}", err);
+                return;
+            }
+        };
+
+        for peer in peers {
+            info!("Sending serialized PacketAllStates to {peer}");
+            socket.send(serialized_message.clone().into(), peer);
         }
-    };
-    
-    let message = format!{
-        "({}, ({}))",
-        client_protocol.all_states_packet(),
-        packet_json,
-    };
-    info!("Pretty: PacketAllStates: {:#?}", &message);
-
-    // Serialize the PacketAllStates instance to MessagePack format
-    let serialized_message = match encode::to_vec(&message) {
-        Ok(bytes) => bytes,
-        Err(err) => {
-            error!("Failed to serialize PacketAllStates: {:?}", err);
-            return;
-        }
-    };
-
-    for peer in peers {
-        info!("Sending serialized PacketAllStates to {peer}");
-        socket.send(serialized_message.clone().into(), peer);
     }
-
     run_trigger.set_target("network_get_client_state_all", false);
+    info!("post response: network_get_client_state_all: [{}]", run_trigger.get("network_get_client_state_all")); 
 }
 
 pub fn network_get_client_state_game(
@@ -183,19 +186,23 @@ pub fn network_get_client_state_game(
     party: Res<Party>,
     state_game: Res<State<StateGame>>,
 ) {
-    let peers: Vec<_> = socket.connected_peers().collect();
-    let player_id = party.main_player_get_player_id();
-    let state = state_game.get();
-    for peer in peers {
-        let message = format!{
-            "{}::{:?}",
-            player_id,
-            state,
-        };
-        info!("Sending message: {message:?} to {peer}");
-        socket.send(message.as_bytes().into(), peer);
+    info!("function: network_get_client_state_game"); 
+    {
+        let peers: Vec<_> = socket.connected_peers().collect();
+        let player_id = party.main_player_get_player_id();
+        let state = state_game.get();
+        for peer in peers {
+            let message = format!{
+                "{}::{:?}",
+                player_id,
+                state,
+            };
+            info!("Sending message: {message:?} to {peer}");
+            socket.send(message.as_bytes().into(), peer);
+        }
     }
     run_trigger.set_target("network_get_client_state_game", false);
+    info!("post response: network_get_client_state_game: [{}]", run_trigger.get("network_get_client_state_game")); 
 }
 
 pub fn receive_messages(

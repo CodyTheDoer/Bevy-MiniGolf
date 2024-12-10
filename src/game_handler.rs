@@ -183,44 +183,82 @@ pub fn game_handler_game_start (
     state_map_set: Res<State<StateMapSet>>,
 ) {
     info!("function: game_handler_game_start "); 
-    if game_handler.remote_game_get() {
+    {
+        if game_handler.remote_game_get() {
 
-    } else {
-        run_trigger.set_target("game_handler_game_state_start_routines", true);
+        } else {
+            run_trigger.set_target("game_handler_game_state_start_routines", true);
+            match state_game.get() {
+                StateGame::NotInGame => {
+                    match state_map_set.get() {
+                        StateMapSet::Tutorial => {
+                            game_handler.current_level_set(0);
+                            next_level.set(StateLevel::HoleTutorial);
+                        },
+                        StateMapSet::WholeCorse => {
+                            game_handler.current_level_set(1);
+                            next_level.set(StateLevel::Hole1);
+                        },
+                        StateMapSet::FrontNine => {
+                            game_handler.current_level_set(1);
+                            next_level.set(StateLevel::Hole1);
+                        },
+                        StateMapSet::BackNine => {
+                            game_handler.current_level_set(10);
+                            next_level.set(StateLevel::Hole10);
+                        },
+                        StateMapSet::SelectAHole => {},
+                    };
+                    info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
+                    run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                },
+                StateGame::InGame => {
+                    warn!("game_handler_game_start: FAILED! Game state already initiated!");
+                },
+            }; 
+        }
+    }
+    run_trigger.set_target("game_handler_game_start", false);
+    info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start")); 
+}
+
+pub fn game_handler_game_state_exit_routines(
+    mut run_trigger: ResMut<RunTrigger>,
+    mut game_handler: ResMut<GameHandler>,
+    mut party: ResMut<Party>,
+    state_game: Res<State<StateGame>>,
+    mut next_state_game: ResMut<NextState<StateGame>>,
+    mut next_level: ResMut<NextState<StateLevel>>,
+    mut next_menu_state: ResMut<NextState<StateMenu>>,
+    mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
+    mut next_state_turn: ResMut<NextState<StateTurn>>,
+) {
+    info!("function: game_handler_game_state_exit_routines"); 
+    {    
+        info!("Current Game State: {:?}", state_game.get());
         match state_game.get() {
-            StateGame::NotInGame => {
-                match state_map_set.get() {
-                    StateMapSet::Tutorial => {
-                        game_handler.current_level_set(0);
-                        next_level.set(StateLevel::HoleTutorial);
-                    },
-                    StateMapSet::WholeCorse => {
-                        game_handler.current_level_set(1);
-                        next_level.set(StateLevel::Hole1);
-                    },
-                    StateMapSet::FrontNine => {
-                        game_handler.current_level_set(1);
-                        next_level.set(StateLevel::Hole1);
-                    },
-                    StateMapSet::BackNine => {
-                        game_handler.current_level_set(10);
-                        next_level.set(StateLevel::Hole10);
-                    },
-                    StateMapSet::SelectAHole => {},
-                };
-                info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
-                run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
-                run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
-                thread::sleep(Duration::from_millis(250)); 
-                run_trigger.set_target("add_physics_query_and_update_scene", true);
-            },
+            StateGame::NotInGame => {},
             StateGame::InGame => {
-                warn!("game_handler_game_start: FAILED! Game state already initiated!");
+                run_trigger.set_target("golf_ball_handler_end_game", true);
+                run_trigger.set_target("level_handler_purge_protocol", true);
+                next_menu_state.set(StateMenu::MenuMainMenu);
+                next_camera_state.set(StateCameraOrbitEntity::Menu);
+                party.active_player_set(1);
+                info!("StateGame::NotInGame");
+                next_state_game.set(StateGame::NotInGame);
+                info!("StateTurn::NotInGame");
+                next_state_turn.set(StateTurn::NotInGame);
+                game_handler.current_level_set(0);
+                next_level.set(StateLevel::MainMenu);
+                game_handler.current_level_set_menu_main();
+                run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                party.game_completed();
+                run_trigger.set_target("leader_board_review_last_game", true);
             },
         };
-        run_trigger.set_target("game_handler_game_start", false);
-        info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start"));  
     }
+    run_trigger.set_target("game_handler_game_state_exit_routines", false);
+    info!("post response: game_handler_game_state_exit_routines: {}", run_trigger.get("game_handler_game_state_exit_routines"));  
 }
 
 pub fn game_handler_game_state_start_routines(
@@ -260,45 +298,3 @@ pub fn game_handler_game_state_start_routines(
     run_trigger.set_target("game_handler_game_state_start_routines", false);
     info!("post response: game_handler_game_state_start_routines: {}", run_trigger.get("game_handler_game_state_start_routines"));  
 }
-
-pub fn game_handler_game_state_exit_routines(
-    mut run_trigger: ResMut<RunTrigger>,
-    mut game_handler: ResMut<GameHandler>,
-    mut party: ResMut<Party>,
-    state_game: Res<State<StateGame>>,
-    mut next_state_game: ResMut<NextState<StateGame>>,
-    mut next_level: ResMut<NextState<StateLevel>>,
-    mut next_menu_state: ResMut<NextState<StateMenu>>,
-    mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
-    mut next_state_turn: ResMut<NextState<StateTurn>>,
-) {
-    info!("function: game_handler_game_state_exit_routines"); 
-    {    
-        info!("Current Game State: {:?}", state_game.get());
-        match state_game.get() {
-            StateGame::NotInGame => {},
-            StateGame::InGame => {
-                run_trigger.set_target("golf_ball_handler_end_game", true);
-                run_trigger.set_target("level_handler_purge_protocol", true);
-                next_menu_state.set(StateMenu::MenuMainMenu);
-                next_camera_state.set(StateCameraOrbitEntity::Menu);
-                party.set_active_player(1);
-                info!("StateGame::NotInGame");
-                next_state_game.set(StateGame::NotInGame);
-                info!("StateTurn::NotInGame");
-                next_state_turn.set(StateTurn::NotInGame);
-                game_handler.current_level_set(0);
-                next_level.set(StateLevel::MainMenu);
-                game_handler.current_level_set_menu_main();
-                run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
-                party.game_completed();
-                run_trigger.set_target("leader_board_review_last_game", true);
-            },
-        };
-    }
-    run_trigger.set_target("game_handler_game_state_exit_routines", false);
-    info!("post response: game_handler_game_state_exit_routines: {}", run_trigger.get("game_handler_game_state_exit_routines"));  
-}
-
-
-

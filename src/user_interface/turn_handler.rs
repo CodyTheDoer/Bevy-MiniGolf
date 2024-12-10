@@ -37,7 +37,7 @@ pub fn turn_handler_set_turn_next(
                     thread::sleep(Duration::from_millis(100)); 
 
                     let owned_finished_count = party.all_players_get_finished_count();
-                    let owned_party_size = party.get_party_size();
+                    let owned_party_size = party.party_size();
                     info!("\nFinished: [{:?}] vs Party: [{:?}]", owned_finished_count, owned_party_size);
                     if owned_finished_count == owned_party_size as i32 {
                         info!("Round Finished: All Players finished!");
@@ -138,7 +138,7 @@ pub fn turn_handler_next_round_prep(
     info!("function: turn_handler_next_round_prep"); 
     {
         party.next_round_prep();
-        party.set_active_player(1);
+        party.active_player_set(1);
     }
     run_trigger.set_target("turn_handler_next_round_prep", false);
     info!("post response: turn_handler_next_round_prep: [{}]", run_trigger.get("turn_handler_next_round_prep"));  

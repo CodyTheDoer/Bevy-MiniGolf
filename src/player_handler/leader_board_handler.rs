@@ -21,30 +21,13 @@ impl LeaderBoard {
         self.current_scores = [0; 18];
     }
 
-    pub async fn asycn_log_game<'a>(
-        &mut self, 
-        mut game_handler: ResMut<'a, GameHandler>,
-        party: ResMut<'a, Party>,
-    ) {
-        let game_id = game_handler.game_id_get();
-        let (players, scores) = party.get_all_player_ids_and_scores();
-        let record = GameRecord {
-            game_id,
-            players,
-            scores,
-        };
-        self.past_games.push(record);
-        self.reset_current_scores();
-        game_handler.game_id_clear();
-    }
-
     pub fn log_game(
         &mut self, 
         mut game_handler: ResMut<GameHandler>,
         party: ResMut<Party>,
     ) {
         let game_id = game_handler.game_id_get();
-        let (players, scores) = party.get_all_player_ids_and_scores();
+        let (players, scores) = party.all_players_get_ids_and_scores();
         let record = GameRecord {
             game_id,
             players,
@@ -85,17 +68,25 @@ pub fn leader_board_log_game(
     game_handler: ResMut<GameHandler>,
     party: ResMut<Party>,
 ) {
-    leader_board.log_game(game_handler, party);
+    info!("function: leader_board_log_game"); 
+    {
+        leader_board.log_game(game_handler, party); 
+    }
     run_trigger.set_target("leader_board_log_game", false);
+    info!("post response: leader_board_log_game: [{}]", run_trigger.get("leader_board_log_game"));  
 }
 
 pub fn leader_board_review_last_game(
     mut run_trigger: ResMut<RunTrigger>,
     leader_board: Res<LeaderBoard>,
 ) {
-    if leader_board.get_game_count() > 0 {
-        let record = leader_board.get_last_game();
-        leader_board.review_game(record);
+    info!("function: leader_board_review_last_game"); 
+    {
+        if leader_board.get_game_count() > 0 {
+            let record = leader_board.get_last_game();
+            leader_board.review_game(record);
+        }
     }
     run_trigger.set_target("leader_board_review_last_game", false);
+    info!("post response: leader_board_review_last_game: [{}]", run_trigger.get("leader_board_review_last_game"));  
 }

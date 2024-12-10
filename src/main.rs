@@ -41,7 +41,10 @@ use minigolf::{
     OnlineStateChange,
     Party,
     PhysicsHandler,
+    PurgeHandler,
     RunTrigger,
+    SceneInstancePurgedEnvironment,
+    SceneInstancePurgedGolfBalls,
     SceneInstanceSpawned,
     UiUpdateEvent,
     UiUpdateTimer,
@@ -98,7 +101,10 @@ use minigolf::{
             party_handler_remove_last_player,
         },
     },
-    network_handler::network_get_client_state_game,
+    network_handler::{
+        network_get_client_state_all,
+        network_get_client_state_game,
+    },
     // network_handler::{
     //     auth_server_handshake,
     //     heartbeat_system,
@@ -189,10 +195,13 @@ fn main() {
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
         .insert_resource(PhysicsHandler::new())
+        .insert_resource(PurgeHandler::new())
         .insert_resource(RunTrigger::new())
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
+        .add_event::<SceneInstancePurgedEnvironment>()
+        .add_event::<SceneInstancePurgedGolfBalls>()
         .add_event::<SceneInstanceSpawned>()
         .add_event::<OnlineStateChange>()
         .add_event::<UiUpdateEvent>()  
@@ -253,8 +262,9 @@ fn main() {
         .add_systems(Update, level_handler_set_state_next_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_level()))
         .add_systems(Update, level_handler_set_state_next_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_map_set()))
 
+        .add_systems(Update, network_get_client_state_all.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_all()))
         .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
-        
+
         .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
         .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
         
@@ -276,6 +286,7 @@ fn main() {
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
+        .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
         .add_systems(Update, temp_interface);
 
@@ -289,6 +300,21 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
             golf_ball.0.uuid,
             parent.map(|p| p.get())
         );
+    }
+}
+
+fn listening_function_purge_events(
+    mut purge_manager: ResMut<PurgeHandler>,
+    mut purge_event_reader_environment: EventReader<SceneInstancePurgedEnvironment>,
+    mut purge_event_reader_golf_balls: EventReader<SceneInstancePurgedGolfBalls>,
+) {
+    for event in purge_event_reader_environment.read() {
+        info!("Environment Purged: [{:?}]", event);
+        purge_manager.set_target("enviroment_purged", true);
+    }
+    for event in purge_event_reader_golf_balls.read() {
+        info!("Environment Purged: [{:?}]", event);
+        purge_manager.set_target("golf_balls_purged", true);
     }
 }
 
@@ -319,7 +345,7 @@ fn golf_ball_query(
 fn party_query(
     party: Res<Party>,
 ) {
-    info!("Party ID's and Scores: [{:?}]", party.get_all_player_ids_and_scores());
+    info!("Party ID's and Scores: [{:?}]", party.all_players_get_ids_and_scores());
 }
 
 fn last_game_record(
@@ -335,9 +361,14 @@ fn temp_interface(
     keys: Res<ButtonInput<KeyCode>>,
     state_game: Res<State<StateGame>>,
 ) {
-    if keys.just_released(KeyCode::Space) {
-        info!("just_released: Space");  
-        run_trigger.set_target("game_handler_toggle_state_game", true);
+    if keys.just_released(KeyCode::KeyA) { // should trigger with new turn
+        info!("just_released: KeyA");  
+        match state_game.get() {
+            StateGame::NotInGame => {},
+            StateGame::InGame => {
+                run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", true);
+            },
+        };
     };
     if keys.just_released(KeyCode::KeyB) {
         info!("just_released: KeyB");  
@@ -345,15 +376,6 @@ fn temp_interface(
             StateGame::NotInGame => {},
             StateGame::InGame => {
                 run_trigger.set_target("party_handler_active_player_add_bonk", true);
-            },
-        };
-    };
-    if keys.just_released(KeyCode::KeyA) { // should trigger with new turn
-        info!("just_released: KeyA");  
-        match state_game.get() {
-            StateGame::NotInGame => {},
-            StateGame::InGame => {
-                run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", true);
             },
         };
     };
