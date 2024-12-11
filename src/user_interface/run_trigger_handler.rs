@@ -143,7 +143,10 @@ impl RunTrigger {
             "turn_handler_set_turn_next" => {
                 self.turn_handler_set_turn_next
             },
-            _ => {false},
+            _ => {
+                warn!("Target: [{}] does not exist!!!", target); 
+                false
+            },
         }
     }
 

@@ -1,4 +1,3 @@
-use bevy::ecs::entity;
 use bevy::prelude::*;
 
 use bevy_rapier3d::{parry::shape::SharedShape, prelude::*};
@@ -8,9 +7,7 @@ use uuid::Uuid;
 
 // States
 use crate::{
-    StateArrow, 
-    StateGamePlayStyle,
-    StateTurn,
+    game_handler, StateArrow, StateGamePlayStyle, StateTurn
 };
 
 // Resources
@@ -27,7 +24,7 @@ use crate::{
     PurgeHandler,
     RunTrigger,
     SceneInstancePurgedGolfBalls,
-    SceneInstanceSpawned,
+    SceneInstanceSpawnedGolfBalls,
 };
 
 use crate::level_handler::level_handler::level_handler_purge_golf_ball_all;
@@ -109,90 +106,95 @@ pub fn add_physics_query_and_update_scene(
     scene_meshes: Query<(Entity, &Name, &Handle<Mesh>)>,
     mut gb_query: Query<(Entity, &mut GolfBall)>,
     mut run_trigger: ResMut<RunTrigger>,
+    game_handler: Res<GameHandler>,
 ) {
-    info!("function: add_physics_query_and_update_scene"); 
-    commands
-        .spawn(Collider::cylinder(0.1, 2000.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
-        .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(Sensor)
-        .insert(Name::new("ground_sensor"));
+    info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.get("environment_loaded")); 
+    if game_handler.get("environment_loaded") {
+        {
+            commands
+                .spawn(Collider::cylinder(0.1, 2000.0))
+                .insert(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
+                .insert(ActiveEvents::COLLISION_EVENTS)
+                .insert(Sensor)
+                .insert(Name::new("ground_sensor"));
 
-    let players = party.all_players_get_ids();
-    for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
-        for player in &players {
-            if player == &golf_ball.0.uuid {
-                let collider = Collider::ball(0.022);
-                commands
-                    .entity(entity)
-                    .insert(collider)
-                    .insert(RigidBody::Dynamic)
-                    .insert(Damping {
-                        angular_damping: 3.0,
-                        ..default()
-                    })
-                    .insert(ExternalImpulse::default())
-                    .insert(ColliderMassProperties::Density(1.0))
-                    .insert(GravityScale(1.0))
-                    .insert(Ccd::enabled())
-                    .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)));
-                    // .insert(Name::new(format!("ball_{}", player.to_string())));
+            let players = party.all_players_get_ids();
+            for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
+                for player in &players {
+                    if player == &golf_ball.0.uuid {
+                        let collider = Collider::ball(0.022);
+                        commands
+                            .entity(entity)
+                            .insert(collider)
+                            .insert(RigidBody::Dynamic)
+                            .insert(Damping {
+                                angular_damping: 3.0,
+                                ..default()
+                            })
+                            .insert(ExternalImpulse::default())
+                            .insert(ColliderMassProperties::Density(1.0))
+                            .insert(GravityScale(1.0))
+                            .insert(Ccd::enabled())
+                            .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)));
+                            // .insert(Name::new(format!("ball_{}", player.to_string())));
+                    }
+                }
+            }
+
+            // iterate over all meshes in the scene and match them by their name.
+            for (entity, name, mesh_handle) in scene_meshes.iter() {
+                if name.as_str() == "cup" {
+                    // Create the collider from the mesh.
+                    let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+                    let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+                    // Attach collider to the entity of this same object.
+                    commands
+                        .entity(entity)
+                        .insert(collider);
+                }
+                if name.as_str() == "cup_sensor" {
+                    let collider = Collider::cuboid(0.04, 0.01, 0.04);
+                    // Attach collider to the entity of this same object.
+                    commands
+                        .entity(entity)
+                        // .insert(material_color.into())
+                        .insert(collider)
+                        .insert(ActiveEvents::COLLISION_EVENTS)
+                        .insert(Sensor);
+                }
+                if name.as_str() == "green" {
+                    let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+
+                    let mut flags = TriMeshFlags::default();
+                    flags.set(TriMeshFlags::FIX_INTERNAL_EDGES, true);
+
+                    let (vtx, idx) =
+                            extract_mesh_vertices_indices(mesh).unwrap();
+                    let collider: Collider = SharedShape::trimesh_with_flags(vtx, idx, flags).into();
+
+                    // Create the collider from the mesh.
+                    // let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+
+                    // Attach collider to the entity of this same object.
+                    commands
+                        .entity(entity)
+                        .insert(collider)
+                        .insert(RigidBody::Fixed);
+                }
+                if name.as_str() == "cannon" {
+                    let mesh = meshes.get(&mesh_handle.clone()).unwrap();
+                    // Create the collider from the mesh.
+                    let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
+                    // Attach collider to the entity of this same object.
+                    commands
+                        .entity(entity)
+                        .insert(collider);
+                }
             }
         }
-    }
-
-    // iterate over all meshes in the scene and match them by their name.
-    for (entity, name, mesh_handle) in scene_meshes.iter() {
-        if name.as_str() == "cup" {
-            // Create the collider from the mesh.
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
-            // Attach collider to the entity of this same object.
-            commands
-                .entity(entity)
-                .insert(collider);
-        }
-        if name.as_str() == "cup_sensor" {
-            let collider = Collider::cuboid(0.04, 0.01, 0.04);
-            // Attach collider to the entity of this same object.
-            commands
-                .entity(entity)
-                // .insert(material_color.into())
-                .insert(collider)
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(Sensor);
-        }
-        if name.as_str() == "green" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-
-            let mut flags = TriMeshFlags::default();
-            flags.set(TriMeshFlags::FIX_INTERNAL_EDGES, true);
-
-            let (vtx, idx) =
-                    extract_mesh_vertices_indices(mesh).unwrap();
-            let collider: Collider = SharedShape::trimesh_with_flags(vtx, idx, flags).into();
-
-            // Create the collider from the mesh.
-            // let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
-
-            // Attach collider to the entity of this same object.
-            commands
-                .entity(entity)
-                .insert(collider)
-                .insert(RigidBody::Fixed);
-        }
-        if name.as_str() == "cannon" {
-            let mesh = meshes.get(&mesh_handle.clone()).unwrap();
-            // Create the collider from the mesh.
-            let collider = Collider::from_bevy_mesh(mesh, &ComputedColliderShape::TriMesh).unwrap();
-            // Attach collider to the entity of this same object.
-            commands
-                .entity(entity)
-                .insert(collider);
-        }
-    }
-    run_trigger.set_target("add_physics_query_and_update_scene", false);
-    info!("post response: add_physics_query_and_update_scene: [{}]", run_trigger.get("add_physics_query_and_update_scene"));  
+        run_trigger.set_target("add_physics_query_and_update_scene", false);
+        info!("post response: add_physics_query_and_update_scene: [{}]", run_trigger.get("add_physics_query_and_update_scene"));
+    }  
 }
 
 pub fn bonk(
@@ -247,7 +249,6 @@ pub fn bonk_step_mid( // Determines bonks power by measuring the difference betw
     party: Res<Party>,
 ) {
     for golf_ball in golf_balls.iter_mut() {
-        info!("Searching for match: [{}]", golf_ball.0.uuid);
         if golf_ball.0.uuid == party.active_player_get_player_id() {
             let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
             let Some(position) = windows.single().cursor_position() else {
@@ -330,46 +331,47 @@ pub fn bonk_step_end( // Fires bonk
 
 pub fn collision_events_listener(
     mut collision_events: EventReader<CollisionEvent>,
-    scene_meshes: Query<(Entity, &Name)>,
+    // scene_meshes: Query<(Entity, &GolfBall)>,
     // mut next_turn_state: ResMut<NextState<StateTurn>>,
 ) {
     for collision_event in collision_events.read() {
+        info!("Collision: [{:?}]", &collision_event);
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _flags) => {
-                // info!("Collision started between {:?} and {:?}", entity1, entity2);
-                for (entity, name) in &scene_meshes {
-                    let owned_name = name.as_str();
-                    if *entity1 == entity {
-                        match owned_name {
-                            "cup_sensor" => {
-                                info!("1: Cups baby!!!!");
-                                // next_turn_state.set(StateTurn::HoleComplete);
-                            },
-                            "ground_sensor" => {
-                                info!("1: Ooof grounded...");
-                                // next_turn_state.set(StateTurn::TurnReset);
-                            },
-                            _ => {},
-                        }
-                    }
-                    if *entity2 == entity {
-                        match owned_name {
-                            "cup_sensor" => {
-                                info!("1: Cups baby!!!!");
-                                // next_turn_state.set(StateTurn::HoleComplete);
-                            },
-                            "ground_sensor" => {
-                                info!("1: Ooof grounded...");
-                                // next_turn_state.set(StateTurn::TurnReset);
-                            },
-                            _ => {},
-                        }
-                    }
-                    
-                }
+                info!("Collision started between {:?} and {:?}", entity1, entity2);
+                // for (entity, name) in &scene_meshes {
+                //     let id = String::from(name.0.uuid.clone());
+                //     let owned_name = format!("golf_ball_{}", id.as_str()).as_str();
+                //     if *entity1 == entity {
+                //         match owned_name {
+                //             "cup_sensor" => {
+                //                 info!("1: Cups baby!!!!");
+                //                 // next_turn_state.set(StateTurn::HoleComplete);
+                //             },
+                //             "ground_sensor" => {
+                //                 info!("1: Ooof grounded...");
+                //                 // next_turn_state.set(StateTurn::TurnReset);
+                //             },
+                //             _ => {},
+                //         }
+                //     }
+                //     if *entity2 == entity {
+                //         match owned_name {
+                //             "cup_sensor" => {
+                //                 info!("1: Cups baby!!!!");
+                //                 // next_turn_state.set(StateTurn::HoleComplete);
+                //             },
+                //             "ground_sensor" => {
+                //                 info!("1: Ooof grounded...");
+                //                 // next_turn_state.set(StateTurn::TurnReset);
+                //             },
+                //             _ => {},
+                //         }
+                //     }
+                // }
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-                // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+             info!("Collision stopped between {:?} and {:?}", entity1, entity2);
             }
         }
     }
@@ -454,7 +456,7 @@ fn golf_ball_handler_init_golf_ball_uuid(
     asset_server: &Res<AssetServer>,
     glb_storage: &Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     player_id: &Uuid,
-    asset_event_writer: &mut EventWriter<SceneInstanceSpawned>,
+    asset_event_writer: &mut EventWriter<SceneInstanceSpawnedGolfBalls>,
 ) {
     if let Some(basic_golf_ball) = glb_storage.glb.get(25) {
         let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
@@ -479,7 +481,7 @@ fn golf_ball_handler_init_golf_ball_uuid(
             .id();
 
             // Emit a custom AssetEvent for this asset
-            asset_event_writer.send(SceneInstanceSpawned {
+            asset_event_writer.send(SceneInstanceSpawnedGolfBalls {
                     entity: spawned_golf_ball,
                 }
             );
@@ -524,9 +526,8 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
     party: ResMut<Party>,
     asset_server: Res<AssetServer>,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
-    mut asset_event_writer: EventWriter<SceneInstanceSpawned>,
+    mut asset_event_writer: EventWriter<SceneInstanceSpawnedGolfBalls>,
     gb_query: Query<(Entity, &Name)>,
-    golf_balls: Query<(Entity, &GolfBall)>,
 ) {
     info!("function: golf_ball_handler_spawn_golf_balls_for_party_members"); 
     {
@@ -540,14 +541,6 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
                 &mut asset_event_writer,
             );
 
-            /*
-            level_handler::physics_handler: Building Golf Ball for player: [01938dc7-1def-7eb3-a771-000436e79280]
-            level_handler::physics_handler: Generated Name: golf_ball_01938dc7-1def-7eb3-a771-000436e79280
-            level_handler::physics_handler: name: ["ball"], Entity: [Entity { index: 210, generation: 1 }]
-
-            ray_system_handler: Name: "ball" Entity: Entity { index: 374, generation: 2 }
-            */
-
             for (golf_ball, name) in gb_query.iter() {
                 if name.as_str() == "ball" {
                     info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
@@ -555,14 +548,7 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
                     info!("name: [{:?}], Entity: [{:?}]", &name, &golf_ball);
                 }
             };
-            
-            // party.golf_ball_build_player(&player);
-        };
-
-        // info!("\n\nPlayer: [{:?}], Golf Ball: [{:?}]", player_id.to_owned(), golf_ball.0);
-                        // commands.entity(spawned_golf_ball).push_children(&[entity]);
-                        // commands.entity(parent.unwrap().get()).insert(Name::new(name.clone()));
-        
+        };   
     }
     run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", false);
     info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  

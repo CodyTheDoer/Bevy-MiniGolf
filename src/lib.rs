@@ -86,6 +86,8 @@ pub struct Fonts {
 pub struct GameHandler {
     current_level: i32,
     arrow_state: bool,
+    environment_loaded: bool,
+    in_game: bool,
     network_server_connection: bool,
     remote_game: bool,
     remotely_pushed_state: Option<StateUpdateRef>,
@@ -278,7 +280,12 @@ pub struct SceneInstancePurgedEnvironment {}
 pub struct SceneInstancePurgedGolfBalls {}
 
 #[derive(Debug, Event)]
-pub struct SceneInstanceSpawned {
+pub struct SceneInstanceSpawnedEnvironment {
+    pub entity: Entity,
+}
+
+#[derive(Debug, Event)]
+pub struct SceneInstanceSpawnedGolfBalls {
     pub entity: Entity,
 }
 

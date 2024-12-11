@@ -28,14 +28,12 @@ pub fn turn_handler_set_turn_next(
         match state_game.get() {
             StateGame::InGame => {
                 next_state_turn.set(StateTurn::NextTurn);
-                if game_handler.remote_game_get() {
+                if game_handler.get("remote_game") {
     
                 } else {
                     let mut load_next_level = false;
                     run_trigger.set_target("golf_ball_handler_party_store_locations", true);
     
-                    thread::sleep(Duration::from_millis(100)); 
-
                     let owned_finished_count = party.all_players_get_finished_count();
                     let owned_party_size = party.party_size();
                     info!("\nFinished: [{:?}] vs Party: [{:?}]", owned_finished_count, owned_party_size);
@@ -50,8 +48,8 @@ pub fn turn_handler_set_turn_next(
                             StateMapSet::WholeCorse => {
                                 match state_level.get() {
                                     StateLevel::Hole18 => {
-                                        run_trigger.set_target("turn_handler_end_game", true);
                                         run_trigger.set_target("golf_ball_handler_end_game", true);
+                                        run_trigger.set_target("turn_handler_end_game", true);
                                     },
                                     _ => {
                                         run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", true);
@@ -106,7 +104,6 @@ pub fn turn_handler_set_turn_next(
                     if load_next_level == true {
                         game_handler.current_level_set_next_level();
                         run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
-                        thread::sleep(Duration::from_millis(100)); 
                         run_trigger.set_target("add_physics_query_and_update_scene", true);
                     }         
                 }
@@ -124,7 +121,6 @@ pub fn turn_handler_end_game(
     info!("function: turn_handler_end_game"); 
     {
         run_trigger.set_target("leader_board_log_game", true);
-        run_trigger.set_target("level_handler_purge_protocol", true);
         run_trigger.set_target("game_handler_game_state_exit_routines", true);
     }
     run_trigger.set_target("turn_handler_end_game", false);

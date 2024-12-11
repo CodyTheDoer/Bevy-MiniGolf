@@ -7,8 +7,8 @@ use crate::level_handler::physics_handler::golf_ball_is_asleep;
 use crate::{
     StateArrow, 
     StateCameraOrbitEntity, 
-    StateGame, 
     StateEngineConnection, 
+    StateGame, 
     StateGamePlayStyle, 
     StateLevel, 
     StateMapSet, 
@@ -27,6 +27,7 @@ use crate::{
     GolfBall,
     LeaderBoard,
     Party,
+    PurgeHandler,
     RunTrigger,
     TextState,
     TextTitle,
@@ -133,7 +134,7 @@ pub fn setup_ui(
     };
     let matrix_display_small = TextStyle {
         font: font.clone(),
-        font_size: 10.0,
+        font_size: 12.0,
         ..default()
     };
     fonts.fonts.push(matrix_display);
@@ -242,7 +243,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..26 {
+    for _ in 0..33 {
         commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -282,6 +283,7 @@ pub fn update_ui(
     leader_board: Res<LeaderBoard>,
     mut query: Query<&mut Text, With<TextState>>,
     run_trigger: Res<RunTrigger>,
+    purge_handler: Res<PurgeHandler>
 ) {
     let state_texts_left = vec![
         format!("state_arrow: {:?}", *state_arrow),                                                                                         // 1
@@ -293,7 +295,7 @@ pub fn update_ui(
         format!("state_map_set: {:?}", *state_map_set),                                                                                     // 7
         format!("state_menu: {:?}", *state_menu),                                                                                           // 8
         format!("state_turn: {:?}", *state_turn),                                                                                           // 9
-        format!("Remote Game: {:?}", game_handler.remote_game_get()),                                                                       // 10
+        format!("Remote Game: {:?}", game_handler.get("remote_game")),                                                                       // 10
         format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 11
         format!("Party Size: {:?}", party.party_size()),                                                                                // 12
         format!("Active Player: {:?}", party.active_player_get_index()),                                                                    // 13 
@@ -316,6 +318,12 @@ pub fn update_ui(
     ];
 
     let state_texts_right = vec![
+        format!("game_handler: In Game: [{:?}]", game_handler.get("in_game")),
+        format!("game_handler: Environment Loaded: [{:?}]", game_handler.get("environment_loaded")),
+        format!("purge_handler: Environment Purged: [{:?}]", purge_handler.get("environment_purged")),
+        format!("purge_handler: Golf Balls Purged: [{:?}]", purge_handler.get("golf_balls_purged")),
+        format!("______________________________________________________________________"),
+        format!("add_physics_query_and_update_scene: {:?}", run_trigger.get("add_physics_query_and_update_scene")),
         format!("camera_handler_cycle_state_camera: {:?}", run_trigger.get("camera_handler_cycle_state_camera")),
         format!("game_handler_game_start: {:?}", run_trigger.get("game_handler_game_start")),
         format!("game_handler_game_state_exit_routines: {:?}", run_trigger.get("game_handler_game_state_exit_routines")),
@@ -331,6 +339,7 @@ pub fn update_ui(
         format!("level_handler_purge_protocol: {:?}", run_trigger.get("level_handler_purge_protocol")),
         format!("level_handler_set_state_next_level: {:?}", run_trigger.get("level_handler_set_state_next_level")),
         format!("level_handler_set_state_next_map_set: {:?}", run_trigger.get("level_handler_set_state_next_map_set")),
+        format!("network_get_client_state_all: {:?}", run_trigger.get("network_get_client_state_all")),
         format!("network_get_client_state_game: {:?}", run_trigger.get("network_get_client_state_game")),
         format!("party_handler_active_player_add_bonk: {:?}", run_trigger.get("party_handler_active_player_add_bonk")),
         format!("party_handler_active_player_set_hole_completion_state_true: {:?}", run_trigger.get("party_handler_active_player_set_hole_completion_state_true")),

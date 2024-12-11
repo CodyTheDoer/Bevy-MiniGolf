@@ -15,15 +15,7 @@ use bevy_rapier3d::prelude::*;
 
 // --- States --- //
 use minigolf::{
-    StateArrow, 
-    StateCameraOrbitEntity, 
-    StateEngineConnection, 
-    StateGame, 
-    StateGamePlayStyle, 
-    StateLevel, 
-    StateMapSet, 
-    StateMenu, 
-    StateTurn
+    game_handler, StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
 };
 
 // --- Resources --- //
@@ -45,7 +37,8 @@ use minigolf::{
     RunTrigger,
     SceneInstancePurgedEnvironment,
     SceneInstancePurgedGolfBalls,
-    SceneInstanceSpawned,
+    SceneInstanceSpawnedEnvironment,
+    SceneInstanceSpawnedGolfBalls,
     UiUpdateEvent,
     UiUpdateTimer,
     UpdateIdResource,
@@ -202,7 +195,8 @@ fn main() {
         // --- Event Initialization --- //
         .add_event::<SceneInstancePurgedEnvironment>()
         .add_event::<SceneInstancePurgedGolfBalls>()
-        .add_event::<SceneInstanceSpawned>()
+        .add_event::<SceneInstanceSpawnedEnvironment>()
+        .add_event::<SceneInstanceSpawnedGolfBalls>()
         .add_event::<OnlineStateChange>()
         .add_event::<UiUpdateEvent>()  
 
@@ -287,6 +281,7 @@ fn main() {
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
         .add_systems(Update, listening_function_purge_events)
+        .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
         .add_systems(Update, temp_interface);
 
@@ -304,27 +299,52 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
 }
 
 fn listening_function_purge_events(
-    mut purge_manager: ResMut<PurgeHandler>,
+    mut game_handler: ResMut<GameHandler>,
+    mut purge_handler: ResMut<PurgeHandler>,
     mut purge_event_reader_environment: EventReader<SceneInstancePurgedEnvironment>,
     mut purge_event_reader_golf_balls: EventReader<SceneInstancePurgedGolfBalls>,
 ) {
     for event in purge_event_reader_environment.read() {
         info!("Environment Purged: [{:?}]", event);
-        purge_manager.set_target("enviroment_purged", true);
+        purge_handler.set_target("environment_purged", true);
+        game_handler.set_target("environment_loaded", false);
     }
     for event in purge_event_reader_golf_balls.read() {
         info!("Environment Purged: [{:?}]", event);
-        purge_manager.set_target("golf_balls_purged", true);
+        purge_handler.set_target("golf_balls_purged", true);
     }
 }
 
 fn listening_function_spawned_golf_ball_events(
-    mut asset_event_reader: EventReader<SceneInstanceSpawned>,
+    mut asset_event_reader: EventReader<SceneInstanceSpawnedGolfBalls>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut purge_handler: ResMut<PurgeHandler>,
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
+        purge_handler.set_target("golf_balls_purged", false);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
+    }
+}
+
+fn listening_function_spawned_environment_events(
+    mut asset_event_reader: EventReader<SceneInstanceSpawnedEnvironment>,
+    mut game_handler: ResMut<GameHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
+    mut purge_handler: ResMut<PurgeHandler>,
+) {
+    for event in asset_event_reader.read() {
+        info!("Entity: [{:?}]", event);
+        purge_handler.set_target("environment_purged", false);
+        game_handler.set_target("environment_loaded", true);
+        match game_handler.get("in_game") {
+            true => {
+                info!("listening_function_spawned_environment_events: In Game: Triggering Golf Ball pipeline");
+                run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
+            },
+            false => {
+                info!("listening_function_spawned_environment_events: Not In Game");},
+        }
     }
 }
 
@@ -371,7 +391,7 @@ fn temp_interface(
         };
     };
     if keys.just_released(KeyCode::KeyB) {
-        info!("just_released: KeyB");  
+        info!("just_released: KeyB");
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
@@ -380,11 +400,11 @@ fn temp_interface(
         };
     };
     if keys.just_released(KeyCode::KeyC) {
-        info!("just_released: KeyC");  
+        info!("just_released: KeyC");
         run_trigger.set_target("camera_handler_cycle_state_camera", true);
     };
     if keys.just_released(KeyCode::KeyI) {
-        info!("just_released: KeyI");  
+        info!("just_released: KeyI");
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     };
     if keys.just_released(KeyCode::KeyM) {
@@ -422,6 +442,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
+                run_trigger.set_target("level_handler_purge_protocol", true);
                 run_trigger.set_target("game_handler_game_start", true);
             },
         };

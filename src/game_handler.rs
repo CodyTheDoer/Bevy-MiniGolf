@@ -30,6 +30,8 @@ impl GameHandler {
         GameHandler {
             current_level: 0,
             arrow_state: false,
+            environment_loaded: false,
+            in_game: false,
             network_server_connection: false,
             remote_game: false,
             remotely_pushed_state: None,
@@ -37,16 +39,74 @@ impl GameHandler {
         }
     }
 
-    pub fn remote_game_get(&self) -> bool {
+    pub fn get(&self, target: &str) -> bool {
+        match target {
+            "arrow_state" => {
+                self.arrow_state
+            },
+            "environment_loaded" => {
+                self.environment_loaded
+            },
+            "in_game" => {
+                self.in_game
+            },
+            "network_server_connection" => {
+                self.network_server_connection
+            },
+            "remote_game" => {
+                self.remote_game
+            },
+            _ => {
+                warn!("Target: [{}] does not exist!!!", target); 
+                false
+            },
+        }
+    }
+
+    pub fn set_target(&mut self, target: &str, state: bool) {
+        match target {
+            "arrow_state" => {
+                self.arrow_state = state;
+                info!("response: arrow_state: {}", self.get("arrow_state"));  
+            },
+            "environment_loaded" => {
+                self.environment_loaded = state;
+                info!("response: environment_loaded: {}", self.get("environment_loaded"));  
+            },
+            "in_game" => {
+                self.in_game = state;
+                info!("response: in_game: {}", self.get("in_game"));  
+            },
+            "network_server_connection" => {
+                self.network_server_connection = state;
+                info!("response: network_server_connection: {}", self.get("network_server_connection"));  
+            },
+            "remote_game" => {
+                self.remote_game = state;
+                info!("response: remote_game: {}", self.get("remote_game"));  
+            },
+            _ => {},
+        }
+    }
+
+    pub fn arrow_state(&self) -> bool {
+        self.arrow_state
+    }
+
+    pub fn environment_loaded(&self) -> bool {
+        self.environment_loaded
+    }
+
+    pub fn in_game(&self) -> bool {
+        self.in_game
+    }
+
+    pub fn network_server_connection(&self) -> bool {
+        self.network_server_connection
+    }
+
+    pub fn remote_game(&self) -> bool {
         self.remote_game
-    }
-    
-    pub fn remote_game_set_false(&mut self) {
-        self.remote_game = false;
-    }
-    
-    pub fn remote_game_set_true(&mut self) {
-        self.remote_game = true;
     }
     
     pub fn game_id_get(&mut self) -> Uuid {
@@ -184,12 +244,13 @@ pub fn game_handler_game_start (
 ) {
     info!("function: game_handler_game_start "); 
     {
-        if game_handler.remote_game_get() {
+        if game_handler.get("remote_game") {
 
         } else {
             run_trigger.set_target("game_handler_game_state_start_routines", true);
             match state_game.get() {
                 StateGame::NotInGame => {
+                    game_handler.set_target("in_game", true);
                     match state_map_set.get() {
                         StateMapSet::Tutorial => {
                             game_handler.current_level_set(0);
@@ -239,6 +300,7 @@ pub fn game_handler_game_state_exit_routines(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
+                game_handler.set_target("in_game", false);
                 run_trigger.set_target("golf_ball_handler_end_game", true);
                 run_trigger.set_target("level_handler_purge_protocol", true);
                 next_menu_state.set(StateMenu::MenuMainMenu);
@@ -275,7 +337,7 @@ pub fn game_handler_game_state_start_routines(
         info!("Current Game State: {:?}", state_game.get());
         match state_game.get() {
             StateGame::NotInGame => {
-                if game_handler.remote_game_get() {
+                if game_handler.get("remote_game") {
                     info!("StateTurn::Idle");
                     next_state_turn.set(StateTurn::Idle);
                 } else {

@@ -22,6 +22,8 @@ use crate::{
     RunTrigger,
     SceneInstancePurgedEnvironment,
     SceneInstancePurgedGolfBalls,
+    SceneInstanceSpawnedEnvironment,
+    SceneInstanceSpawnedGolfBalls,
 };
 
 impl GLBStorageID {
@@ -93,8 +95,12 @@ pub fn level_handler_purge_protocol(
     
     info!("function: level_handler_purge_protocol"); 
     {
-        level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment, &mut purge_handler);
-        level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball, &mut purge_handler);
+        if purge_handler.get("environment_purged") == false {
+            level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment, &mut purge_handler);
+        }
+        if purge_handler.get("golf_balls_purged") == false {
+            level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball, &mut purge_handler);
+        }
     }
     run_trigger.set_target("level_handler_purge_protocol", false);
     info!("post response: level_handler_purge_protocol: [{}]", run_trigger.get("level_handler_purge_protocol"));  
@@ -106,24 +112,15 @@ pub fn level_handler_init_level_game_handler_current_level(
     lhi_commands: Commands,
     glb_storage: Res<GLBStorageID>,
     gh: ResMut<GameHandler>,
-    state_game: Res<State<StateGame>>,
     mut purge_handler: ResMut<PurgeHandler>,
+    mut asset_event_writer: EventWriter<SceneInstanceSpawnedEnvironment>,
 ) {
     info!("level_handler_init_level_game_handler_current_level: [{}]", gh.current_level);
     {
         info!("Purge Handler: Environment: [{}] Golf Balls [{}]", purge_handler.get("environment_purged"), purge_handler.get("golf_balls_purged"));
         // Write in testing for purge states:
         if purge_handler.get("environment_purged") && purge_handler.get("golf_balls_purged") {
-            run_trigger.set_target("level_handler_purge_protocol", true);
-            level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level);
-            match state_game.get() {
-                StateGame::InGame => {
-                    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
-                    purge_handler.set_target("golf_balls_purged", false);
-                },
-                StateGame::NotInGame => {},
-            }
-            info!("{:?}", state_game.get());
+            level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level, &mut asset_event_writer);
             purge_handler.set_target("environment_purged", false);
             run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
             info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
@@ -137,6 +134,7 @@ fn level_handler_init_level(
     mut commands: Commands,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     level: i32,
+    asset_event_writer: &mut EventWriter<SceneInstanceSpawnedEnvironment>,
 ) {
     info!("level_handler_init_level: Running");
     if let Some(scene_glb_file) = glb_storage.glb.get((level) as usize) {
@@ -144,7 +142,7 @@ fn level_handler_init_level(
             GltfAssetLabel::Scene(0).from_asset(scene_glb_file.map),
         );
         info!("level_handler_init_level: Loading: [{:?}]", scene_handle);
-        let _scene_entities = commands
+        let scene_entities = commands
             .spawn(SceneBundle {
                 scene: scene_handle.clone(),
                 ..default()
@@ -152,6 +150,12 @@ fn level_handler_init_level(
             .insert(Interactable)
             .id(); 
         info!("level_handler_init_level: Completed");
+
+        // Emit a custom AssetEvent for this asset
+        asset_event_writer.send(SceneInstanceSpawnedEnvironment {
+                entity: scene_entities,
+            }
+        );
     } else {
         warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
     };
@@ -314,6 +318,7 @@ pub fn level_handler_next_turn_protocol(
     info!("function: level_handler_next_turn_protocol"); 
     {
         run_trigger.set_target("level_handler_set_state_next_level", true);
+        run_trigger.set_target("level_handler_purge_protocol", true);
     }
     run_trigger.set_target("level_handler_next_turn_protocol", false);
     info!("post response: level_handler_next_turn_protocol: [{}]", run_trigger.get("level_handler_next_turn_protocol"));  
