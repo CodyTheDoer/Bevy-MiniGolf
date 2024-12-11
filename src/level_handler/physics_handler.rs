@@ -8,6 +8,7 @@ use uuid::Uuid;
 use std::thread;
 use std::time::Duration;
 
+use crate::player_handler::party_handler;
 // States
 use crate::{
     game_handler, StateArrow, StateGamePlayStyle, StateTurn
@@ -158,8 +159,7 @@ pub fn add_physics_query_and_update_scene(
                     info!("Built Cup collider from mesh...");
                 }
                 if name.as_str() == "cup_sensor" {
-                    // let collider = Collider::cuboid(0.04, 0.01, 0.04);
-                    let collider = Collider::cuboid(0.08, 0.08, 0.08);
+                    let collider = Collider::cuboid(0.04, 0.01, 0.04);
                     // Attach collider to the entity of this same object.
                     commands
                         .entity(entity)
@@ -339,48 +339,66 @@ pub fn bonk_step_end( // Fires bonk
 }
 
 pub fn collision_events_listener(
+    mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
-    // scene_meshes: Query<(Entity, &GolfBall)>,
-    // mut next_turn_state: ResMut<NextState<StateTurn>>,
+    mut party: ResMut<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+    golf_balls: Query<(Entity, &GolfBall)>,
+    scene_meshes: Query<(Entity, &Name)>,
 ) {
     for collision_event in collision_events.read() {
-        info!("Collision: [{:?}]", &collision_event);
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _flags) => {
-                info!("Collision started between {:?} and {:?}", entity1, entity2);
-                // for (entity, name) in &scene_meshes {
-                //     let id = String::from(name.0.uuid.clone());
-                //     let owned_name = format!("golf_ball_{}", id.as_str()).as_str();
-                //     if *entity1 == entity {
-                //         match owned_name {
-                //             "cup_sensor" => {
-                //                 info!("1: Cups baby!!!!");
-                //                 // next_turn_state.set(StateTurn::HoleComplete);
-                //             },
-                //             "ground_sensor" => {
-                //                 info!("1: Ooof grounded...");
-                //                 // next_turn_state.set(StateTurn::TurnReset);
-                //             },
-                //             _ => {},
-                //         }
-                //     }
-                //     if *entity2 == entity {
-                //         match owned_name {
-                //             "cup_sensor" => {
-                //                 info!("1: Cups baby!!!!");
-                //                 // next_turn_state.set(StateTurn::HoleComplete);
-                //             },
-                //             "ground_sensor" => {
-                //                 info!("1: Ooof grounded...");
-                //                 // next_turn_state.set(StateTurn::TurnReset);
-                //             },
-                //             _ => {},
-                //         }
-                //     }
-                // }
+                // info!("Collision started between {:?} and {:?}", entity1, entity2);
+                for (entity, name) in &scene_meshes {
+                    let owned_name = name.as_str();
+                    if *entity1 == entity {
+                        for (golf_ball_ent, golf_ball) in golf_balls.iter() {
+                            if *entity2 == golf_ball_ent {
+                                match owned_name {
+                                    "cup_sensor" => {
+                                        info!("1: Cups baby!!!!!");
+                                        info!("1: Golf Ball: [{:?}]", golf_ball.0);
+                                        party.player_set_hole_completion_state(golf_ball.0.uuid, true);
+                                        commands.entity(golf_ball_ent).despawn();
+                                        info!("party::all_finished: [{}]", party.all_finished());
+                                        if party.all_finished() {
+                                            run_trigger.set_target("turn_handler_set_turn_next", true);
+                                        }
+                                    },
+                                    "ground_sensor" => {
+                                        info!("1: Ooof grounded...");
+                                        info!("2: Golf Ball: [{:?}]", golf_ball.0);
+                                    },
+                                    _ => {},
+                                }
+                            }
+                        }
+                    }
+                    if *entity2 == entity {
+                        for (golf_ball_ent, golf_ball) in golf_balls.iter() {
+                            if *entity1 == golf_ball_ent {
+                                match owned_name {
+                                    "cup_sensor" => {
+                                        info!("2: Cups baby!!!!!");
+                                        info!("1: Golf Ball: [{:?}]", golf_ball.0);
+                                        party.player_set_hole_completion_state(golf_ball.0.uuid, true);
+                                        commands.entity(golf_ball_ent).despawn();
+                                    },
+                                    "ground_sensor" => {
+                                        info!("2: Ooof grounded...");
+                                        info!("2: Golf Ball: [{:?}]", golf_ball.0);
+                                    },
+                                    _ => {},
+                                }
+                            }
+                        }
+                    }
+                    
+                }
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-             info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+                // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
             }
         }
     }

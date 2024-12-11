@@ -205,6 +205,17 @@ impl Party {
         *party_size 
     }
 
+    pub fn player_set_hole_completion_state(&mut self, player_id: Uuid, state: bool) {
+        let mut players = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        for player in players.iter_mut() {
+            let mut player = player.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            let id = player.get_player_id();
+            if id == player_id {
+                player.set_hole_completion_state(state);
+            };
+        }
+    }
+
     pub fn player_set_player_id(&mut self, player_idx: usize, new_id: Uuid) {
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[player_idx]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
