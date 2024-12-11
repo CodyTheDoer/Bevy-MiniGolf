@@ -5,6 +5,9 @@ use bevy_render::mesh::{Indices, VertexAttributeValues};
 
 use uuid::Uuid;
 
+use std::thread;
+use std::time::Duration;
+
 // States
 use crate::{
     game_handler, StateArrow, StateGamePlayStyle, StateTurn
@@ -109,7 +112,7 @@ pub fn add_physics_query_and_update_scene(
     game_handler: Res<GameHandler>,
 ) {
     info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.get("environment_loaded")); 
-    if game_handler.get("environment_loaded") {
+    if game_handler.get("environment_loaded") && game_handler.get("golf_balls_loaded") {
         {
             commands
                 .spawn(Collider::cylinder(0.1, 2000.0))
@@ -135,8 +138,9 @@ pub fn add_physics_query_and_update_scene(
                             .insert(ColliderMassProperties::Density(1.0))
                             .insert(GravityScale(1.0))
                             .insert(Ccd::enabled())
-                            .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)));
-                            // .insert(Name::new(format!("ball_{}", player.to_string())));
+                            .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)))
+                            .insert(Name::new(format!("golf_ball_{}", player.to_string())));
+                        info!("Built Golf Ball: [{}]", format!("golf_ball_{}", player.to_string()));
                     }
                 }
             }
@@ -151,9 +155,11 @@ pub fn add_physics_query_and_update_scene(
                     commands
                         .entity(entity)
                         .insert(collider);
+                    info!("Built Cup collider from mesh...");
                 }
                 if name.as_str() == "cup_sensor" {
-                    let collider = Collider::cuboid(0.04, 0.01, 0.04);
+                    // let collider = Collider::cuboid(0.04, 0.01, 0.04);
+                    let collider = Collider::cuboid(0.08, 0.08, 0.08);
                     // Attach collider to the entity of this same object.
                     commands
                         .entity(entity)
@@ -161,6 +167,7 @@ pub fn add_physics_query_and_update_scene(
                         .insert(collider)
                         .insert(ActiveEvents::COLLISION_EVENTS)
                         .insert(Sensor);
+                    info!("Built Cup Sensor...");
                 }
                 if name.as_str() == "green" {
                     let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -180,6 +187,7 @@ pub fn add_physics_query_and_update_scene(
                         .entity(entity)
                         .insert(collider)
                         .insert(RigidBody::Fixed);
+                    info!("Built Rigid Body green...");
                 }
                 if name.as_str() == "cannon" {
                     let mesh = meshes.get(&mesh_handle.clone()).unwrap();
@@ -189,6 +197,7 @@ pub fn add_physics_query_and_update_scene(
                     commands
                         .entity(entity)
                         .insert(collider);
+                    info!("Built Cannon...");
                 }
             }
         }

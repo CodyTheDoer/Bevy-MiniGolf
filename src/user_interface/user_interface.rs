@@ -321,6 +321,7 @@ pub fn update_ui(
         format!("game_handler: In Game: [{:?}]", game_handler.get("in_game")),
         format!("game_handler: Environment Loaded: [{:?}]", game_handler.get("environment_loaded")),
         format!("purge_handler: Environment Purged: [{:?}]", purge_handler.get("environment_purged")),
+        format!("game_handler: Golf Balls Loaded: [{:?}]", game_handler.get("golf_balls_loaded")),
         format!("purge_handler: Golf Balls Purged: [{:?}]", purge_handler.get("golf_balls_purged")),
         format!("______________________________________________________________________"),
         format!("add_physics_query_and_update_scene: {:?}", run_trigger.get("add_physics_query_and_update_scene")),

@@ -15,7 +15,7 @@ use bevy_rapier3d::prelude::*;
 
 // --- States --- //
 use minigolf::{
-    game_handler, StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
+    StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
 };
 
 // --- Resources --- //
@@ -159,7 +159,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-        // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //
@@ -312,17 +312,20 @@ fn listening_function_purge_events(
     for event in purge_event_reader_golf_balls.read() {
         info!("Environment Purged: [{:?}]", event);
         purge_handler.set_target("golf_balls_purged", true);
+        game_handler.set_target("golf_balls_loaded", false);
     }
 }
 
 fn listening_function_spawned_golf_ball_events(
     mut asset_event_reader: EventReader<SceneInstanceSpawnedGolfBalls>,
+    mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
     mut purge_handler: ResMut<PurgeHandler>,
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
         purge_handler.set_target("golf_balls_purged", false);
+        game_handler.set_target("golf_balls_loaded", true);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }

@@ -31,6 +31,7 @@ impl GameHandler {
             current_level: 0,
             arrow_state: false,
             environment_loaded: false,
+            golf_balls_loaded: false,
             in_game: false,
             network_server_connection: false,
             remote_game: false,
@@ -46,6 +47,9 @@ impl GameHandler {
             },
             "environment_loaded" => {
                 self.environment_loaded
+            },
+            "golf_balls_loaded" => {
+                self.golf_balls_loaded
             },
             "in_game" => {
                 self.in_game
@@ -73,6 +77,10 @@ impl GameHandler {
                 self.environment_loaded = state;
                 info!("response: environment_loaded: {}", self.get("environment_loaded"));  
             },
+            "golf_balls_loaded" => {
+                self.golf_balls_loaded = state;
+                info!("response: golf_balls_loaded: {}", self.get("golf_balls_loaded"));  
+            },
             "in_game" => {
                 self.in_game = state;
                 info!("response: in_game: {}", self.get("in_game"));  
@@ -95,6 +103,10 @@ impl GameHandler {
 
     pub fn environment_loaded(&self) -> bool {
         self.environment_loaded
+    }
+
+    pub fn golf_balls_loaded(&self) -> bool {
+        self.golf_balls_loaded
     }
 
     pub fn in_game(&self) -> bool {

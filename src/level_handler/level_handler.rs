@@ -1,8 +1,5 @@
 use bevy::prelude::*;
 
-use std::thread;
-use std::time::Duration;
-
 // States
 use crate::{
     StateGame, 
@@ -347,7 +344,6 @@ pub fn level_handler_purge_env_glb_all(
         level_handler_purge_entity(&mut commands, entity);
     }
     purge_event_writer.send(SceneInstancePurgedEnvironment{});
-    purge_handler.set_target("environment_purged", true);
 }
 
 pub fn level_handler_purge_golf_ball_all(
@@ -362,7 +358,6 @@ pub fn level_handler_purge_golf_ball_all(
         level_handler_purge_entity(&mut commands, entity);
     }
     purge_event_writer.send(SceneInstancePurgedGolfBalls{});
-    purge_handler.set_target("golf_balls_purged", true);
 }
 
 impl PurgeHandler {

@@ -87,6 +87,7 @@ pub struct GameHandler {
     current_level: i32,
     arrow_state: bool,
     environment_loaded: bool,
+    golf_balls_loaded: bool,
     in_game: bool,
     network_server_connection: bool,
     remote_game: bool,
