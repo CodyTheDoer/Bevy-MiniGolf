@@ -5,13 +5,10 @@ use bevy_render::mesh::{Indices, VertexAttributeValues};
 
 use uuid::Uuid;
 
-use std::thread;
-use std::time::Duration;
-
-use crate::player_handler::party_handler;
 // States
 use crate::{
-    game_handler, StateArrow, StateGamePlayStyle, StateTurn
+    StateArrow, 
+    StateGamePlayStyle,
 };
 
 // Resources
@@ -25,7 +22,6 @@ use crate::{
     Interactable,
     Party,
     PhysicsHandler,
-    PurgeHandler,
     RunTrigger,
     SceneInstancePurgedGolfBalls,
     SceneInstanceSpawnedGolfBalls,
@@ -398,7 +394,7 @@ pub fn collision_events_listener(
                 }
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-                // info!("Collision stopped between {:?} and {:?}", entity1, entity2);
+                info!("Collision stopped between {:?} and {:?}", entity1, entity2);
             }
         }
     }
@@ -467,11 +463,10 @@ pub fn golf_ball_handler_end_game(
     mut run_trigger: ResMut<RunTrigger>,
     golf_balls: Query<Entity, With<GolfBall>>,
     purge_event_writer: EventWriter<SceneInstancePurgedGolfBalls>,
-    mut purge_handler: ResMut<PurgeHandler>,
 ) {
     info!("function: golf_ball_handler_end_game "); 
     {
-        level_handler_purge_golf_ball_all(commands, golf_balls, purge_event_writer, &mut purge_handler);
+        level_handler_purge_golf_ball_all(commands, golf_balls, purge_event_writer);
     }
     run_trigger.set_target("golf_ball_handler_end_game", false);
     info!("post response: golf_ball_handler_end_game: {}", run_trigger.get("golf_ball_handler_end_game"));  

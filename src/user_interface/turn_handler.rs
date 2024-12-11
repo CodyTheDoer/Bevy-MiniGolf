@@ -5,9 +5,6 @@ use crate::{
     Party, StateGame, StateLevel, StateMapSet, StateTurn
 };
 
-use std::thread;
-use std::time::Duration;
-
 // Resources
 use crate::{
     GameHandler,

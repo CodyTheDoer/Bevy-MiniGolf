@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 // States
 use crate::{
-    StateGame, 
     StateLevel, 
     StateMapSet,
 };
@@ -20,7 +19,6 @@ use crate::{
     SceneInstancePurgedEnvironment,
     SceneInstancePurgedGolfBalls,
     SceneInstanceSpawnedEnvironment,
-    SceneInstanceSpawnedGolfBalls,
 };
 
 impl GLBStorageID {
@@ -87,16 +85,16 @@ pub fn level_handler_purge_protocol(
     golf_balls: Query<Entity, With<GolfBall>>,
     purge_event_writer_environment: EventWriter<SceneInstancePurgedEnvironment>,
     purge_event_writer_golf_ball: EventWriter<SceneInstancePurgedGolfBalls>,
-    mut purge_handler: ResMut<PurgeHandler>,
+    purge_handler: Res<PurgeHandler>,
 ) {
     
     info!("function: level_handler_purge_protocol"); 
     {
         if purge_handler.get("environment_purged") == false {
-            level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment, &mut purge_handler);
+            level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment);
         }
         if purge_handler.get("golf_balls_purged") == false {
-            level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball, &mut purge_handler);
+            level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball);
         }
     }
     run_trigger.set_target("level_handler_purge_protocol", false);
@@ -336,7 +334,6 @@ pub fn level_handler_purge_env_glb_all(
     mut commands: Commands,
     scene_meshes: Query<(Entity, &Name)>,
     mut purge_event_writer: EventWriter<SceneInstancePurgedEnvironment>,
-    purge_handler: &mut ResMut<PurgeHandler>,
 ) {
     info!("\n[ PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ---  PURGING ENVIRONMENT!!! ]");
     for (entity, _) in scene_meshes.iter() {
@@ -350,7 +347,6 @@ pub fn level_handler_purge_golf_ball_all(
     mut commands: Commands,
     mut golf_balls: Query<Entity, With<GolfBall>>, 
     mut purge_event_writer: EventWriter<SceneInstancePurgedGolfBalls>,
-    purge_handler: &mut ResMut<PurgeHandler>,
 ) {
     info!("\n[ PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ---  PURGING GOLF BALLS !!! ]");
     for entity in golf_balls.iter_mut() {
