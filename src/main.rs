@@ -64,17 +64,18 @@ use minigolf::{
         physics_handler::{
             add_physics_query_and_update_scene,
 
+            bonk_step_start,
+            bonk_step_mid,
+            bonk_step_end,
+            
+            collision_events_listener,
+
             golf_ball_handler_active_player_manual_bonk,
             golf_ball_handler_end_game,
             golf_ball_handler_party_store_locations,
             golf_ball_handler_reset_golf_ball_locations,
             golf_ball_handler_spawn_golf_balls_for_party_members,
 
-            bonk_step_start,
-            bonk_step_mid,
-            bonk_step_end,
-            // collision_events_listener,
-            
             performance_physics_setup,
         },
     },
@@ -220,6 +221,7 @@ fn main() {
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
         .add_systems(Update, bonk_step_mid.run_if(input_pressed(MouseButton::Right)))
         .add_systems(Update, bonk_step_end.run_if(input_just_released(MouseButton::Right)))
+        .add_systems(Update, collision_events_listener)
 
         // Camera //
         .add_systems(Update, state_camera_orbit_entity_logic)
