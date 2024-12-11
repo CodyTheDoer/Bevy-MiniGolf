@@ -78,8 +78,6 @@ use minigolf::{
             
             collision_events_listener,
 
-            golf_ball_is_asleep,
-
             golf_ball_handler_active_player_manual_bonk,
             golf_ball_handler_end_game,
             golf_ball_handler_party_store_locations,
@@ -170,7 +168,7 @@ fn main() {
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //

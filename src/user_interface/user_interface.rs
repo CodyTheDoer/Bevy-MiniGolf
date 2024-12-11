@@ -173,7 +173,7 @@ pub fn setup_ui(
                 TextBundle {
                     text: Text {
                         sections: vec![TextSection::new(
-                            "Minigolf State Refactor", 
+                            "Minigolf Dev Interface", 
                             fonts.fonts[0].clone())],
                         ..default()
                     },
