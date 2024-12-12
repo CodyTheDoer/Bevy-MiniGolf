@@ -7,7 +7,11 @@ use bevy::{prelude::*,
     },
     time::common_conditions::on_timer,
     utils::Duration, 
-    window::{PresentMode, WindowTheme},
+    window::{
+        PresentMode, 
+        // WindowMode::BorderlessFullscreen, 
+        WindowTheme,
+    },
 };
 // --- External Plugins --- //
 use bevy_rapier3d::prelude::*;
@@ -43,8 +47,10 @@ use minigolf::{
     PhysicsHandler,
     PurgeHandler,
     RunTrigger,
+    SceneInstanceOutOfBoundGolfBall,
     SceneInstancePurgedEnvironment,
     SceneInstancePurgedGolfBalls,
+    SceneInstanceRespawnedGolfBall,
     SceneInstanceSpawnedEnvironment,
     SceneInstanceSpawnedGolfBalls,
     UiUpdateEvent,
@@ -80,9 +86,11 @@ use minigolf::{
 
             golf_ball_handler_active_player_manual_bonk,
             golf_ball_handler_end_game,
+            golf_ball_handler_respawn_golf_ball_uuid,
             golf_ball_handler_party_store_locations,
             golf_ball_handler_reset_golf_ball_locations,
             golf_ball_handler_spawn_golf_balls_for_party_members,
+            golf_balls_update_sleep_status,
 
             performance_physics_setup,
         },
@@ -146,9 +154,10 @@ fn main() {
             DefaultPlugins.set(
                 WindowPlugin {
                     primary_window: Some(Window {
+                        // mode: BorderlessFullscreen,
                         title: "Minigolf".into(),
                         name: Some("bevy.app".into()),
-                        resolution: (1280. * 1.35, 720. * 1.35).into(),
+                        resolution: (1280., 720.).into(),
                         resizable: true,
                         enabled_buttons: bevy::window::EnabledButtons {
                             maximize: true,
@@ -202,8 +211,10 @@ fn main() {
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
+        .add_event::<SceneInstanceOutOfBoundGolfBall>()
         .add_event::<SceneInstancePurgedEnvironment>()
         .add_event::<SceneInstancePurgedGolfBalls>()
+        .add_event::<SceneInstanceRespawnedGolfBall>()
         .add_event::<SceneInstanceSpawnedEnvironment>()
         .add_event::<SceneInstanceSpawnedGolfBalls>()
         .add_event::<OnlineStateChange>()
@@ -285,6 +296,8 @@ fn main() {
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
         .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
 
+        .add_systems(Update, start_movement_listener_turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.start_movement_listener_turn_handler_set_turn_next()))
+
         .add_systems(Update, temp_interface)
         .add_systems(Update, debug_with_optional_parent.run_if(input_just_pressed(KeyCode::KeyT)))
         .add_systems(Update, last_game_record.run_if(input_just_pressed(KeyCode::KeyY)))
@@ -295,9 +308,13 @@ fn main() {
             .run_if(on_timer(Duration::from_millis(500))))
         .add_systems(Update, listening_function_local_all_finished
             .run_if(on_timer(Duration::from_millis(250))))
+        .add_systems(Update, listening_function_local_all_sleeping)
+        .add_systems(Update, listening_function_local_respawn_add_physics)
         .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_environment_events)
-        .add_systems(Update, listening_function_spawned_golf_ball_events);
+        .add_systems(Update, listening_function_spawned_golf_ball_events)
+        .add_systems(Update, golf_ball_handler_respawn_golf_ball)
+        .add_systems(Update, golf_balls_update_sleep_status);
 
     app.run();
 }
@@ -312,19 +329,75 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
     }
 }
 
-fn listening_function_local_all_finished(
-    party: Res<Party>,
-    game_handler: Res<GameHandler>,
+fn start_movement_listener_turn_handler_set_turn_next(
     mut run_trigger: ResMut<RunTrigger>,
+    party: Res<Party>,
+    golf_balls: Query<&GolfBall>,
+) {
+    info!("function: start_movement_listener_turn_handler_set_turn_next"); 
+    {   
+        let id = party.active_player_get_player_id();
+        for golf_ball in golf_balls.iter() {
+            if golf_ball.0.uuid == id {
+                if golf_ball.0.sleeping {
+                    run_trigger.set_target("turn_handler_set_turn_next", true);
+                    run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
+                    info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
+                }
+            }
+        }
+    }
+}
+
+fn golf_ball_handler_respawn_golf_ball(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
+    mut oob_event_reader: EventReader<SceneInstanceOutOfBoundGolfBall>,
+    mut asset_event_writer: EventWriter<SceneInstanceRespawnedGolfBall>,
+) {
+    for event in oob_event_reader.read() {
+        info!("golf Ball Out Of Bounds: [{:?}]", event);
+        golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &event.id, &mut asset_event_writer);
+    }
+}
+
+fn listening_function_local_all_finished(
+    mut run_trigger: ResMut<RunTrigger>,
+    game_handler: Res<GameHandler>,
+    party: Res<Party>,
 ) {
     if party.all_finished() && !game_handler.remote_game() {
         run_trigger.set_target("turn_handler_set_turn_next", true);
     }
 }
 
+fn listening_function_local_all_sleeping(
+    state_game: Res<State<StateGame>>,
+    mut game_handler: ResMut<GameHandler>,
+    golf_balls: Query<&GolfBall>,
+) {
+    if state_game.get() == &StateGame::InGame {
+        let mut sleeping: usize = 0;
+        let mut total: usize = 0;    
+        for (idx, golf_ball) in golf_balls.iter().enumerate() {
+            total = idx + 1;
+            if golf_ball.0.sleeping == true {
+                sleeping += 1;
+            }
+        }
+        
+        if sleeping == total {
+            game_handler.set_target("all_sleeping", true);
+        } else {
+            game_handler.set_target("all_sleeping", false);
+        }
+    }
+}
+
 fn listening_function_local_add_physics(
-    game_handler: Res<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    game_handler: Res<GameHandler>,
     query: Query<&RapierRigidBodyHandle, With<GolfBall>>,
 ) {
     let mut count = 0;
@@ -333,6 +406,37 @@ fn listening_function_local_add_physics(
     }
     if !game_handler.remote_game() && game_handler.in_game() && count == 0 {
         run_trigger.set_target("add_physics_query_and_update_scene", true);
+    }
+}
+
+fn listening_function_local_respawn_add_physics(
+    mut respawn_golf_ball: EventReader<SceneInstanceRespawnedGolfBall>,
+    mut commands: Commands,
+    mut gb_query: Query<(Entity, &mut GolfBall)>,
+) {
+    for event in respawn_golf_ball.read() {
+        info!("Respawn: [{:?}]", event);
+        let id = event.id;
+        for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
+            if golf_ball.0.uuid == id {
+                let collider = Collider::ball(0.022);
+                commands
+                    .entity(entity)
+                    .insert(collider)
+                    .insert(RigidBody::Dynamic)
+                    .insert(Damping {
+                        angular_damping: 3.0,
+                        ..default()
+                    })
+                    .insert(ExternalImpulse::default())
+                    .insert(ColliderMassProperties::Density(1.0))
+                    .insert(GravityScale(1.0))
+                    .insert(Ccd::enabled())
+                    .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)))
+                    .insert(Name::new(format!("golf_ball_{}", id.to_string())));
+                info!("Built Golf Ball: [{}]", format!("golf_ball_{}", id.to_string()));
+            }
+        }
     }
 }
 
@@ -357,8 +461,8 @@ fn listening_function_purge_events(
 fn listening_function_spawned_golf_ball_events(
     mut asset_event_reader: EventReader<SceneInstanceSpawnedGolfBalls>,
     mut game_handler: ResMut<GameHandler>,
-    mut run_trigger: ResMut<RunTrigger>,
     mut purge_handler: ResMut<PurgeHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
@@ -371,8 +475,8 @@ fn listening_function_spawned_golf_ball_events(
 fn listening_function_spawned_environment_events(
     mut asset_event_reader: EventReader<SceneInstanceSpawnedEnvironment>,
     mut game_handler: ResMut<GameHandler>,
-    mut run_trigger: ResMut<RunTrigger>,
     mut purge_handler: ResMut<PurgeHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);

@@ -12,12 +12,12 @@ use crate::{
 // Resource
 use crate::{
     CameraHandler, 
-    CameraWorld, 
+    CameraWorld,
+    GolfBall,
     PanOrbitAction,
     PanOrbitCameraBundle,
     PanOrbitSettings,
     Party,
-    RigidBody,
     RunTrigger,
 };
 
@@ -110,23 +110,28 @@ pub fn state_camera_orbit_entity_logic(
     camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
     mut camera_coord_tracker: ResMut<CameraHandler>,
     scene_meshes: Query<(Entity, &Name, &Transform)>,
-    q_rigid_body: Query<(&RigidBody, &Transform)>,
+    golf_balls: Query<(&GolfBall, &Transform)>,
+    // q_rigid_body: Query<(&RigidBody, &Transform)>,
     party: Res<Party>,
 ) {
-    let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
-    for (_, transform) in q_rigid_body.iter() {
-        ball_rigid_body_coords = transform.translation.clone();
-    }
+    // let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
+    // for (_, transform) in q_rigid_body.iter() {
+    //     ball_rigid_body_coords = transform.translation.clone();
+    // }
     match camera_orbit_entity_state.get() {
         StateCameraOrbitEntity::Ball => {
             let active_player = party.active_player_get_player_id();
-            let active_players_golf_ball = format!("ball_{}", String::from(active_player));
-            for (_entity, name, _transform) in scene_meshes.iter() {
-                let owned_name = name.as_str();
-                if owned_name == active_players_golf_ball {
-                    camera_coord_tracker.current_coords = ball_rigid_body_coords;
-                };
+            for (golf_ball, transform) in golf_balls.iter() {
+                if golf_ball.0.uuid == active_player {
+                    camera_coord_tracker.current_coords = transform.translation;
+                }
             }
+            // for (_entity, name, _transform) in scene_meshes.iter() {
+            //     let owned_name = name.as_str();
+            //     if owned_name == active_players_golf_ball {
+            //         camera_coord_tracker.current_coords = ball_rigid_body_coords;
+            //     };
+            // }
         },    
         StateCameraOrbitEntity::Cup => {
             for (_entity, name, transform) in scene_meshes.iter() {

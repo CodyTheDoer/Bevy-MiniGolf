@@ -1,7 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
-
-use crate::level_handler::physics_handler::golf_ball_is_asleep;
 
 // --- State Imports --- //
 use crate::{
@@ -76,18 +73,18 @@ pub fn bonk_gizmo(
     mut gizmos: Gizmos,
     mut bonk: ResMut<BonkHandler>,
     party: Res<Party>,
-    golf_balls: Query<(&Transform, &GolfBall)>,
+    golf_balls: Query<(&Transform, &mut GolfBall)>,
     windows: Query<&Window>,
     camera_query: Query<&Transform, With<CameraWorld>>, // Query only for CameraWorld's Transform
-    rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<&RapierRigidBodyHandle>,
+    game_handler: Res<GameHandler>,
 ) {
-    let arrow_color = if golf_ball_is_asleep(rapier_context, rigid_body_query) {
-        Color::srgb(0.0, 1.0, 0.0) // Color the arrow Green if the ball is sleeping
-    } else {
-        Color::srgb(1.0, 0.0, 0.0) // Color the arrow Green if the ball is actively moving
+    let arrow_color = { // Color the arrow Green/Blue if the ball is sleeping
+        if game_handler.get("all_sleeping") {
+            Color::srgb(0.0, 0.0, 1.0)
+        } else { // Color the arrow Red if the ball is actively moving
+            Color::srgb(1.0, 0.0, 0.0)
+        }
     };
-
     let Some(cursor_position) = windows.single().cursor_position() else {
         return;
     };
@@ -134,7 +131,7 @@ pub fn setup_ui(
     };
     let matrix_display_small = TextStyle {
         font: font.clone(),
-        font_size: 12.0,
+        font_size: 10.0,
         ..default()
     };
     fonts.fonts.push(matrix_display);
@@ -243,7 +240,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..33 {
+    for _ in 0..39 {
         commands.entity(bottom_right_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -295,16 +292,16 @@ pub fn update_ui(
         format!("state_map_set: {:?}", *state_map_set),                                                                                     // 7
         format!("state_menu: {:?}", *state_menu),                                                                                           // 8
         format!("state_turn: {:?}", *state_turn),                                                                                           // 9
-        format!("Remote Game: {:?}", game_handler.get("remote_game")),                                                                       // 10
+        format!("Remote Game: {:?}", game_handler.get("remote_game")),                                                                      // 10
         format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 11
-        format!("Party Size: {:?}", party.party_size()),                                                                                // 12
+        format!("Party Size: {:?}", party.party_size()),                                                                                    // 12
         format!("Active Player: {:?}", party.active_player_get_index()),                                                                    // 13 
         format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
         format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
         format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 16
         format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 17
         format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 18
-        format!("Active Player Scorecard: {:?}", party.active_player_get_score()),                                                      // 19
+        format!("Active Player Scorecard: {:?}", party.active_player_get_score()),                                                          // 19
         format!("______________________________________________________________________"),                                                  // 20  
         format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 21
         format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 22
@@ -318,10 +315,15 @@ pub fn update_ui(
     ];
 
     let state_texts_right = vec![
-        format!("game_handler: In Game: [{:?}]", game_handler.get("in_game")),
+        format!("game_handler: All Sleeping: [{:?}]", game_handler.get("all_sleeping")),
+        format!("game_handler: Arrow State: [{:?}]", game_handler.get("arrow_state")),
         format!("game_handler: Environment Loaded: [{:?}]", game_handler.get("environment_loaded")),
-        format!("purge_handler: Environment Purged: [{:?}]", purge_handler.get("environment_purged")),
         format!("game_handler: Golf Balls Loaded: [{:?}]", game_handler.get("golf_balls_loaded")),
+        format!("game_handler: In Game: [{:?}]", game_handler.get("in_game")),
+        format!("game_handler: Network Server Connection: [{:?}]", game_handler.get("network_server_connection")),
+        format!("game_handler: Remote Game: [{:?}]", game_handler.get("remote_game")),
+        format!("______________________________________________________________________"),
+        format!("purge_handler: Environment Purged: [{:?}]", purge_handler.get("environment_purged")),
         format!("purge_handler: Golf Balls Purged: [{:?}]", purge_handler.get("golf_balls_purged")),
         format!("______________________________________________________________________"),
         format!("add_physics_query_and_update_scene: {:?}", run_trigger.get("add_physics_query_and_update_scene")),

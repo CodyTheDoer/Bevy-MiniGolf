@@ -48,6 +48,7 @@ impl RunTrigger {
             turn_handler_end_game: false,
             turn_handler_next_round_prep: false,
             turn_handler_set_turn_next: false,
+            start_movement_listener_turn_handler_set_turn_next: false,
         }
     }
 
@@ -142,6 +143,9 @@ impl RunTrigger {
             },
             "turn_handler_set_turn_next" => {
                 self.turn_handler_set_turn_next
+            },
+            "start_movement_listener_turn_handler_set_turn_next" => {
+                self.start_movement_listener_turn_handler_set_turn_next
             },
             _ => {
                 warn!("Target: [{}] does not exist!!!", target); 
@@ -272,6 +276,10 @@ impl RunTrigger {
                 self.turn_handler_set_turn_next = state;
                 info!("response: turn_handler_set_turn_next: {}", self.get("turn_handler_set_turn_next"));
             }
+            "start_movement_listener_turn_handler_set_turn_next" => {
+                self.start_movement_listener_turn_handler_set_turn_next = state;
+                info!("response: start_movement_listener_turn_handler_set_turn_next: {}", self.get("start_movement_listener_turn_handler_set_turn_next"));
+            }
             _ => {
                 info!("Unrecognized Input: RunTrigger: {:?}", target);
             },
@@ -396,5 +404,9 @@ impl RunTrigger {
 
     pub fn turn_handler_set_turn_next(&self) -> bool {
         self.turn_handler_set_turn_next
+    }
+
+    pub fn start_movement_listener_turn_handler_set_turn_next(&self) -> bool {
+        self.start_movement_listener_turn_handler_set_turn_next
     }
 }

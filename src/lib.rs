@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::RigidBody;
 
 use uuid::Uuid;
 
@@ -85,6 +84,7 @@ pub struct Fonts {
 #[derive(Resource)]
 pub struct GameHandler {
     current_level: i32,
+    all_sleeping: bool,
     arrow_state: bool,
     environment_loaded: bool,
     golf_balls_loaded: bool,
@@ -115,6 +115,7 @@ pub struct GolfBallPosition {
     pub uuid: Uuid,
     pub position: Vec3,
     pub last_position: Vec3,
+    pub sleeping: bool,
 }
 
 #[derive(Component)]
@@ -281,6 +282,18 @@ pub struct SceneInstancePurgedEnvironment {}
 pub struct SceneInstancePurgedGolfBalls {}
 
 #[derive(Debug, Event)]
+pub struct SceneInstanceRespawnedGolfBall {
+    pub entity: Entity,
+    pub id: Uuid,
+}
+
+#[derive(Debug, Event)]
+pub struct SceneInstanceOutOfBoundGolfBall {
+    pub id: Uuid,
+    pub position: Vec3,
+}
+
+#[derive(Debug, Event)]
 pub struct SceneInstanceSpawnedEnvironment {
     pub entity: Entity,
 }
@@ -442,6 +455,7 @@ pub struct RunTrigger{
     turn_handler_end_game: bool,
     turn_handler_next_round_prep: bool,
     turn_handler_set_turn_next: bool,
+    start_movement_listener_turn_handler_set_turn_next: bool,
 }
 
 #[derive(Component)]

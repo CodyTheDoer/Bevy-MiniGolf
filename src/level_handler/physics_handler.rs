@@ -23,6 +23,8 @@ use crate::{
     Party,
     PhysicsHandler,
     RunTrigger,
+    SceneInstanceOutOfBoundGolfBall,
+    SceneInstanceRespawnedGolfBall,
     SceneInstancePurgedGolfBalls,
     SceneInstanceSpawnedGolfBalls,
 };
@@ -220,7 +222,7 @@ pub fn bonk(
     run_trigger.set_target("party_handler_active_player_add_bonk", true); 
     match playstyle.get() {
         StateGamePlayStyle::SetOrder => {
-            run_trigger.set_target("turn_handler_set_turn_next", true);
+            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", true);
         }
         StateGamePlayStyle::Proximity => {}
     }
@@ -229,7 +231,7 @@ pub fn bonk(
 pub fn bonk_step_start( // set's bonk start xy
     windows: Query<&Window>,
     mut bonk: ResMut<BonkHandler>,
-    gh: ResMut<GameHandler>,
+    mut game_handler: ResMut<GameHandler>,
     arrow_state: ResMut<State<StateArrow>>,
     next_arrow_state: ResMut<NextState<StateArrow>>,
 ) {
@@ -241,7 +243,7 @@ pub fn bonk_step_start( // set's bonk start xy
     bonk.update_cursor_origin_position(cursor_xy);
     match arrow_state.get() {
         StateArrow::Idle => {
-            toggle_arrow_state(gh, arrow_state, next_arrow_state);
+            toggle_arrow_state(&mut game_handler, arrow_state, next_arrow_state);
         },
         _ => {},
     }
@@ -298,25 +300,25 @@ pub fn bonk_step_mid( // Determines bonks power by measuring the difference betw
 
 pub fn bonk_step_end( // Fires bonk 
     buttons: Res<ButtonInput<MouseButton>>,
-    gh: ResMut<GameHandler>,
+    mut game_handler: ResMut<GameHandler>,
     arrow_state: ResMut<State<StateArrow>>,
     next_arrow_state: ResMut<NextState<StateArrow>>,
     bonk_res: Res<BonkHandler>,
     rapier_context: Res<RapierContext>,
-    rigid_body_query: Query<&RapierRigidBodyHandle>,
-    mut golf_balls: Query<(Entity, &GolfBall)>,
+    rigid_body_query: Query<(Entity, &Name, &RapierRigidBodyHandle)>,
     commands: Commands,
     party: Res<Party>,
     run_trigger: ResMut<RunTrigger>,
     playstyle: Res<State<StateGamePlayStyle>>,
+    golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
 ) {
-    if gh.arrow_state_get() {
-        toggle_arrow_state(gh, arrow_state, next_arrow_state);
+    if game_handler.arrow_state_get() {
+        toggle_arrow_state(&mut game_handler, arrow_state, next_arrow_state);
     }
 
     let mut target_entity: Option<Entity> = None;
     let player = party.active_player_get_player_id();
-    for (entity, golf_ball) in golf_balls.iter_mut() {
+    for (entity, golf_ball, _) in golf_balls.iter() {
         if buttons.just_released(MouseButton::Right) {
             if player == golf_ball.0.uuid{
                 let owned_bonk_power = bonk_res.power.clone();
@@ -328,7 +330,7 @@ pub fn bonk_step_end( // Fires bonk
     }
 
     if target_entity.is_some() {
-        if golf_ball_is_asleep(rapier_context, rigid_body_query) {
+        if golf_ball_is_asleep(rapier_context, rigid_body_query, golf_balls, game_handler) {
             bonk(run_trigger, target_entity.unwrap(), commands, bonk_res.into(), playstyle);
         }
     }
@@ -338,6 +340,7 @@ pub fn collision_events_listener(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
     mut party: ResMut<Party>,
+    mut respawn_event_writer: EventWriter<SceneInstanceOutOfBoundGolfBall>,
     mut run_trigger: ResMut<RunTrigger>,
     golf_balls: Query<(Entity, &GolfBall)>,
     scene_meshes: Query<(Entity, &Name)>,
@@ -357,14 +360,19 @@ pub fn collision_events_listener(
                                         info!("1: Golf Ball: [{:?}]", golf_ball.0);
                                         party.player_set_hole_completion_state(golf_ball.0.uuid, true);
                                         commands.entity(golf_ball_ent).despawn();
-                                        info!("party::all_finished: [{}]", party.all_finished());
-                                        if party.all_finished() {
-                                            run_trigger.set_target("turn_handler_set_turn_next", true);
-                                        }
+                                        run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
+                                        run_trigger.set_target("turn_handler_set_turn_next", true);
                                     },
                                     "ground_sensor" => {
                                         info!("1: Ooof grounded...");
                                         info!("2: Golf Ball: [{:?}]", golf_ball.0);
+                                        let id = golf_ball.0.uuid;
+                                        let position = golf_ball.0.last_position;
+                                        commands.entity(golf_ball_ent).despawn();
+                                        respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
+                                            id: id,
+                                            position: position,
+                                        });
                                     },
                                     _ => {},
                                 }
@@ -380,10 +388,19 @@ pub fn collision_events_listener(
                                         info!("1: Golf Ball: [{:?}]", golf_ball.0);
                                         party.player_set_hole_completion_state(golf_ball.0.uuid, true);
                                         commands.entity(golf_ball_ent).despawn();
+                                        run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
+                                        run_trigger.set_target("turn_handler_set_turn_next", true);
                                     },
                                     "ground_sensor" => {
-                                        info!("2: Ooof grounded...");
+                                        info!("1: Ooof grounded...");
                                         info!("2: Golf Ball: [{:?}]", golf_ball.0);
+                                        let id = golf_ball.0.uuid;
+                                        let position = golf_ball.0.last_position;
+                                        commands.entity(golf_ball_ent).despawn();
+                                        respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
+                                            id: id,
+                                            position: position,
+                                        });
                                     },
                                     _ => {},
                                 }
@@ -499,12 +516,55 @@ fn golf_ball_handler_init_golf_ball_uuid(
                 uuid: *player_id,
                 position: Vec3::ZERO,
                 last_position: Vec3::ZERO,
+                sleeping: false,
             }))
             .id();
 
             // Emit a custom AssetEvent for this asset
             asset_event_writer.send(SceneInstanceSpawnedGolfBalls {
                     entity: spawned_golf_ball,
+                }
+            );
+    } else {
+        warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
+    };
+}
+
+// Helper: golf_ball_handler_spawn_golf_balls_for_party_members
+pub fn golf_ball_handler_respawn_golf_ball_uuid(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    glb_storage: &Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
+    player_id: &Uuid,
+    asset_event_writer: &mut EventWriter<SceneInstanceRespawnedGolfBall>,
+) {
+    if let Some(basic_golf_ball) = glb_storage.glb.get(25) {
+        let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
+            GltfAssetLabel::Scene(0).from_asset(basic_golf_ball.map),
+        );
+        let name = format!("golf_ball_{}", player_id.to_string());
+        info!("Generated Name: {}", name);
+        let spawned_golf_ball = commands
+            .spawn((
+                SceneBundle {
+                    scene: basic_golf_ball_handle.clone(),
+                    ..default()
+                },
+                Name::new(name.clone()),
+            ))
+            .insert(Interactable)
+            .insert(GolfBall(GolfBallPosition{
+                uuid: *player_id,
+                position: Vec3::ZERO,
+                last_position: Vec3::ZERO,
+                sleeping: false,
+            }))
+            .id();
+
+            // Emit a custom AssetEvent for this asset
+            asset_event_writer.send(SceneInstanceRespawnedGolfBall {
+                    entity: spawned_golf_ball,
+                    id: *player_id,
                 }
             );
     } else {
@@ -576,22 +636,76 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
     info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  
 }
 
-pub fn golf_ball_is_asleep(
+pub fn golf_balls_update_sleep_status(
     rapier_context: Res<RapierContext>,
-    query: Query<&RapierRigidBodyHandle>,
-) -> bool {
-    let mut results = false;
-    for rb_handle in query.iter() {
+    query: Query<(Entity, &Name, &RapierRigidBodyHandle)>,
+    mut golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
+) {
+    for (_entity, name, rb_handle) in query.iter() {
         // Access the rigid body from the physics world using its handle
         if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
             // Check if the rigid body is currently sleeping
             if rigid_body.is_sleeping() {
                 // println!("Entity {:?} is sleeping", entity);
-                results = true;
+                for (_, mut golf_ball, golf_ball_name) in golf_balls.iter_mut() {
+                    if name == golf_ball_name {
+                        golf_ball.0.sleeping = true
+                    }
+                }
+            } else {
+                for (_, mut golf_ball, golf_ball_name) in golf_balls.iter_mut() {
+                    if name == golf_ball_name {
+                        golf_ball.0.sleeping = false
+                    }
+                }
             }
         }
-    }       
-    results
+    }
+}
+
+pub fn golf_ball_is_asleep(
+    rapier_context: Res<RapierContext>,
+    query: Query<(Entity, &Name, &RapierRigidBodyHandle)>,
+    mut golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
+    game_handler: ResMut<GameHandler>,
+) -> bool {
+    for (_entity, name, rb_handle) in query.iter() {
+        // Access the rigid body from the physics world using its handle
+        if let Some(rigid_body) = rapier_context.bodies.get(rb_handle.0) {
+            // Check if the rigid body is currently sleeping
+            if rigid_body.is_sleeping() {
+                // println!("Entity {:?} is sleeping", entity);
+                for (_, mut golf_ball, golf_ball_name) in golf_balls.iter_mut() {
+                    if name == golf_ball_name {
+                        golf_ball.0.sleeping = true
+                    }
+                }
+            } else {
+                for (_, mut golf_ball, golf_ball_name) in golf_balls.iter_mut() {
+                    if name == golf_ball_name {
+                        golf_ball.0.sleeping = false
+                    }
+                }
+            }
+        }
+    }
+    game_handler.get("all_sleeping")
+    // let mut sleeping: usize = 0;
+    // let mut total: usize = 0;    
+    // for (idx, (_, golf_ball, _)) in golf_balls.iter().enumerate() {
+    //     total = idx + 1;
+    //     if golf_ball.0.sleeping == true {
+    //         sleeping += 1;
+    //     }
+    // }
+    
+    // if sleeping == total {
+    //     game_handler.set_target("all_sleeping", true);
+    //     true
+    // } else {
+    //     game_handler.set_target("all_sleeping", false);
+    //     false
+    // }
 }
 
 pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
@@ -610,19 +724,19 @@ pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>)
 }
 
 fn toggle_arrow_state(
-    mut gh: ResMut<GameHandler>,
+    game_handler: &mut ResMut<GameHandler>,
     state: ResMut<State<StateArrow>>,
     mut next_state: ResMut<NextState<StateArrow>>,
 ) {
     match state.get() {
         StateArrow::DrawingArrow => {
             info!("Entering StateArrow::Idle");
-            gh.arrow_state_set_false();
+            game_handler.arrow_state_set_false();
             next_state.set(StateArrow::Idle);
         },
         StateArrow::Idle => {
             info!("Entering StateArrow::DrawingArrow");
-            gh.arrow_state_set_true();
+            game_handler.arrow_state_set_true();
             next_state.set(StateArrow::DrawingArrow);
         },
     }

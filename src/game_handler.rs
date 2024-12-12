@@ -26,6 +26,7 @@ impl GameHandler {
     pub fn new() -> Self {
         GameHandler {
             current_level: 0,
+            all_sleeping: false,
             arrow_state: false,
             environment_loaded: false,
             golf_balls_loaded: false,
@@ -39,6 +40,9 @@ impl GameHandler {
 
     pub fn get(&self, target: &str) -> bool {
         match target {
+            "all_sleeping" => {
+                self.all_sleeping
+            },
             "arrow_state" => {
                 self.arrow_state
             },
@@ -66,6 +70,10 @@ impl GameHandler {
 
     pub fn set_target(&mut self, target: &str, state: bool) {
         match target {
+            "all_sleeping" => {
+                self.all_sleeping = state;
+                // info!("response: all_sleeping: {}", self.get("all_sleeping"));  
+            },
             "arrow_state" => {
                 self.arrow_state = state;
                 info!("response: arrow_state: {}", self.get("arrow_state"));  
@@ -92,6 +100,10 @@ impl GameHandler {
             },
             _ => {},
         }
+    }
+
+    pub fn all_sleeping(&self) -> bool {
+        self.all_sleeping
     }
 
     pub fn arrow_state(&self) -> bool {
