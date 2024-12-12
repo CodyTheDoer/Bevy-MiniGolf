@@ -19,15 +19,7 @@ use bevy_rapier3d::prelude::*;
 
 // --- States --- //
 use minigolf::{
-    StateArrow, 
-    StateCameraOrbitEntity, 
-    StateEngineConnection, 
-    StateGame, 
-    StateGamePlayStyle, 
-    StateLevel, 
-    StateMapSet, 
-    StateMenu, 
-    StateTurn
+    game_handler, StateArrow, StateCameraOrbitEntity, StateEngineConnection, StateGame, StateGamePlayStyle, StateLevel, StateMapSet, StateMenu, StateTurn
 };
 
 // --- Resources --- //
@@ -304,11 +296,11 @@ fn main() {
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
+        .add_systems(Update, listening_function_local_all_sleeping)
         .add_systems(Update, listening_function_local_add_physics
             .run_if(on_timer(Duration::from_millis(500))))
         .add_systems(Update, listening_function_local_all_finished
             .run_if(on_timer(Duration::from_millis(250))))
-        .add_systems(Update, listening_function_local_all_sleeping)
         .add_systems(Update, listening_function_local_respawn_add_physics)
         .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_environment_events)
@@ -331,20 +323,14 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
 
 fn start_movement_listener_turn_handler_set_turn_next(
     mut run_trigger: ResMut<RunTrigger>,
-    party: Res<Party>,
-    golf_balls: Query<&GolfBall>,
+    game_handler: Res<GameHandler>,
 ) {
     info!("function: start_movement_listener_turn_handler_set_turn_next"); 
-    {   
-        let id = party.active_player_get_player_id();
-        for golf_ball in golf_balls.iter() {
-            if golf_ball.0.uuid == id {
-                if golf_ball.0.sleeping {
-                    run_trigger.set_target("turn_handler_set_turn_next", true);
-                    run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
-                    info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
-                }
-            }
+    {
+        if game_handler.get("all_sleeping") {
+            run_trigger.set_target("turn_handler_set_turn_next", true);
+            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
+            info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
         }
     }
 }

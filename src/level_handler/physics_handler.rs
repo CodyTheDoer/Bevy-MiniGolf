@@ -7,8 +7,7 @@ use uuid::Uuid;
 
 // States
 use crate::{
-    StateArrow, 
-    StateGamePlayStyle,
+    game_handler, StateArrow, StateGamePlayStyle
 };
 
 // Resources
@@ -210,6 +209,7 @@ pub fn bonk(
     mut commands: Commands,
     bonk: Res<BonkHandler>,
     playstyle: Res<State<StateGamePlayStyle>>,
+    game_handler: &mut ResMut<GameHandler>,
 ) {
     let scaled_bonk = bonk.power * 0.00025;
     info!("bonk: [{}]", scaled_bonk);
@@ -222,6 +222,7 @@ pub fn bonk(
     run_trigger.set_target("party_handler_active_player_add_bonk", true); 
     match playstyle.get() {
         StateGamePlayStyle::SetOrder => {
+            game_handler.set_target("all_sleeping", false);
             run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", true);
         }
         StateGamePlayStyle::Proximity => {}
@@ -330,8 +331,8 @@ pub fn bonk_step_end( // Fires bonk
     }
 
     if target_entity.is_some() {
-        if golf_ball_is_asleep(rapier_context, rigid_body_query, golf_balls, game_handler) {
-            bonk(run_trigger, target_entity.unwrap(), commands, bonk_res.into(), playstyle);
+        if golf_ball_is_asleep(rapier_context, rigid_body_query, golf_balls, &mut game_handler) {
+            bonk(run_trigger, target_entity.unwrap(), commands, bonk_res.into(), playstyle, &mut game_handler);
         }
     }
 }
@@ -667,7 +668,7 @@ pub fn golf_ball_is_asleep(
     rapier_context: Res<RapierContext>,
     query: Query<(Entity, &Name, &RapierRigidBodyHandle)>,
     mut golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
-    game_handler: ResMut<GameHandler>,
+    game_handler: &mut ResMut<GameHandler>,
 ) -> bool {
     for (_entity, name, rb_handle) in query.iter() {
         // Access the rigid body from the physics world using its handle
