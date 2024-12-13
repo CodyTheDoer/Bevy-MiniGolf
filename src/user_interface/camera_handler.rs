@@ -141,16 +141,16 @@ pub fn state_camera_orbit_entity_logic(
                 }
             }        
         },
-        StateCameraOrbitEntity::Menu | StateCameraOrbitEntity::LeaderBoard => {
+        StateCameraOrbitEntity::Menu => {
             for (_entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "cam_target" {
+                if name.as_str() == "ball" {
                     camera_coord_tracker.current_coords = transform.translation;
                     break;
                 };
             }  
         },
-        StateCameraOrbitEntity::FreePan => {    
-        },
+        StateCameraOrbitEntity::LeaderBoard => {},
+        StateCameraOrbitEntity::FreePan => {},
     }
 }
 
