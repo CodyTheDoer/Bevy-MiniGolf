@@ -14,7 +14,7 @@ use crate::{
 // Resources
 use crate::{
     BonkHandler,
-    BonkMouseXY,
+    XYMatrix,
     GameHandler,
     GLBStorageID,
     GolfBall,
@@ -35,9 +35,9 @@ impl BonkHandler {
     pub fn new() -> Self {
         let direction: Vec3 = Vec3::new(0.0, 0.0, 0.0);
         let power: f32 = 0.0;
-        let cursor_origin_position: BonkMouseXY = BonkMouseXY::new();
+        let cursor_origin_position: XYMatrix = XYMatrix::new();
         let cursor_origin_position_updated: bool = false;
-        let cursor_bonk_position: BonkMouseXY = BonkMouseXY::new();
+        let cursor_bonk_position: XYMatrix = XYMatrix::new();
         let cursor_bonk_position_updated: bool = false;
         BonkHandler {
             direction,
@@ -56,7 +56,7 @@ impl BonkHandler {
 
     pub fn update_cursor_bonk_position(
         &mut self, 
-        bonk_coords: BonkMouseXY
+        bonk_coords: XYMatrix
     ) {
         self.cursor_bonk_position = bonk_coords;
         self.cursor_bonk_position_updated = true;
@@ -64,7 +64,7 @@ impl BonkHandler {
 
     pub fn update_cursor_origin_position(
         &mut self, 
-        bonk_coords: BonkMouseXY
+        bonk_coords: XYMatrix
     ) {
         self.cursor_origin_position = bonk_coords;
         self.cursor_origin_position_updated = true;
@@ -79,11 +79,11 @@ impl BonkHandler {
     }
 }
 
-impl BonkMouseXY {
+impl XYMatrix {
     pub fn new() -> Self {
         let x: f32 = 0.0;
         let y: f32 = 0.0;
-        BonkMouseXY {
+        XYMatrix {
             x,
             y,
         }
@@ -237,7 +237,7 @@ pub fn bonk_step_start( // set's bonk start xy
     arrow_state: ResMut<State<StateArrow>>,
     next_arrow_state: ResMut<NextState<StateArrow>>,
 ) {
-    let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
+    let mut cursor_xy: XYMatrix = XYMatrix::new();
     let Some(position) = windows.single().cursor_position() else {
         return;
     };
@@ -259,7 +259,7 @@ pub fn bonk_step_mid( // Determines bonks power by measuring the difference betw
 ) {
     for golf_ball in golf_balls.iter_mut() {
         if golf_ball.0.uuid == party.active_player_get_player_id() {
-            let mut cursor_xy: BonkMouseXY = BonkMouseXY::new();
+            let mut cursor_xy: XYMatrix = XYMatrix::new();
             let Some(position) = windows.single().cursor_position() else {
                 return;
             };
@@ -457,24 +457,24 @@ fn extract_mesh_vertices_indices(
     Some((vtx, idx))
 }
 
-pub fn golf_ball_handler_active_player_manual_bonk(
+pub fn golf_ball_handler_update_locations_post_bonk(
     mut run_trigger: ResMut<RunTrigger>,
     party: ResMut<Party>,
-    mut gb_query: Query<&mut GolfBall>,
+    mut gb_query: Query<(&mut GolfBall, &Transform)>,
 ) {
-    info!("function: golf_ball_handler_active_player_manual_bonk "); 
+    info!("function: golf_ball_handler_update_locations_post_bonk "); 
     {
+        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
         let player_id = party.active_player_get_player_id();
-        for mut golf_ball in gb_query.iter_mut() {
+        for (mut golf_ball, transform) in gb_query.iter_mut() {
             if golf_ball.0.uuid == player_id {
-                golf_ball.0.position = golf_ball.0.position + Vec3::new(5.0, 5.0, 5.0);
+                golf_ball.0.position = transform.translation;
             };
             info!("golf_ball: [{:?}]", golf_ball.0);
         };
-        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
     }
-    run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", false);
-    info!("post response: golf_ball_handler_active_player_manual_bonk: {}", run_trigger.get("golf_ball_handler_active_player_manual_bonk"));  
+    run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", false);
+    info!("post response: golf_ball_handler_update_locations_post_bonk: {}", run_trigger.get("golf_ball_handler_update_locations_post_bonk"));  
 }
 
 pub fn golf_ball_handler_end_game(

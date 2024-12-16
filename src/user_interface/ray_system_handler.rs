@@ -73,15 +73,11 @@ pub fn ray_fire(
 }
 
 pub fn ray_release(
-    // mut party: ResMut<Party>,
     mut raycast: Raycast,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
-    // map_set_state: Res<State<StateMapSet>>,
-    // mut game_handler: ResMut<GameHandler>,
-    // mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,

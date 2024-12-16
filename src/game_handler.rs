@@ -314,6 +314,7 @@ pub fn game_handler_game_state_exit_routines(
     mut next_menu_state: ResMut<NextState<StateMenu>>,
     mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
+    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {
     info!("function: game_handler_game_state_exit_routines"); 
     {    
@@ -325,18 +326,24 @@ pub fn game_handler_game_state_exit_routines(
                 run_trigger.set_target("golf_ball_handler_end_game", true);
                 run_trigger.set_target("level_handler_purge_protocol", true);
                 next_menu_state.set(StateMenu::MenuMainMenu);
-                next_camera_state.set(StateCameraOrbitEntity::Menu);
                 party.active_player_set(1);
-                info!("StateGame::NotInGame");
                 next_state_game.set(StateGame::NotInGame);
-                info!("StateTurn::NotInGame");
                 next_state_turn.set(StateTurn::NotInGame);
+                info!("StateGame::NotInGame");
+                info!("StateTurn::NotInGame");
                 game_handler.current_level_set(0);
                 next_level.set(StateLevel::MainMenu);
                 game_handler.current_level_set_menu_main();
                 run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                 party.game_completed();
                 run_trigger.set_target("leader_board_review_last_game", true);
+                next_camera_state.set(StateCameraOrbitEntity::Menu);
+                for mut state in pan_orbit_camera_query.iter_mut() {
+                    info!("{:?}", state);
+                    state.radius = 0.3;
+                    state.pitch = -2.0f32.to_radians();
+                    state.yaw = 0.0f32.to_radians();
+                };
             },
         };
     }
@@ -371,7 +378,7 @@ pub fn game_handler_game_state_start_routines(
                 for mut state in pan_orbit_camera_query.iter_mut() {
                     info!("{:?}", state);
                     state.radius = 2.75;
-                    state.pitch = -15.0f32.to_radians();
+                    state.pitch = -17.5f32.to_radians();
                     state.yaw = 0.0f32.to_radians();
                 };
             },

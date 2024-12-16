@@ -20,6 +20,7 @@ use bevy_rapier3d::prelude::*;
 // --- States --- //
 use minigolf::{
     StateArrow, 
+    StateCameraMenuTarget,
     StateCameraOrbitEntity, 
     StateEngineConnection, 
     StateGame, 
@@ -84,7 +85,7 @@ use minigolf::{
             
             collision_events_listener,
 
-            golf_ball_handler_active_player_manual_bonk,
+            golf_ball_handler_update_locations_post_bonk,
             golf_ball_handler_end_game,
             golf_ball_handler_respawn_golf_ball_uuid,
             golf_ball_handler_party_store_locations,
@@ -126,6 +127,7 @@ use minigolf::{
     user_interface::{
         camera_handler::{
             camera_handler_cycle_state_camera,
+            camera_handler_cycle_state_camera_menu_target,
             setup_3d_camera,
             pan_orbit_camera, 
             state_camera_orbit_entity_logic,
@@ -182,6 +184,7 @@ fn main() {
     
         // --- State Initialization --- //
         .insert_state(StateArrow::Idle)
+        .insert_state(StateCameraMenuTarget::Main)
         .insert_state(StateCameraOrbitEntity::Menu)
         .insert_state(StateEngineConnection::Local)
         .insert_state(StateGame::NotInGame)
@@ -257,12 +260,13 @@ fn main() {
         .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))
 
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-      
+              .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
+
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
         .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
         .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_start_routines()))
 
-        .add_systems(Update, golf_ball_handler_active_player_manual_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_active_player_manual_bonk()))
+        .add_systems(Update, golf_ball_handler_update_locations_post_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_update_locations_post_bonk()))
         .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_end_game()))
         .add_systems(Update, golf_ball_handler_party_store_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_party_store_locations()))
         .add_systems(Update, golf_ball_handler_reset_golf_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_reset_golf_ball_locations()))
@@ -336,6 +340,7 @@ fn start_movement_listener_turn_handler_set_turn_next(
     info!("function: start_movement_listener_turn_handler_set_turn_next"); 
     {
         if game_handler.get("all_sleeping") {
+            run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
             run_trigger.set_target("turn_handler_set_turn_next", true);
             run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
             info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
@@ -585,6 +590,10 @@ fn temp_interface(
                 run_trigger.set_target("game_handler_game_start", true);
             },
         };
+    };
+    if keys.just_released(KeyCode::KeyV) {
+        info!("just_released: KeyV");  
+        run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", true);
     };
     if keys.just_released(KeyCode::Numpad1) {
         info!("just_released: Numpad1");  

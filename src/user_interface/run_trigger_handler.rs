@@ -20,10 +20,11 @@ impl RunTrigger {
         RunTrigger{
             add_physics_query_and_update_scene: false,
             camera_handler_cycle_state_camera: false,
+            camera_handler_cycle_state_camera_menu_target: false,
             game_handler_game_start: false,
             game_handler_game_state_exit_routines: false,
             game_handler_game_state_start_routines: false,
-            golf_ball_handler_active_player_manual_bonk: false,
+            golf_ball_handler_update_locations_post_bonk: false,
             golf_ball_handler_end_game: false,
             golf_ball_handler_party_store_locations: false,
             golf_ball_handler_reset_golf_ball_locations: false,
@@ -60,6 +61,9 @@ impl RunTrigger {
             "camera_handler_cycle_state_camera" => {
                 self.camera_handler_cycle_state_camera
             },
+            "camera_handler_cycle_state_camera_menu_target" => {
+                self.camera_handler_cycle_state_camera_menu_target
+            },
             "game_handler_game_start" => {
                 self.game_handler_game_start
             },
@@ -72,8 +76,8 @@ impl RunTrigger {
             "golf_ball_handler_end_game" => {
                 self.golf_ball_handler_end_game 
             },
-            "golf_ball_handler_active_player_manual_bonk" => {
-                self.golf_ball_handler_active_player_manual_bonk 
+            "golf_ball_handler_update_locations_post_bonk" => {
+                self.golf_ball_handler_update_locations_post_bonk 
             },
             "golf_ball_handler_party_store_locations" => {
                 self.golf_ball_handler_party_store_locations 
@@ -164,6 +168,10 @@ impl RunTrigger {
                 self.camera_handler_cycle_state_camera = state;
                 info!("response: camera_handler_cycle_state_camera: {}", self.get("camera_handler_cycle_state_camera"));  
             },
+            "camera_handler_cycle_state_camera_menu_target" => {
+                self.camera_handler_cycle_state_camera_menu_target = state;
+                info!("response: camera_handler_cycle_state_camera_menu_target: {}", self.get("camera_handler_cycle_state_camera_menu_target"));  
+            },
             "game_handler_game_start" => {
                 self.game_handler_game_start = state;
                 info!("response: game_handler_game_start: {}", self.get("game_handler_game_start"));
@@ -180,9 +188,9 @@ impl RunTrigger {
                 self.golf_ball_handler_end_game = state;
                 info!("response: golf_ball_handler_end_game: {}", self.get("golf_ball_handler_end_game"));
             }
-            "golf_ball_handler_active_player_manual_bonk" => {
-                self.golf_ball_handler_active_player_manual_bonk = state;
-                info!("response: golf_ball_handler_active_player_manual_bonk: {}", self.get("golf_ball_handler_active_player_manual_bonk"));
+            "golf_ball_handler_update_locations_post_bonk" => {
+                self.golf_ball_handler_update_locations_post_bonk = state;
+                info!("response: golf_ball_handler_update_locations_post_bonk: {}", self.get("golf_ball_handler_update_locations_post_bonk"));
             }
             "golf_ball_handler_party_store_locations" => {
                 self.golf_ball_handler_party_store_locations = state;
@@ -294,6 +302,10 @@ impl RunTrigger {
         self.camera_handler_cycle_state_camera
     }
 
+    pub fn camera_handler_cycle_state_camera_menu_target(&self) -> bool {
+        self.camera_handler_cycle_state_camera_menu_target
+    }
+
     pub fn game_handler_game_start(&self) -> bool {
         self.game_handler_game_start
     }
@@ -310,8 +322,8 @@ impl RunTrigger {
         self.golf_ball_handler_end_game 
     }
 
-    pub fn golf_ball_handler_active_player_manual_bonk(&self) -> bool {
-        self.golf_ball_handler_active_player_manual_bonk 
+    pub fn golf_ball_handler_update_locations_post_bonk(&self) -> bool {
+        self.golf_ball_handler_update_locations_post_bonk 
     }
 
     pub fn golf_ball_handler_party_store_locations(&self) -> bool {

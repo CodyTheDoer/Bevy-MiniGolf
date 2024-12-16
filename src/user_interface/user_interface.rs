@@ -2,7 +2,8 @@ use bevy::prelude::*;
 
 // --- State Imports --- //
 use crate::{
-    StateArrow, 
+    StateArrow,
+    StateCameraMenuTarget,
     StateCameraOrbitEntity, 
     StateEngineConnection, 
     StateGame, 
@@ -16,7 +17,7 @@ use crate::{
 // --- resource Imports --- //
 use crate::{
     BonkHandler,
-    BonkMouseXY,
+    XYMatrix,
     CameraWorld,
     CameraUi,
     Fonts,
@@ -53,7 +54,7 @@ pub fn apply_rotation_matrix_camera_yaw(
     camera_yaw: &f32, // Query only for CameraWorld's Transform
     direction_x: f32,
     direction_y: f32,
-) -> BonkMouseXY {
+) -> XYMatrix {
     // 2D rotation matrix
     let rotation_matrix = vec![
         [camera_yaw.cos(), camera_yaw.sin()],
@@ -63,7 +64,7 @@ pub fn apply_rotation_matrix_camera_yaw(
     let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
     let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
 
-    BonkMouseXY {
+    XYMatrix {
         x: rotated_x,
         y: rotated_y,
     }
@@ -198,7 +199,7 @@ pub fn setup_ui(
             ..default()
         }).id();
 
-    for _ in 0..29 {
+    for _ in 0..30 {
         commands.entity(bottom_left_ui).with_children(|parent| {
             // Spawn each state text entry and tag it for easy lookup later
             parent.spawn((
@@ -267,6 +268,7 @@ pub fn setup_ui(
 
 pub fn update_ui(
     state_arrow: Res<State<StateArrow>>,
+    state_camera_menu_target: Res<State<StateCameraMenuTarget>>,
     state_camera: Res<State<StateCameraOrbitEntity>>,
     state_game: Res<State<StateGame>>,
     state_engine_connection : Res<State<StateEngineConnection>>,
@@ -285,33 +287,34 @@ pub fn update_ui(
     let state_texts_left = vec![
         format!("state_arrow: {:?}", *state_arrow),                                                                                         // 1
         format!("state_camera: {:?}", *state_camera),                                                                                       // 2
-        format!("state_game: {:?}", *state_game),                                                                                           // 3
-        format!("state_engine_connection: {:?}", *state_engine_connection),                                                                 // 4
-        format!("state_play_style: {:?}", *state_play_style),                                                                               // 5
-        format!("state_level: {:?}", *state_level),                                                                                         // 6
-        format!("state_map_set: {:?}", *state_map_set),                                                                                     // 7
-        format!("state_menu: {:?}", *state_menu),                                                                                           // 8
-        format!("state_turn: {:?}", *state_turn),                                                                                           // 9
-        format!("Remote Game: {:?}", game_handler.get("remote_game")),                                                                      // 10
-        format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 11
-        format!("Party Size: {:?}", party.party_size()),                                                                                    // 12
-        format!("Active Player: {:?}", party.active_player_get_index()),                                                                    // 13 
-        format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 14
-        format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 15
-        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 16
-        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 17
-        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 18
-        format!("Active Player Scorecard: {:?}", party.active_player_get_score()),                                                          // 19
-        format!("______________________________________________________________________"),                                                  // 20  
-        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 21
-        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 22
-        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 23    
-        format!("KeyC: cycle_camera,   KeyM: cycle_state_map_set,   KeyP: cycle_active_player"),                                            // 24     
-        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 25   
-        format!("Keys: start_game_local, KeyQ: AllStatesUpdate"),                                                                           // 26   
-        format!("KeyU: golf_ball_query, KeyI: add_physics_query_and_update_scene"),                                                         // 27
-        format!("KeyO: debug_names_query, KeyP: party_query"),                                                                              // 28
-        format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world"),                                         // 29
+        format!("state_camera_menu_target: {:?}", *state_camera_menu_target),                                                               // 3
+        format!("state_game: {:?}", *state_game),                                                                                           // 4
+        format!("state_engine_connection: {:?}", *state_engine_connection),                                                                 // 5
+        format!("state_play_style: {:?}", *state_play_style),                                                                               // 6
+        format!("state_level: {:?}", *state_level),                                                                                         // 7
+        format!("state_map_set: {:?}", *state_map_set),                                                                                     // 8
+        format!("state_menu: {:?}", *state_menu),                                                                                           // 9
+        format!("state_turn: {:?}", *state_turn),                                                                                           // 10
+        format!("Remote Game: {:?}", game_handler.get("remote_game")),                                                                      // 11
+        format!("Current Level: {:?}", game_handler.current_level_get()),                                                                   // 12
+        format!("Party Size: {:?}", party.party_size()),                                                                                    // 13
+        format!("Active Player: {:?}", party.active_player_get_index()),                                                                    // 14 
+        format!("Active Player: player_id: {:?}", party.active_player_get_player_id()),                                                     // 15
+        format!("Active Player: player_type: {:?}", party.active_player_get_player_type()),                                                 // 16
+        format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize)),   // 17
+        format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state()),                             // 18
+        format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count()),                                                  // 19
+        format!("Active Player Scorecard: {:?}", party.active_player_get_score()),                                                          // 20
+        format!("______________________________________________________________________"),                                                  // 21  
+        format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,"),                                                                               // 22
+        format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI"),                                                // 23
+        format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game"),                                                          // 24    
+        format!("KeyC: cycle_camera,   KeyV: cycle_camera_menu_target,   KeyP: cycle_active_player"),                                            // 25     
+        format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn"),                                                   // 26   
+        format!("Keys: start_game_local, KeyQ: AllStatesUpdate,   KeyM: cycle_state_map_set"),                                                                           // 27   
+        format!("KeyU: golf_ball_query, KeyI: add_physics_query_and_update_scene"),                                                         // 28
+        format!("KeyO: debug_names_query, KeyP: party_query"),                                                                              // 29
+        format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world"),                                         // 30
     ];
 
     let state_texts_right = vec![
@@ -331,7 +334,7 @@ pub fn update_ui(
         format!("game_handler_game_start: {:?}", run_trigger.get("game_handler_game_start")),
         format!("game_handler_game_state_exit_routines: {:?}", run_trigger.get("game_handler_game_state_exit_routines")),
         format!("game_handler_game_state_start_routines: {:?}", run_trigger.get("game_handler_game_state_start_routines")),
-        format!("golf_ball_handler_active_player_manual_bonk: {:?}", run_trigger.get("golf_ball_handler_active_player_manual_bonk")),
+        format!("golf_ball_handler_update_locations_post_bonk: {:?}", run_trigger.get("golf_ball_handler_update_locations_post_bonk")),
         format!("golf_ball_handler_party_store_locations: {:?}", run_trigger.get("golf_ball_handler_party_store_locations")),
         format!("golf_ball_handler_reset_golf_ball_locations: {:?}", run_trigger.get("golf_ball_handler_reset_golf_ball_locations")),
         format!("golf_ball_handler_spawn_golf_balls_for_party_members: {:?}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members")),

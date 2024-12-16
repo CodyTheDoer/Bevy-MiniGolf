@@ -5,8 +5,7 @@ use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
 // State
 use crate::{
-    StateCameraOrbitEntity, 
-    StatePanOrbit,
+    StateCameraMenuTarget, StateCameraOrbitEntity, StatePanOrbit
 };
 
 // Resource
@@ -19,13 +18,16 @@ use crate::{
     PanOrbitSettings,
     Party,
     RunTrigger,
+    XYMatrix,
 };
 
 impl CameraHandler {
     pub fn new() -> Self {
         let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        let rotation: Quat = Quat::from_xyzw(0.0, 0.0, 0.0, 0.0);
         CameraHandler {
             current_coords,
+            rotation,
         }
     }
 }
@@ -78,16 +80,48 @@ pub fn camera_handler_cycle_state_camera(
             next_camera_orbit_entity_state.set(StateCameraOrbitEntity::FreePan);
         },
         StateCameraOrbitEntity::FreePan => {
-            info!("StateCameraOrbitEntity::LeaderBoard");
-            next_camera_orbit_entity_state.set(StateCameraOrbitEntity::LeaderBoard);
-        },
-        StateCameraOrbitEntity::LeaderBoard => {
             info!("StateCameraOrbitEntity::Menu");
             next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Menu);
         },
     }
     run_trigger.set_target("camera_handler_cycle_state_camera", false);
     info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
+}
+
+pub fn camera_handler_cycle_state_camera_menu_target(
+    mut run_trigger: ResMut<RunTrigger>,
+    camera_menu_target_state: Res<State<StateCameraMenuTarget>>,
+    mut next_camera_menu_target_state: ResMut<NextState<StateCameraMenuTarget>>,
+) {
+    info!("function: camera_handler_cycle_state_camera_menu_target"); 
+    match camera_menu_target_state.get() {
+        StateCameraMenuTarget::LeaderBoard => {
+            info!("StateCameraMenuTarget::Local");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::Local);
+        },
+        StateCameraMenuTarget::Local => {
+            info!("StateCameraMenuTarget::Main");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::Main);
+        },
+        StateCameraMenuTarget::Main => {
+            info!("StateCameraMenuTarget::Online");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::Online);
+        },
+        StateCameraMenuTarget::Online => {
+            info!("StateCameraMenuTarget::Player");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::Player);
+        },
+        StateCameraMenuTarget::Player => {
+            info!("StateCameraMenuTarget::Preferences");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::Preferences);
+        },
+        StateCameraMenuTarget::Preferences => {
+            info!("StateCameraMenuTarget::LeaderBoard");
+            next_camera_menu_target_state.set(StateCameraMenuTarget::LeaderBoard);
+        },
+    }
+    run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", false);
+    info!("post response: camera_handler_cycle_state_camera_menu_target: {}", run_trigger.get("camera_handler_cycle_state_camera_menu_target"));  
 }
 
 pub fn setup_3d_camera(
@@ -97,27 +131,106 @@ pub fn setup_3d_camera(
     // Position our camera using our component,
     // not Transform (it would get overwritten)
     camera.state.center = Vec3::new(0.0, 0.0, 0.0);
-    camera.state.radius = 38.0;
-    camera.state.pitch = -12.0f32.to_radians();
-    camera.state.yaw = -17.0f32.to_radians();
+    camera.state.radius = 5.0;
+    camera.state.pitch = 2.0f32.to_radians();
+    camera.state.yaw = 0.0f32.to_radians();
     commands.spawn((
         camera,
         CameraWorld,
     ));
 }
 
+fn apply_rotation_matrix_menu_camera(
+    camera_yaw: &f32,
+    direction_x: f32,
+    direction_y: f32,
+) -> XYMatrix {
+    // 2D rotation matrix
+    let rotation_matrix = vec![
+        [camera_yaw.cos(), camera_yaw.sin()],
+        [-camera_yaw.sin(), camera_yaw.cos()],
+    ];
+
+    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
+    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
+
+    XYMatrix {
+        x: rotated_x,
+        y: rotated_y,
+    }
+}
+
 pub fn state_camera_orbit_entity_logic(
+    camera_menu_target_state: ResMut<State<StateCameraMenuTarget>>,
     camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
     mut camera_coord_tracker: ResMut<CameraHandler>,
     scene_meshes: Query<(Entity, &Name, &Transform)>,
     golf_balls: Query<(&GolfBall, &Transform)>,
-    // q_rigid_body: Query<(&RigidBody, &Transform)>,
     party: Res<Party>,
-) {
-    // let mut ball_rigid_body_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0); 
-    // for (_, transform) in q_rigid_body.iter() {
-    //     ball_rigid_body_coords = transform.translation.clone();
-    // }
+) {    
+    let mut menu_orbit_direction_x = 0.0;
+    let mut menu_orbit_direction_y = 0.0;
+    if camera_orbit_entity_state.get() == &StateCameraOrbitEntity::Menu {
+        for (_entity, name, transform) in scene_meshes.iter() {
+            let owned_name = name.as_str();
+            match camera_menu_target_state.get() {
+                StateCameraMenuTarget::LeaderBoard => {
+                    match owned_name {
+                        "target_leaderboard" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                }
+                StateCameraMenuTarget::Local => {
+                    match owned_name {
+                        "target_local" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                },
+                StateCameraMenuTarget::Main => {
+                    match owned_name {
+                        "target_main" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                },
+                StateCameraMenuTarget::Online => {
+                    match owned_name {
+                        "target_online" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                },
+                StateCameraMenuTarget::Player => {
+                    match owned_name {
+                        "target_player" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                },
+                StateCameraMenuTarget::Preferences => {
+                    match owned_name {
+                        "target_preferences" => {
+                            menu_orbit_direction_x = transform.translation.x;
+                            menu_orbit_direction_y = transform.translation.y;
+                        },
+                        _ => {},
+                    };
+                },
+            }
+        }
+    }
     match camera_orbit_entity_state.get() {
         StateCameraOrbitEntity::Ball => {
             let active_player = party.active_player_get_player_id();
@@ -126,12 +239,6 @@ pub fn state_camera_orbit_entity_logic(
                     camera_coord_tracker.current_coords = transform.translation;
                 }
             }
-            // for (_entity, name, _transform) in scene_meshes.iter() {
-            //     let owned_name = name.as_str();
-            //     if owned_name == active_players_golf_ball {
-            //         camera_coord_tracker.current_coords = ball_rigid_body_coords;
-            //     };
-            // }
         },    
         StateCameraOrbitEntity::Cup => {
             for (_entity, name, transform) in scene_meshes.iter() {
@@ -144,12 +251,32 @@ pub fn state_camera_orbit_entity_logic(
         StateCameraOrbitEntity::Menu => {
             for (_entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "ball" {
-                    camera_coord_tracker.current_coords = transform.translation;
+                    // Translation
+                    let camera_yaw = transform.rotation.to_euler(EulerRot::YXZ).0;
+                    let adjusted_xy = apply_rotation_matrix_menu_camera(&camera_yaw, menu_orbit_direction_x, menu_orbit_direction_y);
+                    let mut normalized_adj: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * 5.0;
+                    normalized_adj.y = 10.0;
+                    camera_coord_tracker.current_coords = transform.translation + normalized_adj;
+
+                    // Rotation
+                    let target_position = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y); // Target's position on the plane
+                    let camera_forward = Vec3::new(0.0, 0.0, 1.0); // Camera's forward vector (or current direction)
+                    let direction_vector = target_position - transform.translation; // Vector from camera to target
+
+                    let direction_vector = direction_vector.normalize();
+
+                    // Calculate the angle between the forward vector and the direction vector
+                    let angle = camera_forward.angle_between(direction_vector);
+                    
+                    // Determine the axis of rotation (cross product gives the perpendicular axis)
+                    let rotation_axis = camera_forward.cross(direction_vector).normalize();
+
+                    let rotation = Quat::from_axis_angle(rotation_axis, angle);
+                    camera_coord_tracker.rotation = rotation; // Update the camera's rotation
                     break;
                 };
             }  
         },
-        StateCameraOrbitEntity::LeaderBoard => {},
         StateCameraOrbitEntity::FreePan => {},
     }
 }
@@ -185,13 +312,12 @@ pub fn pan_orbit_camera(
         // Determine the target based on the current camera state
         let target = match camera_orbit_entity_state.get() {
             StateCameraOrbitEntity::Ball | StateCameraOrbitEntity::Cup |
-            StateCameraOrbitEntity::Menu | StateCameraOrbitEntity::LeaderBoard => camera_coord_tracker.current_coords,
+            StateCameraOrbitEntity::Menu => camera_coord_tracker.current_coords,
             StateCameraOrbitEntity::FreePan => state.center, // Use the original free pan center
         };
 
-        let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in MainMenu * LeaderBoard
+        let allow_interaction = match camera_orbit_entity_state.get() { // Disable all interactions in Menus
             StateCameraOrbitEntity::Menu => false,
-            StateCameraOrbitEntity::LeaderBoard => false,
             _ => true, // Enable interactions in all other states
         };
 

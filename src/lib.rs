@@ -23,14 +23,14 @@ pub mod user_interface;
 pub struct BonkHandler {
     pub direction: Vec3,
     pub power: f32,
-    pub cursor_origin_position: BonkMouseXY,
+    pub cursor_origin_position: XYMatrix,
     pub cursor_origin_position_updated: bool,
-    pub cursor_bonk_position: BonkMouseXY,
+    pub cursor_bonk_position: XYMatrix,
     pub cursor_bonk_position_updated: bool,
 }
 
 #[derive(Clone, Debug)]
-pub struct BonkMouseXY {
+pub struct XYMatrix {
     pub x: f32,
     pub y: f32, 
 }
@@ -38,6 +38,7 @@ pub struct BonkMouseXY {
 #[derive(Debug, Resource)]
 pub struct CameraHandler {
     current_coords: Vec3,
+    rotation: Quat,
 }
 
 #[derive(Asset, Component, TypePath)]
@@ -313,13 +314,23 @@ pub enum StateArrow {
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum StateCameraMenuTarget {
+    #[default]
+    Main,
+    LeaderBoard,
+    Local,
+    Online,
+    Player,
+    Preferences,
+}
+
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateCameraOrbitEntity {
     #[default]
     Menu,
     Ball,
     Cup,
     FreePan,
-    LeaderBoard,
 }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -427,10 +438,11 @@ pub enum StateUpdateRef {
 pub struct RunTrigger{
     add_physics_query_and_update_scene:bool,
     camera_handler_cycle_state_camera: bool,
+    camera_handler_cycle_state_camera_menu_target: bool,
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
     game_handler_game_state_start_routines: bool,
-    golf_ball_handler_active_player_manual_bonk: bool,
+    golf_ball_handler_update_locations_post_bonk: bool,
     golf_ball_handler_end_game: bool,
     golf_ball_handler_party_store_locations: bool,
     golf_ball_handler_reset_golf_ball_locations: bool,

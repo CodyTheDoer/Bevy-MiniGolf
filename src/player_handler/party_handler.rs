@@ -289,7 +289,6 @@ pub fn party_handler_active_player_add_bonk(
         match game_state.get() {
             StateGame::InGame => {
                 party.active_player_add_bonk(game_handler.current_level_get() as usize);
-                run_trigger.set_target("golf_ball_handler_active_player_manual_bonk", true);
             },
             _ => {},
         }
