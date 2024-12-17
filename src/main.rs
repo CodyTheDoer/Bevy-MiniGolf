@@ -55,6 +55,7 @@ use minigolf::{
     SceneInstanceRespawnedGolfBall,
     SceneInstanceSpawnedEnvironment,
     SceneInstanceSpawnedGolfBalls,
+    StatesRef,
     UpdateIdResource,
 };
 
@@ -141,6 +142,7 @@ use minigolf::{
         user_interface::{
             bonk_gizmo,
             easy_vec_ui,
+            updated_states_ref,
         },
     },
 };
@@ -210,6 +212,7 @@ fn main() {
         .insert_resource(PhysicsHandler::new())
         .insert_resource(PurgeHandler::new())
         .insert_resource(RunTrigger::new())
+        .insert_resource(StatesRef::new())
         .insert_resource(UpdateIdResource { update_id: None })
 
         // --- Event Initialization --- //
@@ -315,7 +318,8 @@ fn main() {
         .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
-        .add_systems(Update, golf_balls_update_sleep_status);
+        .add_systems(Update, golf_balls_update_sleep_status)
+        .add_systems(Update, updated_states_ref);
 
     app.run();
 }
@@ -368,7 +372,7 @@ fn listening_function_local_all_finished(
     game_handler: Res<GameHandler>,
     party: Res<Party>,
 ) {
-    if party.all_finished() && !game_handler.remote_game() {
+    if party.all_finished() && !game_handler.get("remote_game") {
         run_trigger.set_target("turn_handler_set_turn_next", true);
     }
 }
@@ -405,7 +409,7 @@ fn listening_function_local_add_physics(
     for _ in query.iter() {
         count += 1;
     }
-    if !game_handler.remote_game() && game_handler.in_game() && count == 0 {
+    if !game_handler.get("remote_game") && game_handler.get("in_game") && count == 0 {
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }
@@ -459,20 +463,6 @@ fn listening_function_purge_events(
     }
 }
 
-fn listening_function_spawned_golf_ball_events(
-    mut asset_event_reader: EventReader<SceneInstanceSpawnedGolfBalls>,
-    mut game_handler: ResMut<GameHandler>,
-    mut purge_handler: ResMut<PurgeHandler>,
-    mut run_trigger: ResMut<RunTrigger>,
-) {
-    for event in asset_event_reader.read() {
-        info!("Entity: [{:?}]", event);
-        purge_handler.set_target("golf_balls_purged", false);
-        game_handler.set_target("golf_balls_loaded", true);
-        run_trigger.set_target("add_physics_query_and_update_scene", true);
-    }
-}
-
 fn listening_function_spawned_environment_events(
     mut asset_event_reader: EventReader<SceneInstanceSpawnedEnvironment>,
     mut game_handler: ResMut<GameHandler>,
@@ -491,6 +481,20 @@ fn listening_function_spawned_environment_events(
             false => {
                 info!("listening_function_spawned_environment_events: Not In Game");},
         }
+    }
+}
+
+fn listening_function_spawned_golf_ball_events(
+    mut asset_event_reader: EventReader<SceneInstanceSpawnedGolfBalls>,
+    mut game_handler: ResMut<GameHandler>,
+    mut purge_handler: ResMut<PurgeHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    for event in asset_event_reader.read() {
+        info!("Entity: [{:?}]", event);
+        purge_handler.set_target("golf_balls_purged", false);
+        game_handler.set_target("golf_balls_loaded", true);
+        run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }
 

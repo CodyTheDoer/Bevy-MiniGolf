@@ -421,6 +421,20 @@ pub enum StateUpdateRef {
     StateMapSet(StateMapSet),
     StateGamePlayStyle(StateGamePlayStyle),
     StateTurn(StateTurn),
+} 
+
+#[derive(Resource)]
+pub struct StatesRef {
+    all_states: Vec<String>,
+}
+
+impl StatesRef {
+    pub fn new() -> StatesRef {
+        let all_states: Vec<String> = Vec::new();
+        StatesRef {
+            all_states,
+        }
+    }
 }
 
 #[derive(Resource)]

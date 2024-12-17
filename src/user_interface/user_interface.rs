@@ -27,6 +27,7 @@ use crate::{
     Party,
     PurgeHandler,
     RunTrigger,
+    StatesRef,
     UserInterface,
 };
 
@@ -95,58 +96,58 @@ pub fn bonk_gizmo(
             );
         }
     }
-} 
+}
 
 pub fn easy_vec_ui(
     mut easy_vec_ui_resource: ResMut<EasyVecUi>,
-    state_arrow: Res<State<StateArrow>>,
-    state_camera_menu_target: Res<State<StateCameraMenuTarget>>,
-    state_camera: Res<State<StateCameraOrbitEntity>>,
-    state_game: Res<State<StateGame>>,
-    state_engine_connection : Res<State<StateEngineConnection>>,
-    state_play_style: Res<State<StateGamePlayStyle>>,
-    state_level: Res<State<StateLevel>>,
-    state_map_set: Res<State<StateMapSet>>,
-    state_menu: Res<State<StateMenu>>,
-    state_turn: Res<State<StateTurn>>,
     party: Res<Party>,
     game_handler: ResMut<GameHandler>,
     leader_board: Res<LeaderBoard>,
     run_trigger: Res<RunTrigger>,
-    purge_handler: Res<PurgeHandler>
+    purge_handler: Res<PurgeHandler>,
+    golf_balls: Query<&GolfBall>,
+    all_states_ref: Res<StatesRef>,
 ) {
-    let left_data_vec = vec![
-        String::from(format!("state_arrow: {:?}", *state_arrow)),                                                                                         // 1
-        String::from(format!("state_camera: {:?}", *state_camera)),                                                                                       // 2
-        String::from(format!("state_camera_menu_target: {:?}", *state_camera_menu_target)),                                                               // 3
-        String::from(format!("state_game: {:?}", *state_game)),                                                                                           // 4
-        String::from(format!("state_engine_connection: {:?}", *state_engine_connection)),                                                                 // 5
-        String::from(format!("state_play_style: {:?}", *state_play_style)),                                                                               // 6
-        String::from(format!("state_level: {:?}", *state_level)),                                                                                         // 7
-        String::from(format!("state_map_set: {:?}", *state_map_set)),                                                                                     // 8
-        String::from(format!("state_menu: {:?}", *state_menu)),                                                                                           // 9
-        String::from(format!("state_turn: {:?}", *state_turn)),                                                                                           // 10
-        String::from(format!("Remote Game: {:?}", game_handler.get("remote_game"))),                                                                      // 11
-        String::from(format!("Current Level: {:?}", game_handler.current_level_get())),                                                                   // 12
-        String::from(format!("Party Size: {:?}", party.party_size())),                                                                                    // 13
-        String::from(format!("Active Player: {:?}", party.active_player_get_index())),                                                                    // 14 
-        String::from(format!("Active Player: player_id: {:?}", party.active_player_get_player_id())),                                                     // 15
-        String::from(format!("Active Player: player_type: {:?}", party.active_player_get_player_type())),                                                 // 16
-        String::from(format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize))),   // 17
-        String::from(format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state())),                             // 18
-        String::from(format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count())),                                                  // 19
-        String::from(format!("Active Player Scorecard: {:?}", party.active_player_get_score())),                                                          // 20
-        String::from(format!("______________________________________________________________________")),                                                  // 21  
-        String::from(format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,")),                                                                               // 22
-        String::from(format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI")),                                                // 23
-        String::from(format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game")),                                                          // 24    
-        String::from(format!("KeyC: cycle_camera,   KeyV: cycle_camera_menu_target,   KeyP: cycle_active_player")),                                            // 25     
-        String::from(format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn")),                                                   // 26   
-        String::from(format!("Keys: start_game_local, KeyQ: AllStatesUpdate,   KeyM: cycle_state_map_set")),                                                                           // 27   
-        String::from(format!("KeyU: golf_ball_query, KeyI: add_physics_query_and_update_scene")),                                                         // 28
-        String::from(format!("KeyO: debug_names_query, KeyP: party_query")),                                                                              // 29
-        String::from(format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world")),                                         // 30
+    let mut left_data_vec: Vec<String> = Vec::new();
+
+    for golf_ball in golf_balls.iter() {
+        left_data_vec.push(String::from(format!("Golfball: [{:?}]", golf_ball.0.uuid )));
+        left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
+        left_data_vec.push(String::from(format!("______________________________________________________________________")));
+    }
+
+    let all_states = &all_states_ref.all_states;
+    for state in all_states.iter() {
+        left_data_vec.push(state.to_owned())
+    }
+
+    let dedicated_data_vec = vec![
+        String::from(format!("______________________________________________________________________")),
+        String::from(format!("Remote Game: {:?}", game_handler.get("remote_game"))),
+        String::from(format!("Current Level: {:?}", game_handler.current_level_get())),
+        String::from(format!("Party Size: {:?}", party.party_size())),
+        String::from(format!("Active Player: {:?}", party.active_player_get_index())), 
+        String::from(format!("Active Player: player_id: {:?}", party.active_player_get_player_id())),
+        String::from(format!("Active Player: player_type: {:?}", party.active_player_get_player_type())),
+        String::from(format!("Active Player: Bonk Count Level: {:?}", party.active_player_get_bonks_level(game_handler.current_level_get() as usize))),
+        String::from(format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state())),
+        String::from(format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count())),
+        String::from(format!("Active Player Scorecard: {:?}", party.active_player_get_score())),
+        String::from(format!("______________________________________________________________________")),
+        String::from(format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,")),
+        String::from(format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI")),
+        String::from(format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game")),
+        String::from(format!("KeyC: cycle_camera,   KeyV: cycle_camera_menu_target,   KeyP: cycle_active_player")),
+        String::from(format!("KeyA: active_player_set_ball_location,   KeyN: game_handler.next_turn")),
+        String::from(format!("Keys: start_game_local, KeyQ: AllStatesUpdate,   KeyM: cycle_state_map_set")),
+        String::from(format!("KeyU: golf_ball_query, KeyI: add_physics_query_and_update_scene")),
+        String::from(format!("KeyO: debug_names_query, KeyP: party_query")),
+        String::from(format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world")),
     ];
+
+    for entry in dedicated_data_vec.iter() {
+        left_data_vec.push(entry.to_owned());
+    }
 
     let right_data_vec = vec![
         String::from(format!("game_handler: All Sleeping: [{:?}]", game_handler.get("all_sleeping"))),
@@ -193,6 +194,34 @@ pub fn easy_vec_ui(
     
     easy_vec_ui_resource.inject_vec_left(left_data_vec);
     easy_vec_ui_resource.inject_vec_right(right_data_vec);
+}
+
+pub fn updated_states_ref(
+    state_arrow: Res<State<StateArrow>>,
+    state_camera_menu_target: Res<State<StateCameraMenuTarget>>,
+    state_camera: Res<State<StateCameraOrbitEntity>>,
+    state_game: Res<State<StateGame>>,
+    state_engine_connection : Res<State<StateEngineConnection>>,
+    state_play_style: Res<State<StateGamePlayStyle>>,
+    state_level: Res<State<StateLevel>>,
+    state_map_set: Res<State<StateMapSet>>,
+    state_menu: Res<State<StateMenu>>,
+    state_turn: Res<State<StateTurn>>,
+    mut all_states_ref: ResMut<StatesRef>,
+) {
+    let all_states = vec![
+        String::from(format!("state_arrow: {:?}", *state_arrow)),
+        String::from(format!("state_camera: {:?}", *state_camera)),
+        String::from(format!("state_camera_menu_target: {:?}", *state_camera_menu_target)),
+        String::from(format!("state_game: {:?}", *state_game)),
+        String::from(format!("state_engine_connection: {:?}", *state_engine_connection)),
+        String::from(format!("state_play_style: {:?}", *state_play_style)),
+        String::from(format!("state_level: {:?}", *state_level)),
+        String::from(format!("state_map_set: {:?}", *state_map_set)),
+        String::from(format!("state_menu: {:?}", *state_menu)),
+        String::from(format!("state_turn: {:?}", *state_turn)),
+    ];
+    all_states_ref.all_states = all_states;
 }
 
 impl UserInterface {
