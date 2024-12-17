@@ -29,12 +29,6 @@ pub struct BonkHandler {
     pub cursor_bonk_position_updated: bool,
 }
 
-#[derive(Clone, Debug)]
-pub struct XYMatrix {
-    pub x: f32,
-    pub y: f32, 
-}
-
 #[derive(Debug, Resource)]
 pub struct CameraHandler {
     current_coords: Vec3,
@@ -53,16 +47,16 @@ pub struct ClientProtocol {}
 impl ClientProtocol {
     pub fn new() -> Self {ClientProtocol{}}
 
-    pub fn init_player_connection(&self) -> String {
-        String::from("InitPlayerConnection")
-    }
-
     pub fn all_states_packet(&self) -> String {
         String::from("PacketAllStates")
     }
 
     pub fn heart_beat_packet(&self) -> String {
         String::from("PacketHeartBeat")
+    }
+
+    pub fn init_player_connection(&self) -> String {
+        String::from("InitPlayerConnection")
     }
 }
 
@@ -76,11 +70,6 @@ pub struct HeartbeatTimer(pub Timer);
 
 #[derive(Asset, Clone, Component, Debug, TypePath)]
 pub struct Interactable; 
-
-#[derive(Resource)]
-pub struct Fonts {
-    pub fonts: Vec<TextStyle>,
-}
 
 #[derive(Resource)]
 pub struct GameHandler {
@@ -442,11 +431,11 @@ pub struct RunTrigger{
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
     game_handler_game_state_start_routines: bool,
-    golf_ball_handler_update_locations_post_bonk: bool,
     golf_ball_handler_end_game: bool,
     golf_ball_handler_party_store_locations: bool,
     golf_ball_handler_reset_golf_ball_locations: bool,
     golf_ball_handler_spawn_golf_balls_for_party_members: bool,
+    golf_ball_handler_update_locations_post_bonk: bool,
     leader_board_log_game: bool,
     leader_board_review_last_game: bool,
     level_handler_init_level_game_handler_current_level: bool,
@@ -470,12 +459,6 @@ pub struct RunTrigger{
     start_movement_listener_turn_handler_set_turn_next: bool,
 }
 
-#[derive(Component)]
-pub struct TextState;
-
-#[derive(Component)]
-pub struct TextTitle;
-
 #[derive(Resource)]
 pub struct UpdateIdResource {
     pub update_id: Option<Uuid>,
@@ -483,8 +466,8 @@ pub struct UpdateIdResource {
 
 pub struct UserInterface {}
 
-#[derive(Resource)]
-pub struct UiUpdateTimer(pub Timer);
-
-#[derive(Debug, Event)]
-pub struct UiUpdateEvent;
+#[derive(Clone, Debug)]
+pub struct XYMatrix {
+    pub x: f32,
+    pub y: f32, 
+}

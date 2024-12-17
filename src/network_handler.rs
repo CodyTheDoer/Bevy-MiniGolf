@@ -261,7 +261,7 @@ pub fn remote_state_change_monitor(
             StateUpdateRef::StateEngineConnection(state_engine_connection) => {
                 info!("StateEngineConnection: {:?}", state_engine_connection);
                 next_state_connection.set(state_engine_connection); 
-                game_handler.is_connected_set_true();
+                game_handler.set_target("network_server_connection", true);
             },
             StateUpdateRef::StateGame(state_game) => {
                 info!("StateGame: {:?}", state_game);
@@ -376,7 +376,7 @@ pub fn server_parse_message(
                 },
                 "InitPlayerConnection" => {
                     // Handle InitPlayerConnection command
-                    if game_handler.is_not_connected() {
+                    if game_handler.get("network_server_connection") == false {
                         let parsed_state = Some(StateUpdateRef::StateEngineConnection(
                             StateEngineConnection::Online,
                         ));

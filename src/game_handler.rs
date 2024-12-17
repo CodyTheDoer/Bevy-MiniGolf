@@ -25,7 +25,6 @@ use crate::{
 impl GameHandler {
     pub fn new() -> Self {
         GameHandler {
-            current_level: 0,
             all_sleeping: false,
             arrow_state: false,
             environment_loaded: false,
@@ -33,8 +32,9 @@ impl GameHandler {
             in_game: false,
             network_server_connection: false,
             remote_game: false,
-            remotely_pushed_state: None,
+            current_level: 0,
             game_id: None,
+            remotely_pushed_state: None,
         }
     }
 
@@ -129,6 +129,8 @@ impl GameHandler {
     pub fn remote_game(&self) -> bool {
         self.remote_game
     }
+
+    // Game ID Logic
     
     pub fn game_id_get(&mut self) -> Uuid {
         if self.game_id == None {
@@ -146,6 +148,7 @@ impl GameHandler {
     }
 
     // Level Handling logic
+
     pub fn current_level_set_next_level(&mut self) {
         self.current_level += 1;
     }
@@ -172,6 +175,7 @@ impl GameHandler {
     }
 
     // Level Handling logic
+
     pub fn current_level_get(&self) -> i32 {
         self.current_level
     }
@@ -208,34 +212,10 @@ impl GameHandler {
         self.current_level_set(24);
     }
 
-    // Bonk UI Logic
-    pub fn arrow_state_get(&self) -> bool {
-        self.arrow_state
-    }
+    // pushed state logic 
 
-    pub fn arrow_state_set_true(&mut self) {
-        self.arrow_state = true;
-    }
-
-    pub fn arrow_state_set_false(&mut self) {
-        self.arrow_state = false;
-    }
-    
-    // Remote Auth Server Logic
-    pub fn is_connected(&self) -> bool {
-        self.network_server_connection
-    }
-    
-    pub fn is_not_connected(&self) -> bool {
-        !self.network_server_connection
-    }
-    
-    pub fn is_connected_set_false(&mut self) {
-        self.network_server_connection = false;
-    }
-    
-    pub fn is_connected_set_true(&mut self) {
-        self.network_server_connection = true;
+    pub fn pushed_state_get(&self) -> StateUpdateRef {
+        self.remotely_pushed_state.clone().expect("Push State get failed.")
     }
 
     pub fn pushed_state_set(
@@ -243,10 +223,6 @@ impl GameHandler {
         parsed_state: Option<StateUpdateRef>,
     ) {
         self.remotely_pushed_state = Some(parsed_state.unwrap());
-    }
-
-    pub fn pushed_state_get(&self) -> StateUpdateRef {
-        self.remotely_pushed_state.clone().expect("Push State get failed.")
     }
 }
 

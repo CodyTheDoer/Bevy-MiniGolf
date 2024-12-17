@@ -174,8 +174,16 @@ impl Party {
         player.get_player_id()
     }
 
-    pub fn next_proximity_player(&self, ) {
+    pub fn next_player_proximity(&self, ) {
         todo!(); 
+    }
+
+    pub fn next_player_set_order(&mut self) {
+        let mut active_player_index = self.active_player.lock().unwrap();
+        let players_len = self.players.lock().unwrap().len() as i32;
+
+        *active_player_index = (*active_player_index % players_len) + 1; // Wraps to 1 after reaching the last player
+        info!("post function: next_set_order_player");
     }
 
     pub fn next_round_prep(&mut self) {
@@ -186,14 +194,6 @@ impl Party {
             let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
             player.next_round_prep();
         }
-    }
-
-    pub fn next_set_order_player(&mut self) {
-        let mut active_player_index = self.active_player.lock().unwrap();
-        let players_len = self.players.lock().unwrap().len() as i32;
-
-        *active_player_index = (*active_player_index % players_len) + 1; // Wraps to 1 after reaching the last player
-        info!("post function: next_set_order_player");
     }
 
     pub fn party_size(&self) -> usize {        
@@ -294,7 +294,7 @@ pub fn party_handler_active_player_add_bonk(
         }
     }
     run_trigger.set_target("party_handler_active_player_add_bonk", false);
-    info!("post response: party_handler_active_player_add_bonk");  
+    info!("post response: party_handler_active_player_add_bonk: {}", run_trigger.get("party_handler_active_player_add_bonk"));   
 }
 
 pub fn party_handler_active_player_set_hole_completion_state_true(
@@ -312,7 +312,7 @@ pub fn party_handler_active_player_set_hole_completion_state_true(
         };
     }
     run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", false);
-    info!("post response: party_handler_active_player_set_hole_completion_state_true");  
+    info!("post response: party_handler_active_player_set_hole_completion_state_true: {}", run_trigger.get("party_handler_active_player_set_hole_completion_state_true"));   
 }
 
 pub fn party_handler_cycle_active_player( 
@@ -327,7 +327,7 @@ pub fn party_handler_cycle_active_player(
         let party_size = party.party_size();
         if finished_count != party_size {
             loop {
-                party.next_set_order_player();
+                party.next_player_set_order();
                 let players = party.players.lock().unwrap();
                 let ref_idx = (party.active_player_get_index() - 1) as usize;
                 if let Some(player) = players.get(ref_idx) {
@@ -339,7 +339,7 @@ pub fn party_handler_cycle_active_player(
         }
     }
     run_trigger.set_target("party_handler_cycle_active_player", false);
-    info!("post response: party_handler_cycle_active_player");  
+    info!("post response: party_handler_cycle_active_player: {}", run_trigger.get("party_handler_cycle_active_player"));  
 }
 
 pub fn party_handler_new_player_ai(
@@ -353,7 +353,7 @@ pub fn party_handler_new_player_ai(
         party.players_add_player(new_player);
     }
     run_trigger.set_target("party_handler_new_player_ai", false);
-    info!("post response: party_handler_new_player_ai");  
+    info!("post response: party_handler_new_player_ai: {}", run_trigger.get("party_handler_new_player_ai"));  
 }
 
 pub fn party_handler_new_player_local(
@@ -367,21 +367,21 @@ pub fn party_handler_new_player_local(
         party.players_add_player(new_player);
     }
     run_trigger.set_target("party_handler_new_player_local", false);
-    info!("post response: party_handler_new_player_local");  
+    info!("post response: party_handler_new_player_local: {}", run_trigger.get("party_handler_new_player_local"));  
 }
 
 pub fn party_handler_new_player_remote(
     party: Res<Party>,
     mut run_trigger: ResMut<RunTrigger>,
 ) {
-    info!("function: party_handler_new_player_local"); 
+    info!("function: party_handler_new_player_remote"); 
     {
         let new_player_remote = PlayerRemote::new();
         let new_player = Arc::new(Mutex::new(new_player_remote));
         party.players_add_player(new_player);
     }
-    run_trigger.set_target("party_handler_new_player_local", false);
-    info!("post response: party_handler_new_player_local");  
+    run_trigger.set_target("party_handler_new_player_remote", false);
+    info!("post response: party_handler_new_player_remote: {}", run_trigger.get("party_handler_new_player_remote"));  
 
 }
 

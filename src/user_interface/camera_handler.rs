@@ -60,12 +60,32 @@ impl Default for PanOrbitSettings {
     }
 }
 
+fn apply_rotation_matrix_menu_camera(
+    camera_yaw: &f32,
+    direction_x: f32,
+    direction_y: f32,
+) -> XYMatrix {
+    // 2D rotation matrix
+    let rotation_matrix = vec![
+        [camera_yaw.cos(), camera_yaw.sin()],
+        [-camera_yaw.sin(), camera_yaw.cos()],
+    ];
+
+    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
+    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
+
+    XYMatrix {
+        x: rotated_x,
+        y: rotated_y,
+    }
+}
+
 pub fn camera_handler_cycle_state_camera(
     mut run_trigger: ResMut<RunTrigger>,
     camera_orbit_entity_state: Res<State<StateCameraOrbitEntity>>,
     mut next_camera_orbit_entity_state: ResMut<NextState<StateCameraOrbitEntity>>,
 ) {
-    info!("function: game_handler_cycle_state_camera"); 
+    info!("function: camera_handler_cycle_state_camera"); 
     match camera_orbit_entity_state.get() {
         StateCameraOrbitEntity::Menu => {
             info!("StateCameraOrbitEntity::Ball");
@@ -138,26 +158,6 @@ pub fn setup_3d_camera(
         camera,
         CameraWorld,
     ));
-}
-
-fn apply_rotation_matrix_menu_camera(
-    camera_yaw: &f32,
-    direction_x: f32,
-    direction_y: f32,
-) -> XYMatrix {
-    // 2D rotation matrix
-    let rotation_matrix = vec![
-        [camera_yaw.cos(), camera_yaw.sin()],
-        [-camera_yaw.sin(), camera_yaw.cos()],
-    ];
-
-    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
-    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
-
-    XYMatrix {
-        x: rotated_x,
-        y: rotated_y,
-    }
 }
 
 pub fn state_camera_orbit_entity_logic(

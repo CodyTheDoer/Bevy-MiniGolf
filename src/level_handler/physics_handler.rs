@@ -79,22 +79,6 @@ impl BonkHandler {
     }
 }
 
-impl XYMatrix {
-    pub fn new() -> Self {
-        let x: f32 = 0.0;
-        let y: f32 = 0.0;
-        XYMatrix {
-            x,
-            y,
-        }
-    }
-    
-    pub fn set(&mut self, x: f32, y: f32) {
-        self.x = x;
-        self.y = y;
-    }
-}
-
 impl PhysicsHandler {
     pub fn new() -> Self {
         PhysicsHandler
@@ -314,7 +298,7 @@ pub fn bonk_step_end( // Fires bonk
     playstyle: Res<State<StateGamePlayStyle>>,
     golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
 ) {
-    if game_handler.arrow_state_get() {
+    if game_handler.get("arrow_state") {
         toggle_arrow_state(&mut game_handler, arrow_state, next_arrow_state);
     }
 
@@ -733,13 +717,29 @@ fn toggle_arrow_state(
     match state.get() {
         StateArrow::DrawingArrow => {
             info!("Entering StateArrow::Idle");
-            game_handler.arrow_state_set_false();
+            game_handler.set_target("arrow_state", false);
             next_state.set(StateArrow::Idle);
         },
         StateArrow::Idle => {
             info!("Entering StateArrow::DrawingArrow");
-            game_handler.arrow_state_set_true();
+            game_handler.set_target("arrow_state", true);
             next_state.set(StateArrow::DrawingArrow);
         },
+    }
+}
+
+impl XYMatrix {
+    pub fn new() -> Self {
+        let x: f32 = 0.0;
+        let y: f32 = 0.0;
+        XYMatrix {
+            x,
+            y,
+        }
+    }
+    
+    pub fn set(&mut self, x: f32, y: f32) {
+        self.x = x;
+        self.y = y;
     }
 }

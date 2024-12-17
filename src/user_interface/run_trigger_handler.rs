@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::RunTrigger;
 
 /*
+// Standard Trigger
 pub fn _______________________________(
     mut run_trigger: ResMut<RunTrigger>,
 ) {
@@ -12,6 +13,18 @@ pub fn _______________________________(
     }
     run_trigger.set_target("_______________________________", false);
     info!("post response: _______________________________: [{}]", run_trigger.get("_______________________________"));  
+}
+
+// Delayed Trigger
+pub fn _______________________________(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: _______________________________"); 
+    {
+        
+        run_trigger.set_target("_______________________________", false);
+        info!("post response: _______________________________: [{}]", run_trigger.get("_______________________________"));  
+    }
 }
 */ 
 

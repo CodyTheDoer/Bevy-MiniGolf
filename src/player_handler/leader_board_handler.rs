@@ -17,10 +17,6 @@ impl LeaderBoard {
         }
     }
 
-    pub fn reset_current_scores(&mut self) {
-        self.current_scores = [0; 18];
-    }
-
     pub fn log_game(
         &mut self, 
         mut game_handler: ResMut<GameHandler>,
@@ -45,6 +41,10 @@ impl LeaderBoard {
     pub fn get_last_game(&self) -> GameRecord {
         let index = self.past_games.len() as i32 - 1;
         self.past_games[index as usize].clone()
+    }
+
+    pub fn reset_current_scores(&mut self) {
+        self.current_scores = [0; 18];
     }
 
     pub fn review_game(&self, record: GameRecord) {

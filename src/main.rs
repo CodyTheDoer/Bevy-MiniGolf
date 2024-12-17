@@ -39,7 +39,6 @@ use minigolf::{
     CameraHandler,
     ClientProtocol,
     DatabaseConnection,
-    Fonts,
     GameHandler,
     GLBStorageID,
     GolfBall,
@@ -56,8 +55,6 @@ use minigolf::{
     SceneInstanceRespawnedGolfBall,
     SceneInstanceSpawnedEnvironment,
     SceneInstanceSpawnedGolfBalls,
-    UiUpdateEvent,
-    UiUpdateTimer,
     UpdateIdResource,
 };
 
@@ -115,17 +112,14 @@ use minigolf::{
         },
     },
     network_handler::{
+        auth_server_handshake,
+        heartbeat_system,
         network_get_client_state_all,
         network_get_client_state_game,
+        receive_messages,
+        remote_state_change_monitor,
+        start_socket,
     },
-    // network_handler::{
-    //     auth_server_handshake,
-    //     heartbeat_system,
-    //     network_get_client_state_game,
-    //     start_socket,
-    //     receive_messages,
-    //     remote_state_change_monitor,
-    // },
     user_interface::{
         camera_handler::{
             camera_handler_cycle_state_camera,
@@ -203,7 +197,6 @@ fn main() {
 
         // --- Timer Initialization --- //
         .insert_resource(HeartbeatTimer(Timer::new(Duration::from_secs(5), TimerMode::Repeating)))
-        .insert_resource(UiUpdateTimer(Timer::new(Duration::from_millis(250), TimerMode::Repeating)))
 
         // --- Resource Initialization --- //
         .insert_resource(BonkHandler::new())
@@ -212,7 +205,6 @@ fn main() {
         .insert_resource(ClientProtocol::new())
         .insert_resource(GameHandler::new())
         .insert_resource(GLBStorageID::new())
-        .insert_resource(Fonts::new())
         .insert_resource(LeaderBoard::new()) 
         .insert_resource(Party::new())
         .insert_resource(PhysicsHandler::new())
@@ -228,23 +220,21 @@ fn main() {
         .add_event::<SceneInstanceSpawnedEnvironment>()
         .add_event::<SceneInstanceSpawnedGolfBalls>()
         .add_event::<OnlineStateChange>()
-        .add_event::<UiUpdateEvent>()  
 
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, level_handler_boot_protocals)
         .add_systems(Startup, setup_3d_camera)
-        // .add_systems(Startup, setup_ui)
         .add_systems(Startup, db_pipeline_init_local_player)
         .add_systems(Startup, performance_physics_setup)
-        // .add_systems(Startup, start_socket)
+        .add_systems(Startup, start_socket)
 
         // Network - Update //
-        // .add_systems(Update, auth_server_handshake
-            // .run_if(|game_handler: Res<GameHandler>|game_handler.is_not_connected())
-            // .run_if(on_timer(Duration::from_millis(500))))
-        // .add_systems(Update, heartbeat_system)
-        // .add_systems(Update, receive_messages)
-        // .add_systems(Update, remote_state_change_monitor)
+        .add_systems(Update, auth_server_handshake
+            .run_if(|game_handler: Res<GameHandler>|!game_handler.get("network_server_connection"))
+            .run_if(on_timer(Duration::from_millis(500))))
+        .add_systems(Update, heartbeat_system)
+        .add_systems(Update, receive_messages)
+        .add_systems(Update, remote_state_change_monitor)
 
         // Physics //
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
@@ -267,7 +257,7 @@ fn main() {
         .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))
 
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-              .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
+        .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
 
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
         .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
@@ -330,6 +320,12 @@ fn main() {
     app.run();
 }
 
+fn debug_names_query(query: Query<(&Name, &GolfBall)>) {
+    for (name, golf_ball) in query.iter() {
+        info!("Entity Name: {}, GolfBall UUID: {}", name.as_str(), golf_ball.0.uuid);
+    }
+}
+
 fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
     for (golf_ball, parent) in query.iter() {
         info!(
@@ -337,21 +333,6 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
             golf_ball.0.uuid,
             parent.map(|p| p.get())
         );
-    }
-}
-
-fn start_movement_listener_turn_handler_set_turn_next(
-    mut run_trigger: ResMut<RunTrigger>,
-    game_handler: Res<GameHandler>,
-) {
-    info!("function: start_movement_listener_turn_handler_set_turn_next"); 
-    {
-        if game_handler.get("all_sleeping") {
-            run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
-            run_trigger.set_target("turn_handler_set_turn_next", true);
-            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
-            info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
-        }
     }
 }
 
@@ -366,6 +347,20 @@ fn golf_ball_handler_respawn_golf_ball(
         info!("golf Ball Out Of Bounds: [{:?}]", event);
         golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &event.id, &mut asset_event_writer);
     }
+}
+
+fn golf_ball_query(
+    golf_balls: Query<(Entity, &GolfBall)>,
+) {
+    for (entity, golf_ball) in golf_balls.iter() {
+        info!("Entity: {:?}, GolfBall: {:?}", entity, golf_ball.0);
+    }
+}
+
+fn last_game_record(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    run_trigger.set_target("leader_board_review_last_game", true);
 }
 
 fn listening_function_local_all_finished(
@@ -499,30 +494,25 @@ fn listening_function_spawned_environment_events(
     }
 }
 
-fn debug_names_query(query: Query<(&Name, &GolfBall)>) {
-    for (name, golf_ball) in query.iter() {
-        info!("Entity Name: {}, GolfBall UUID: {}", name.as_str(), golf_ball.0.uuid);
-    }
-}
-
-fn golf_ball_query(
-    golf_balls: Query<(Entity, &GolfBall)>,
-) {
-    for (entity, golf_ball) in golf_balls.iter() {
-        info!("Entity: {:?}, GolfBall: {:?}", entity, golf_ball.0);
-    }
-}
-
 fn party_query(
     party: Res<Party>,
 ) {
     info!("Party ID's and Scores: [{:?}]", party.all_players_get_ids_and_scores());
 }
 
-fn last_game_record(
+fn start_movement_listener_turn_handler_set_turn_next(
     mut run_trigger: ResMut<RunTrigger>,
+    game_handler: Res<GameHandler>,
 ) {
-    run_trigger.set_target("leader_board_review_last_game", true);
+    info!("function: start_movement_listener_turn_handler_set_turn_next"); 
+    {
+        if game_handler.get("all_sleeping") {
+            run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
+            run_trigger.set_target("turn_handler_set_turn_next", true);
+            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
+            info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------------//
@@ -581,9 +571,10 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("party_handler_cycle_active_player", true);},
-            };
+                run_trigger.set_target("party_handler_cycle_active_player", true);
+            },
         };
+    };
     if keys.just_released(KeyCode::KeyQ) {
         info!("just_released: KeyQ");  
         run_trigger.set_target("network_get_client_state_all", true);
