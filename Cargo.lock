@@ -655,17 +655,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-tokio-tasks"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8893452e2329cdbfdee5244bb6bd1be1910b91530f91ca44565edca90b16cdb"
-dependencies = [
- "bevy_app",
- "bevy_ecs",
- "tokio",
-]
-
-[[package]]
 name = "bevy_a11y"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -867,6 +856,15 @@ dependencies = [
  "bevy_utils",
  "const-fnv1a-hash",
  "sysinfo",
+]
+
+[[package]]
+name = "bevy_easy_vec_ui"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32822f17516d7ce1de23ac8d06a5daf1719c3ef3050f7b67e3bd1b5b54ac290"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -3958,7 +3956,7 @@ name = "minigolf"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-tokio-tasks",
+ "bevy_easy_vec_ui",
  "bevy_editor_pls",
  "bevy_matchbox",
  "bevy_mod_raycast",

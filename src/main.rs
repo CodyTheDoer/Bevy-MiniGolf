@@ -13,7 +13,9 @@ use bevy::{prelude::*,
         WindowTheme,
     },
 };
+
 // --- External Plugins --- //
+use bevy_easy_vec_ui::BevyEasyVecUiPlugin;
 use bevy_rapier3d::prelude::*;
 // use bevy_matchbox::prelude::*;
 
@@ -144,8 +146,7 @@ use minigolf::{
         },
         user_interface::{
             bonk_gizmo,
-            setup_ui,
-            update_ui,
+            easy_vec_ui,
         },
     },
 };
@@ -178,7 +179,13 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
+        .add_plugins(BevyEasyVecUiPlugin::init("fonts/MatrixtypeDisplay-KVELZ.ttf")
+            .camera_layer(-1)
+            .title("Minigolf Backend Server: UI")
+            .title_font_size(42.0) // Default is 42
+            .data_font_size(10.0) // Default is 12
+            .build()
+        )
         // .add_plugins(RapierDebugRenderPlugin::default())
         // .add_plugins(EditorPlugin::default())
     
@@ -226,7 +233,7 @@ fn main() {
         // --- Startup Systems Initialization --- //
         .add_systems(Startup, level_handler_boot_protocals)
         .add_systems(Startup, setup_3d_camera)
-        .add_systems(Startup, setup_ui)
+        // .add_systems(Startup, setup_ui)
         .add_systems(Startup, db_pipeline_init_local_player)
         .add_systems(Startup, performance_physics_setup)
         // .add_systems(Startup, start_socket)
@@ -254,7 +261,7 @@ fn main() {
         .add_systems(Update, ray_fire.run_if(input_just_pressed(MouseButton::Left)))
         .add_systems(Update, ray_release.run_if(input_just_released(MouseButton::Left)))
         .add_systems(Update, bonk_gizmo.run_if(in_state(StateArrow::DrawingArrow)))
-        .add_systems(Update, update_ui)
+        .add_systems(Update, easy_vec_ui)
 
         // Run Trigger Systems //
         .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))

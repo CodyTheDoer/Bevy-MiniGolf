@@ -42,6 +42,7 @@ Language:
 
 The Cargo Manifest:
     bevy = {version = "0.14.2", features = ["mp3"]}
+    bevy_easy_vec_ui = { path = "D:/bevy/donut/bevy_easy_vec_ui" }
     bevy_editor_pls = "0.9"
     bevy_matchbox = "0.10"
     bevy_mod_raycast = "0.18.0"
