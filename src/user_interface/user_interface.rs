@@ -113,7 +113,7 @@ pub fn easy_vec_ui(
     for golf_ball in golf_balls.iter() {
         left_data_vec.push(String::from(format!("Golfball: [{:?}]", golf_ball.0.uuid )));
         left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
-        left_data_vec.push(String::from(format!("______________________________________________________________________")));
+        left_data_vec.push(String::from(format!("______________________________________________________________________________________________________________________")));
     }
 
     let all_states = &all_states_ref.all_states;
@@ -122,7 +122,7 @@ pub fn easy_vec_ui(
     }
 
     let dedicated_data_vec = vec![
-        String::from(format!("______________________________________________________________________")),
+        String::from(format!("______________________________________________________________________________________________________________________")),
         String::from(format!("Remote Game: {:?}", game_handler.get("remote_game"))),
         String::from(format!("Current Level: {:?}", game_handler.current_level_get())),
         String::from(format!("Party Size: {:?}", party.party_size())),
@@ -133,7 +133,7 @@ pub fn easy_vec_ui(
         String::from(format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state())),
         String::from(format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count())),
         String::from(format!("Active Player Scorecard: {:?}", party.active_player_get_score())),
-        String::from(format!("______________________________________________________________________")),
+        String::from(format!("______________________________________________________________________________________________________________________")),
         String::from(format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,")),
         String::from(format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI")),
         String::from(format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game")),
@@ -154,6 +154,8 @@ pub fn easy_vec_ui(
         String::from(format!("game_handler: Arrow State: [{:?}]", game_handler.get("arrow_state"))),
         String::from(format!("game_handler: Environment Loaded: [{:?}]", game_handler.get("environment_loaded"))),
         String::from(format!("game_handler: Golf Balls Loaded: [{:?}]", game_handler.get("golf_balls_loaded"))),
+        String::from(format!("game_handler: Golf Balls Bonk Trigger: [{:?}]", game_handler.get("golf_balls_bonk_trigger"))),
+        String::from(format!("game_handler: Golf Balls Store Location: [{:?}]", game_handler.get("golf_balls_store_location"))),
         String::from(format!("game_handler: In Game: [{:?}]", game_handler.get("in_game"))),
         String::from(format!("game_handler: Network Server Connection: [{:?}]", game_handler.get("network_server_connection"))),
         String::from(format!("game_handler: Remote Game: [{:?}]", game_handler.get("remote_game"))),

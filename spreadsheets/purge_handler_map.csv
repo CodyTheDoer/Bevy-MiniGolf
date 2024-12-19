@@ -1,1 +1,5 @@
 Purge Handler Calls,camera_handler,database_handler,game_handler,leader_board_handler,level_handler,lib,network handler,main,menu_handler,party_handler,physics_handler,player_handler,ray_system_handler,run_trigger_handler,turn_handler,user_interface
+environment_purged,,,,,level_handler_init_level_game_handler_current_level (false),,,listening_function_purge_events (true),,,,,,,,
+,,,,,,,,listening_function_spawned_environment_events (true),,,,,,,,
+golf_balls_purged,,,,,,,,listening_function_purge_events (true),,,,,,,,
+,,,,,,,,listening_function_spawned_golf_ball_events (false),,,,,,,,

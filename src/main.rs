@@ -229,15 +229,15 @@ fn main() {
         .add_systems(Startup, setup_3d_camera)
         .add_systems(Startup, db_pipeline_init_local_player)
         .add_systems(Startup, performance_physics_setup)
-        .add_systems(Startup, start_socket)
 
-        // Network - Update //
-        .add_systems(Update, auth_server_handshake
-            .run_if(|game_handler: Res<GameHandler>|!game_handler.get("network_server_connection"))
-            .run_if(on_timer(Duration::from_millis(500))))
-        .add_systems(Update, heartbeat_system)
-        .add_systems(Update, receive_messages)
-        .add_systems(Update, remote_state_change_monitor)
+        // // Network //
+        // .add_systems(Startup, start_socket)
+        // .add_systems(Update, auth_server_handshake
+        //     .run_if(|game_handler: Res<GameHandler>|!game_handler.get("network_server_connection"))
+        //     .run_if(on_timer(Duration::from_millis(500))))
+        // .add_systems(Update, heartbeat_system)
+        // .add_systems(Update, receive_messages)
+        // .add_systems(Update, remote_state_change_monitor)
 
         // Physics //
         .add_systems(Update, bonk_step_start.run_if(input_just_pressed(MouseButton::Right)))
@@ -318,6 +318,7 @@ fn main() {
         .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
+        .add_systems(Update, golf_ball_handler_update_locations_while_in_game)
         .add_systems(Update, golf_balls_update_sleep_status)
         .add_systems(Update, updated_states_ref);
 
@@ -340,16 +341,33 @@ fn debug_with_optional_parent(query: Query<(&GolfBall, Option<&Parent>)>) {
     }
 }
 
+fn golf_ball_handler_update_locations_while_in_game(
+    mut gb_query: Query<(&mut GolfBall, &Transform)>,
+    state_game: Res<State<StateGame>>,
+) {
+    if state_game.get() == &StateGame::InGame {
+        for (mut golf_ball, transform) in gb_query.iter_mut() {
+            golf_ball.0.position = transform.translation;
+        };
+    };
+}
+
 fn golf_ball_handler_respawn_golf_ball(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     mut oob_event_reader: EventReader<SceneInstanceOutOfBoundGolfBall>,
     mut asset_event_writer: EventWriter<SceneInstanceRespawnedGolfBall>,
+    mut game_handler: ResMut<GameHandler>,
 ) {
     for event in oob_event_reader.read() {
         info!("golf Ball Out Of Bounds: [{:?}]", event);
-        golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &event.id, &mut asset_event_writer);
+        let info_vec = &event.info_vec;
+        for player in info_vec.iter() {
+            let player_id = player.0;
+            let location = player.1;
+            golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &player_id, &location, &mut asset_event_writer, &mut game_handler);
+        };
     }
 }
 
@@ -402,14 +420,15 @@ fn listening_function_local_all_sleeping(
 
 fn listening_function_local_add_physics(
     mut run_trigger: ResMut<RunTrigger>,
-    game_handler: Res<GameHandler>,
+    mut game_handler: ResMut<GameHandler>,
     query: Query<&RapierRigidBodyHandle, With<GolfBall>>,
 ) {
     let mut count = 0;
     for _ in query.iter() {
         count += 1;
     }
-    if !game_handler.get("remote_game") && game_handler.get("in_game") && count == 0 {
+    if !game_handler.get("remote_game") && game_handler.get("in_game") && game_handler.get("round_start") && count == 0 {
+        game_handler.set_target("round_start", false);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }
@@ -417,13 +436,18 @@ fn listening_function_local_add_physics(
 fn listening_function_local_respawn_add_physics(
     mut respawn_golf_ball: EventReader<SceneInstanceRespawnedGolfBall>,
     mut commands: Commands,
-    mut gb_query: Query<(Entity, &mut GolfBall)>,
+    mut gb_query: Query<(Entity, &mut GolfBall, &mut Transform)>,
 ) {
     for event in respawn_golf_ball.read() {
+        info!("Init: listening_function_local_respawn_add_physics");
         info!("Respawn: [{:?}]", event);
         let id = event.id;
-        for (idx, (entity, golf_ball)) in gb_query.iter_mut().enumerate() {
+        let point = event.location;
+        for (entity, mut golf_ball, mut transform) in gb_query.iter_mut() {
+            info!("Golf Ball Pre: [{}], Point: [{}], Real [{:?}]", format!("golf_ball_{}", id.to_string()), point, golf_ball);
             if golf_ball.0.uuid == id {
+                transform.translation = point;
+                golf_ball.0.last_position = point;
                 let collider = Collider::ball(0.022);
                 commands
                     .entity(entity)
@@ -437,11 +461,14 @@ fn listening_function_local_respawn_add_physics(
                     .insert(ColliderMassProperties::Density(1.0))
                     .insert(GravityScale(1.0))
                     .insert(Ccd::enabled())
-                    .insert(TransformBundle::from(Transform::from_xyz(0.05 * (idx as f32), 0.0, 0.0)))
                     .insert(Name::new(format!("golf_ball_{}", id.to_string())));
-                info!("Built Golf Ball: [{}]", format!("golf_ball_{}", id.to_string()));
+                    // .insert(TransformBundle::from(Transform::from_xyz(golf_ball.0.last_position.x, golf_ball.0.last_position.y, golf_ball.0.last_position.y)));
             }
+            info!("Golf Ball Post: [{}], Target: [{}], Real [{:?}]", format!("golf_ball_{}", id.to_string()), point, golf_ball);
         }
+        for (entity, golf_ball, transform) in gb_query.iter() {
+            info!("Respawn: [{:?}]::[{}]::[{:?}]", golf_ball, entity, transform);
+        };
     }
 }
 
@@ -512,6 +539,7 @@ fn start_movement_listener_turn_handler_set_turn_next(
     {
         if game_handler.get("all_sleeping") {
             run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
+            run_trigger.set_target("golf_ball_handler_party_store_locations", true);
             run_trigger.set_target("turn_handler_set_turn_next", true);
             run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
             info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  

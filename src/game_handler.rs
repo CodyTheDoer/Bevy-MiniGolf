@@ -29,7 +29,10 @@ impl GameHandler {
             arrow_state: false,
             environment_loaded: false,
             golf_balls_loaded: false,
+            golf_balls_bonk_trigger: true,
+            golf_balls_store_location: true,
             in_game: false,
+            round_start: true,
             network_server_connection: false,
             remote_game: false,
             current_level: 0,
@@ -52,8 +55,17 @@ impl GameHandler {
             "golf_balls_loaded" => {
                 self.golf_balls_loaded
             },
+            "golf_balls_bonk_trigger" => {
+                self.golf_balls_bonk_trigger
+            },
+            "golf_balls_store_location" => {
+                self.golf_balls_store_location
+            },
             "in_game" => {
                 self.in_game
+            },
+            "round_start" => {
+                self.round_start
             },
             "network_server_connection" => {
                 self.network_server_connection
@@ -86,9 +98,21 @@ impl GameHandler {
                 self.golf_balls_loaded = state;
                 info!("response: golf_balls_loaded: {}", self.get("golf_balls_loaded"));  
             },
+            "golf_balls_bonk_trigger" => {
+                self.golf_balls_bonk_trigger = state;
+                info!("response: golf_balls_bonk_trigger: {}", self.get("golf_balls_bonk_trigger"));  
+            },
+            "golf_balls_store_location" => {
+                self.golf_balls_store_location = state;
+                info!("response: golf_balls_store_location: {}", self.get("golf_balls_store_location"));  
+            },
             "in_game" => {
                 self.in_game = state;
                 info!("response: in_game: {}", self.get("in_game"));  
+            },
+            "round_start" => {
+                self.round_start = state;
+                info!("response: round_start: {}", self.get("round_start"));  
             },
             "network_server_connection" => {
                 self.network_server_connection = state;
@@ -118,8 +142,20 @@ impl GameHandler {
         self.golf_balls_loaded
     }
 
+    pub fn golf_balls_bonk_trigger(&self) -> bool {
+        self.golf_balls_bonk_trigger
+    }
+
+    pub fn golf_balls_store_location(&self) -> bool {
+        self.golf_balls_store_location
+    }
+
     pub fn in_game(&self) -> bool {
         self.in_game
+    }
+
+    pub fn round_start(&self) -> bool {
+        self.round_start
     }
 
     pub fn network_server_connection(&self) -> bool {

@@ -78,7 +78,10 @@ pub struct GameHandler {
     arrow_state: bool,
     environment_loaded: bool,
     golf_balls_loaded: bool,
+    golf_balls_bonk_trigger: bool,
+    golf_balls_store_location: bool,
     in_game: bool,
+    round_start: bool,
     network_server_connection: bool,
     remote_game: bool,
     remotely_pushed_state: Option<StateUpdateRef>,
@@ -274,13 +277,13 @@ pub struct SceneInstancePurgedGolfBalls {}
 #[derive(Debug, Event)]
 pub struct SceneInstanceRespawnedGolfBall {
     pub entity: Entity,
-    pub id: Uuid,
+    pub id: Uuid, 
+    pub location: Vec3,
 }
 
 #[derive(Debug, Event)]
 pub struct SceneInstanceOutOfBoundGolfBall {
-    pub id: Uuid,
-    pub position: Vec3,
+    pub info_vec: Vec<(Uuid, Vec3)>,
 }
 
 #[derive(Debug, Event)]

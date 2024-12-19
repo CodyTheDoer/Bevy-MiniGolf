@@ -328,9 +328,11 @@ pub fn collision_events_listener(
     mut party: ResMut<Party>,
     mut respawn_event_writer: EventWriter<SceneInstanceOutOfBoundGolfBall>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut game_handler: ResMut<GameHandler>,
     golf_balls: Query<(Entity, &GolfBall)>,
     scene_meshes: Query<(Entity, &Name)>,
 ) {
+    let mut out_of_bounds = false;
     for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _flags) => {
@@ -352,13 +354,7 @@ pub fn collision_events_listener(
                                     "ground_sensor" => {
                                         info!("1: Ooof grounded...");
                                         info!("2: Golf Ball: [{:?}]", golf_ball.0);
-                                        let id = golf_ball.0.uuid;
-                                        let position = golf_ball.0.last_position;
-                                        commands.entity(golf_ball_ent).despawn();
-                                        respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
-                                            id: id,
-                                            position: position,
-                                        });
+                                        out_of_bounds = true;
                                     },
                                     _ => {},
                                 }
@@ -380,13 +376,7 @@ pub fn collision_events_listener(
                                     "ground_sensor" => {
                                         info!("1: Ooof grounded...");
                                         info!("2: Golf Ball: [{:?}]", golf_ball.0);
-                                        let id = golf_ball.0.uuid;
-                                        let position = golf_ball.0.last_position;
-                                        commands.entity(golf_ball_ent).despawn();
-                                        respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
-                                            id: id,
-                                            position: position,
-                                        });
+                                        out_of_bounds = true;
                                     },
                                     _ => {},
                                 }
@@ -401,6 +391,21 @@ pub fn collision_events_listener(
             }
         }
     }
+    if out_of_bounds == true {
+        game_handler.set_target("golf_balls_bonk_trigger", false);
+        let mut info_vec: Vec<(Uuid, Vec3)> = Vec::new();
+        
+        for (_, golf_ball) in golf_balls.iter() {
+            info_vec.push((golf_ball.0.uuid, golf_ball.0.last_position));
+        };
+        for (golf_ball_ent, _) in golf_balls.iter() {
+            commands.entity(golf_ball_ent).despawn();
+        };
+        
+        respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
+            info_vec: info_vec,
+        });        
+    };
 }
 
 // Helper function for ^^^add_physics_query_and_update_scene^^^
@@ -445,17 +450,23 @@ pub fn golf_ball_handler_update_locations_post_bonk(
     mut run_trigger: ResMut<RunTrigger>,
     party: ResMut<Party>,
     mut gb_query: Query<(&mut GolfBall, &Transform)>,
+    mut game_handler: ResMut<GameHandler>,
 ) {
     info!("function: golf_ball_handler_update_locations_post_bonk "); 
     {
-        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
-        let player_id = party.active_player_get_player_id();
-        for (mut golf_ball, transform) in gb_query.iter_mut() {
-            if golf_ball.0.uuid == player_id {
-                golf_ball.0.position = transform.translation;
+        if game_handler.get("golf_balls_bonk_trigger") {
+            info!("golf_ball_handler_update_locations_post_bonk: ");
+            let player_id = party.active_player_get_player_id();
+            for (mut golf_ball, transform) in gb_query.iter_mut() {
+                info!("golf_ball before: [{:?}]", golf_ball.0);
+                if golf_ball.0.uuid == player_id {
+                    golf_ball.0.position = transform.translation;
+                };
+                info!("golf_ball after: [{:?}]", golf_ball.0);
             };
-            info!("golf_ball: [{:?}]", golf_ball.0);
-        };
+        } else {
+            game_handler.set_target("golf_balls_bonk_trigger", true);
+        }
     }
     run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", false);
     info!("post response: golf_ball_handler_update_locations_post_bonk: {}", run_trigger.get("golf_ball_handler_update_locations_post_bonk"));  
@@ -522,8 +533,11 @@ pub fn golf_ball_handler_respawn_golf_ball_uuid(
     asset_server: &Res<AssetServer>,
     glb_storage: &Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     player_id: &Uuid,
+    player_position: &Vec3,
     asset_event_writer: &mut EventWriter<SceneInstanceRespawnedGolfBall>,
+    game_handler: &mut ResMut<GameHandler>,
 ) {
+    info!("golf_ball_handler_respawn_golf_ball_uuid: [{:?}]::[{:?}]", player_id, player_position);
     if let Some(basic_golf_ball) = glb_storage.glb.get(25) {
         let basic_golf_ball_handle: Handle<Scene> = asset_server.load(
             GltfAssetLabel::Scene(0).from_asset(basic_golf_ball.map),
@@ -534,6 +548,7 @@ pub fn golf_ball_handler_respawn_golf_ball_uuid(
             .spawn((
                 SceneBundle {
                     scene: basic_golf_ball_handle.clone(),
+                    // transform: Transform::from_xyz(player_position.x, player_position.y, player_position.y),
                     ..default()
                 },
                 Name::new(name.clone()),
@@ -541,18 +556,25 @@ pub fn golf_ball_handler_respawn_golf_ball_uuid(
             .insert(Interactable)
             .insert(GolfBall(GolfBallPosition{
                 uuid: *player_id,
-                position: Vec3::ZERO,
-                last_position: Vec3::ZERO,
+                position: *player_position,
+                last_position: *player_position,
                 sleeping: false,
             }))
+            // .insert(TransformBundle::from(Transform::from_xyz(player_position.x, player_position.y, player_position.y)))
             .id();
 
-            // Emit a custom AssetEvent for this asset
-            asset_event_writer.send(SceneInstanceRespawnedGolfBall {
-                    entity: spawned_golf_ball,
-                    id: *player_id,
-                }
-            );
+        info!("Generated Golf Ball: {}", spawned_golf_ball);
+        info!("Generated Event: [SceneInstanceRespawnedGolfBall]");
+
+        // Emit a custom AssetEvent for this asset
+        asset_event_writer.send(SceneInstanceRespawnedGolfBall {
+                entity: spawned_golf_ball,
+                id: *player_id,
+                location: *player_position,
+            }
+        );
+        
+        game_handler.set_target("golf_balls_store_location", false);
     } else {
         warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
     };
@@ -561,12 +583,19 @@ pub fn golf_ball_handler_respawn_golf_ball_uuid(
 pub fn golf_ball_handler_party_store_locations(
     mut run_trigger: ResMut<RunTrigger>,
     mut gb_query: Query<&mut GolfBall>,
+    mut game_handler: ResMut<GameHandler>,
 ) {
     info!("function: golf_ball_handler_party_store_locations "); 
     {
-        for mut golf_ball in gb_query.iter_mut() {
-            golf_ball.0.last_position = golf_ball.0.position;
-            info!("golf_ball: [{:?}]", golf_ball.0);
+        if game_handler.get("golf_balls_store_location") {
+            for mut golf_ball in gb_query.iter_mut() {
+                info!("golf_ball before: [{:?}]", golf_ball.0);
+                golf_ball.0.last_position = golf_ball.0.position;
+                info!("golf_ball after: [{:?}]", golf_ball.0);
+            };
+        } else {
+            // This is a single fire trigger to stop the storing of location for reset golfballs.
+            game_handler.set_target("golf_balls_store_location", true);
         };
     }
     run_trigger.set_target("golf_ball_handler_party_store_locations", false);
@@ -575,13 +604,13 @@ pub fn golf_ball_handler_party_store_locations(
 
 pub fn golf_ball_handler_reset_golf_ball_locations(
     mut run_trigger: ResMut<RunTrigger>,
-    mut gb_query: Query<&mut GolfBall>,
+    mut gb_query: Query<(&GolfBall, &mut Transform)>,
 ) {
     info!("function: golf_ball_handler_reset_golf_ball_locations "); 
     {
-        for mut golf_ball in gb_query.iter_mut() {
+        for (golf_ball, mut transform) in gb_query.iter_mut() {
+            transform.translation = golf_ball.0.last_position;
             info!("golf_ball: [{:?}]", golf_ball.0);
-            golf_ball.0.position = golf_ball.0.last_position;
         };
     }
     run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", false);
