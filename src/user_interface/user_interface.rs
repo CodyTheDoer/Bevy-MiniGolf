@@ -13,13 +13,14 @@ use crate::{
     StateLevel, 
     StateMapSet, 
     StateMenu, 
+    StatePanOrbit,
     StateTurn,
 };
 
 // --- resource Imports --- //
 use crate::{
     BonkHandler,
-    XYMatrix,
+    CameraHandler,
     CameraWorld,
     GameHandler,
     GolfBall,
@@ -29,6 +30,7 @@ use crate::{
     RunTrigger,
     StatesRef,
     UserInterface,
+    XYMatrix,
 };
 
 pub fn apply_rotation_matrix_camera_yaw(
@@ -100,7 +102,9 @@ pub fn bonk_gizmo(
 
 pub fn easy_vec_ui(
     mut easy_vec_ui_resource: ResMut<EasyVecUi>,
+    pan_orbit_camera_query: Query<&StatePanOrbit>,
     party: Res<Party>,
+    camera_handler: Res<CameraHandler>,
     game_handler: ResMut<GameHandler>,
     leader_board: Res<LeaderBoard>,
     run_trigger: Res<RunTrigger>,
@@ -113,7 +117,7 @@ pub fn easy_vec_ui(
     for golf_ball in golf_balls.iter() {
         left_data_vec.push(String::from(format!("Golfball: [{:?}]", golf_ball.0.uuid )));
         left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
-        left_data_vec.push(String::from(format!("______________________________________________________________________________________________________________________")));
+        left_data_vec.push(String::from(format!("______________________________________________________________________________________________________________________________")));
     }
 
     let all_states = &all_states_ref.all_states;
@@ -121,8 +125,8 @@ pub fn easy_vec_ui(
         left_data_vec.push(state.to_owned())
     }
 
-    let dedicated_data_vec = vec![
-        String::from(format!("______________________________________________________________________________________________________________________")),
+    let data_vec = vec![
+        String::from(format!("______________________________________________________________________________________________________________________________")),
         String::from(format!("Remote Game: {:?}", game_handler.get("remote_game"))),
         String::from(format!("Current Level: {:?}", game_handler.current_level_get())),
         String::from(format!("Party Size: {:?}", party.party_size())),
@@ -133,7 +137,7 @@ pub fn easy_vec_ui(
         String::from(format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state())),
         String::from(format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count())),
         String::from(format!("Active Player Scorecard: {:?}", party.active_player_get_score())),
-        String::from(format!("______________________________________________________________________________________________________________________")),
+        String::from(format!("______________________________________________________________________________________________________________________________")),
         String::from(format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,")),
         String::from(format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI")),
         String::from(format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game")),
@@ -145,11 +149,24 @@ pub fn easy_vec_ui(
         String::from(format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world")),
     ];
 
-    for entry in dedicated_data_vec.iter() {
-        left_data_vec.push(entry.to_owned());
+    for data_point in data_vec.iter() {
+        left_data_vec.push(data_point.to_owned());
     }
 
-    let right_data_vec = vec![
+    let mut right_data_vec: Vec<String> = Vec::new();
+
+    for query in pan_orbit_camera_query.iter() {
+        right_data_vec.push(String::from(format!("pan_orbit_camera_query: center [{}]", query.center)));
+        right_data_vec.push(String::from(format!("pan_orbit_camera_query: radius [{}]", query.radius)));
+        right_data_vec.push(String::from(format!("pan_orbit_camera_query: upside_down [{}]", query.upside_down)));
+        right_data_vec.push(String::from(format!("pan_orbit_camera_query: pitch [{}]", query.pitch)));
+        right_data_vec.push(String::from(format!("pan_orbit_camera_query: yaw [{}]", query.yaw)));
+        right_data_vec.push(String::from(format!("______________________________________________________________________")));
+    };
+
+    let data_vec = vec![
+        String::from(format!("camera_handler: current_coords [{}]", camera_handler.current_coords)),
+        String::from(format!("______________________________________________________________________")),
         String::from(format!("game_handler: All Sleeping: [{:?}]", game_handler.get("all_sleeping"))),
         String::from(format!("game_handler: Arrow State: [{:?}]", game_handler.get("arrow_state"))),
         String::from(format!("game_handler: Environment Loaded: [{:?}]", game_handler.get("environment_loaded"))),
@@ -193,6 +210,10 @@ pub fn easy_vec_ui(
         String::from(format!("turn_handler_next_round_prep: {:?}", run_trigger.get("turn_handler_next_round_prep"))),
         String::from(format!("turn_handler_set_turn_next: {:?}", run_trigger.get("turn_handler_set_turn_next"))),
     ];
+
+    for data_point in data_vec.iter() {
+        right_data_vec.push(data_point.to_owned());
+    }
     
     easy_vec_ui_resource.inject_vec_left(left_data_vec);
     easy_vec_ui_resource.inject_vec_right(right_data_vec);

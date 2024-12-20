@@ -24,7 +24,7 @@ use crate::{
 impl CameraHandler {
     pub fn new() -> Self {
         let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-        let rotation: Quat = Quat::from_xyzw(0.0, 0.0, 0.0, 0.0);
+        let rotation: f32 = 0.0;
         CameraHandler {
             current_coords,
             rotation,
@@ -251,9 +251,10 @@ pub fn state_camera_orbit_entity_logic(
         StateCameraOrbitEntity::Menu => {
             for (_entity, name, transform) in scene_meshes.iter() {
                 if name.as_str() == "ball" {
-                    // Translation
                     let camera_yaw = transform.rotation.to_euler(EulerRot::YXZ).0;
                     let adjusted_xy = apply_rotation_matrix_menu_camera(&camera_yaw, menu_orbit_direction_x, menu_orbit_direction_y);
+
+                    // Translation
                     let mut normalized_adj: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * 5.0;
                     normalized_adj.y = 10.0;
                     camera_coord_tracker.current_coords = transform.translation + normalized_adj;
@@ -267,12 +268,8 @@ pub fn state_camera_orbit_entity_logic(
 
                     // Calculate the angle between the forward vector and the direction vector
                     let angle = camera_forward.angle_between(direction_vector);
-                    
-                    // Determine the axis of rotation (cross product gives the perpendicular axis)
-                    let rotation_axis = camera_forward.cross(direction_vector).normalize();
-
-                    let rotation = Quat::from_axis_angle(rotation_axis, angle);
-                    camera_coord_tracker.rotation = rotation; // Update the camera's rotation
+                    info!("Angle: [{}]", &angle);
+                    camera_coord_tracker.rotation = angle; // Update the camera's rotation
                     break;
                 };
             }  
@@ -407,6 +404,9 @@ pub fn pan_orbit_camera(
                 state.center = target;
             }
         }
+
+        // Update yaw to match camera_coord_tracker.rotation
+        state.yaw = camera_coord_tracker.rotation;
 
         // Update the camera's transform if anything changed
         if any || state.is_added() {

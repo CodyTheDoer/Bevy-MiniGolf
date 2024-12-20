@@ -31,8 +31,8 @@ pub struct BonkHandler {
 
 #[derive(Debug, Resource)]
 pub struct CameraHandler {
-    current_coords: Vec3,
-    rotation: Quat,
+    pub current_coords: Vec3,
+    pub rotation: f32,
 }
 
 #[derive(Asset, Component, TypePath)]
