@@ -113,13 +113,13 @@ use minigolf::{
         },
     },
     network_handler::{
-        auth_server_handshake,
-        heartbeat_system,
+        // auth_server_handshake,
+        // heartbeat_system,
         network_get_client_state_all,
         network_get_client_state_game,
-        receive_messages,
-        remote_state_change_monitor,
-        start_socket,
+        // receive_messages,
+        // remote_state_change_monitor,
+        // start_socket,
     },
     user_interface::{
         camera_handler::{

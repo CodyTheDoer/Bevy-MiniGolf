@@ -20,16 +20,13 @@ use crate::{
     PanOrbitSettings,
     Party,
     RunTrigger,
-    XYMatrix,
 };
 
 impl CameraHandler {
     pub fn new() -> Self {
         let current_coords: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-        let rotation: Quat = Quat::from_xyzw(0.0, 0.0, 0.0, 0.0);
         CameraHandler {
             current_coords,
-            rotation,
         }
     }
 }
@@ -62,26 +59,6 @@ impl Default for PanOrbitSettings {
     }
 }
 
-fn apply_rotation_matrix_menu_camera(
-    camera_yaw: &f32,
-    direction_x: f32,
-    direction_y: f32,
-) -> XYMatrix {
-    // 2D rotation matrix
-    let rotation_matrix = vec![
-        [camera_yaw.cos(), camera_yaw.sin()],
-        [-camera_yaw.sin(), camera_yaw.cos()],
-    ];
-
-    let rotated_x = rotation_matrix[0][0] * direction_x + rotation_matrix[0][1] * direction_y;
-    let rotated_y = rotation_matrix[1][0] * direction_x + rotation_matrix[1][1] * direction_y;
-
-    XYMatrix {
-        x: rotated_x,
-        y: rotated_y,
-    }
-}
-
 pub fn camera_handler_cycle_state_camera(
     mut run_trigger: ResMut<RunTrigger>,
     camera_orbit_entity_state: Res<State<StateCameraOrbitEntity>>,
@@ -109,42 +86,6 @@ pub fn camera_handler_cycle_state_camera(
     run_trigger.set_target("camera_handler_cycle_state_camera", false);
     info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
 }
-
-// pub fn camera_handler_cycle_state_camera_menu_target(
-//     mut run_trigger: ResMut<RunTrigger>,
-//     camera_menu_target_state: Res<State<StateCameraMenuTarget>>,
-//     mut next_camera_menu_target_state: ResMut<NextState<StateCameraMenuTarget>>,
-// ) {
-//     info!("function: camera_handler_cycle_state_camera_menu_target"); 
-//     match camera_menu_target_state.get() {
-//         StateCameraMenuTarget::LeaderBoard => {
-//             info!("StateCameraMenuTarget::Local");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::Local);
-//         },
-//         StateCameraMenuTarget::Local => {
-//             info!("StateCameraMenuTarget::Main");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::Main);
-//         },
-//         StateCameraMenuTarget::Main => {
-//             info!("StateCameraMenuTarget::Online");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::Online);
-//         },
-//         StateCameraMenuTarget::Online => {
-//             info!("StateCameraMenuTarget::Player");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::Player);
-//         },
-//         StateCameraMenuTarget::Player => {
-//             info!("StateCameraMenuTarget::Preferences");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::Preferences);
-//         },
-//         StateCameraMenuTarget::Preferences => {
-//             info!("StateCameraMenuTarget::LeaderBoard");
-//             next_camera_menu_target_state.set(StateCameraMenuTarget::LeaderBoard);
-//         },
-//     }
-//     run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", false);
-//     info!("post response: camera_handler_cycle_state_camera_menu_target: {}", run_trigger.get("camera_handler_cycle_state_camera_menu_target"));  
-// }
 
 pub fn setup_3d_camera(
     mut commands: Commands,
