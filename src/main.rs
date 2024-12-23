@@ -135,7 +135,10 @@ use minigolf::{
             pan_orbit_camera, 
             state_camera_orbit_entity_logic,
         },
-        menu_handler::local_party_interface_visibliity_toggle,
+        menu_handler::{
+            local_party_interface_ai_material_toggle,
+            local_party_interface_visibliity_toggle,
+        },
         turn_handler::{
             turn_handler_end_game,
             turn_handler_next_round_prep,
@@ -331,10 +334,12 @@ fn main() {
         .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
+        .add_systems(Update, local_party_interface_ai_material_toggle)
         .add_systems(Update, local_party_interface_visibliity_toggle)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
         .add_systems(Update, golf_ball_handler_update_locations_while_in_game)
         .add_systems(Update, golf_balls_update_sleep_status)
+        .add_systems(Update, |mut party: ResMut<Party>|party.update_ai_index_vec())
         .add_systems(Update, updated_states_ref);
 
     app.run();

@@ -110,9 +110,14 @@ pub fn easy_vec_ui(
 ) {
     let mut left_data_vec: Vec<String> = Vec::new();
 
-    for golf_ball in golf_balls.iter() {
-        left_data_vec.push(String::from(format!("Golfball: [{:?}]", golf_ball.0.uuid )));
-        left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
+    for (uuid, player_type) in party.all_players_get_ids_and_types() {
+        left_data_vec.push(String::from(format!("Player: [{}] Type: [{}]", uuid, player_type)));
+        for golf_ball in golf_balls.iter() {
+            if golf_ball.0.uuid == uuid {
+                left_data_vec.push(String::from(format!("Golfball: [{:?}]", golf_ball.0.uuid )));
+                left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
+            }
+        }
         left_data_vec.push(String::from(format!("______________________________________________________________________________________________________________________")));
     }
 

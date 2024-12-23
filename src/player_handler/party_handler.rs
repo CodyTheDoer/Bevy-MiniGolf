@@ -23,11 +23,11 @@ impl Party {
     pub fn new() -> Self {
         let players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>> = Arc::new(Mutex::new(vec![Arc::new(Mutex::new(PlayerLocal::new()))]));
         let active_player: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
-        // let golf_balls: Arc<Mutex<Vec<GolfBallPosition>>> = Arc::new(Mutex::new(Vec::new()));
+        let ai_vec: Option<Vec<usize>> = None;
         Party {
             players,
             active_player,
-            // golf_balls,
+            ai_vec,
         } 
     }
 
@@ -130,6 +130,20 @@ impl Party {
         }
         id_storage
     }
+
+    pub fn all_players_get_ids_and_types(&self) -> Vec<(Uuid, String)> {
+        let mut id_type_storage: Vec<(Uuid, String)> = Vec::new();
+        let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
+        for player in 0..players_lock.len() {
+            let player_arc = &players_lock[player];
+            let player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
+            let id = player.get_player_id();
+            let player_type = player.get_player_type();
+            let id_type = (id, player_type);
+            id_type_storage.push(id_type);
+        }
+        id_type_storage
+    }
     
     pub fn all_players_get_ids_and_scores(&self) -> (Vec<Uuid>, Vec<[i32; 18]>) {
         let mut players: Vec<Uuid> = Vec::new();
@@ -179,10 +193,26 @@ impl Party {
         count
     }
 
+    pub fn get_party_ai_index_vec(&self) -> Vec<usize> {
+        let mut ai_index: Vec<usize> = Vec::new();
+        let players_lock = self.players.lock().unwrap();
+        for (index, player) in players_lock.iter().enumerate() {
+            let player_type = player.lock().unwrap().get_player_type();
+            if player_type == String::from("PlayerAi") {
+                ai_index.push(index);
+            };
+        }
+        ai_index
+    }
+
+    pub fn update_ai_index_vec(&mut self) {
+        self.ai_vec = Some(self.get_party_ai_index_vec());
+    }
+
     pub fn get_count_party(&self) -> usize {
         let players_lock = self.players.lock().unwrap();
-        let count = players_lock.len();
-        count as usize
+        let count: usize = players_lock.len();
+        count
     }
 
     pub fn main_player_get_player_id(&self) -> Uuid {
@@ -395,9 +425,14 @@ pub fn party_handler_new_player_local(
 ) {
     info!("function: party_handler_new_player_local"); 
     {
-        let new_player_local = PlayerLocal::new();
-        let new_player = Arc::new(Mutex::new(new_player_local));
-        party.players_add_player(new_player);
+        if party.get_count_party() == 6 && party.get_count_ai() > 0 {
+            party.players_remove_ai();
+        };
+        if party.get_count_party() < 6 {
+            let new_player_local = PlayerLocal::new();
+            let new_player = Arc::new(Mutex::new(new_player_local));
+            party.players_add_player(new_player);
+        };
     }
     run_trigger.set_target("party_handler_new_player_local", false);
     info!("post response: party_handler_new_player_local: {}", run_trigger.get("party_handler_new_player_local"));  

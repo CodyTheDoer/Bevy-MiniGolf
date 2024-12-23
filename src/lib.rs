@@ -213,6 +213,7 @@ pub struct PanOrbitSettings {
 pub struct Party {
     players: Arc<Mutex<Vec<Arc<Mutex<dyn Player + Send>>>>>,
     active_player: Arc<Mutex<i32>>,
+    pub ai_vec: Option<Vec<usize>>,
 }
 
 #[derive(Resource)]
