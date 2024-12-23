@@ -168,7 +168,7 @@ pub fn ray_release(
                             run_trigger.set_target("party_handler_new_player_local", true);
                         },
                         "local_button_sub_player" | "local_button_sub_player_symbol" => {
-                            run_trigger.set_target("party_handler_remove_last_player", true);
+                            run_trigger.set_target("party_handler_remove_local_player", true);
                         },
 
                         "local_button_add_ai" | "local_button_add_ai_symbol" => {

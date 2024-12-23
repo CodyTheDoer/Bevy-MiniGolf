@@ -465,6 +465,7 @@ pub struct RunTrigger{
     party_handler_new_player_remote: bool,
     party_handler_remove_ai: bool,
     party_handler_remove_last_player: bool,
+    party_handler_remove_local_player: bool,
     turn_handler_end_game: bool,
     turn_handler_next_round_prep: bool,
     turn_handler_set_turn_next: bool,

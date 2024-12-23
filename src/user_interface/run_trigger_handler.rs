@@ -64,6 +64,7 @@ impl RunTrigger {
             party_handler_new_player_remote: false,
             party_handler_remove_ai: false,
             party_handler_remove_last_player: false,
+            party_handler_remove_local_player: false,
             turn_handler_end_game: false,
             turn_handler_next_round_prep: false,
             turn_handler_set_turn_next: false,
@@ -171,6 +172,9 @@ impl RunTrigger {
             },
             "party_handler_remove_last_player" => {
                 self.party_handler_remove_last_player
+            },
+            "party_handler_remove_local_player" => {
+                self.party_handler_remove_local_player
             },
             "turn_handler_end_game" => {
                 self.turn_handler_end_game
@@ -325,6 +329,10 @@ impl RunTrigger {
                 self.party_handler_remove_last_player = state;
                 info!("response: party_handler_remove_last_player: {}", self.get("party_handler_remove_last_player"));  
             },
+            "party_handler_remove_local_player" => {
+                self.party_handler_remove_local_player = state;
+                info!("response: party_handler_remove_local_player: {}", self.get("party_handler_remove_local_player"));  
+            },
             "turn_handler_end_game" => {
                 self.turn_handler_end_game = state;
                 info!("response: turn_handler_end_game: {}", self.get("turn_handler_end_game"));
@@ -477,6 +485,10 @@ impl RunTrigger {
 
     pub fn party_handler_remove_last_player(&self) -> bool {
         self.party_handler_remove_last_player
+    }
+
+    pub fn party_handler_remove_local_player(&self) -> bool {
+        self.party_handler_remove_local_player
     }
 
     pub fn turn_handler_end_game(&self) -> bool {

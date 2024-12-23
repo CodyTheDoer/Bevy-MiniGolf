@@ -167,6 +167,24 @@ impl Party {
         }
     }
 
+    pub fn get_count_ai(&self) -> usize {
+        let mut count: usize = 0;
+        let players_lock = self.players.lock().unwrap();
+        for player in players_lock.iter() {
+            let player_type = player.lock().unwrap().get_player_type();
+            if player_type == String::from("PlayerAi") {
+                count += 1;
+            }
+        }
+        count
+    }
+
+    pub fn get_count_party(&self) -> usize {
+        let players_lock = self.players.lock().unwrap();
+        let count = players_lock.len();
+        count as usize
+    }
+
     pub fn main_player_get_player_id(&self) -> Uuid {
         let players_lock = self.players.lock().unwrap(); // First, lock the players mutex to get access to the Vec
         let player_arc = &players_lock[0]; // adjusted for 1 indexing // Get the active player (Arc<Mutex<Player>>)
@@ -251,6 +269,21 @@ impl Party {
         // Only pop if we have more than one player
         if players_lock.len() > 1 {
             players_lock.pop();
+        }
+    }
+    
+    pub fn players_remove_local_player(&self) {
+        let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
+        
+        // Only pop if we have more than one player
+        if players_lock.len() > 1 {
+            if let Some(index) = players_lock.iter().rev().position(|player| {
+                let player_lock = player.lock().unwrap();
+                player_lock.get_player_type().as_str() == "PlayerLocal"
+            }) {
+                // Remove the player at the found index
+                players_lock.remove(index);
+            }
         }
     }
 
@@ -407,6 +440,18 @@ pub fn party_handler_remove_last_player(
     }
     run_trigger.set_target("party_handler_remove_last_player", false);
     info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  
+}
+
+pub fn party_handler_remove_local_player(
+    party: Res<Party>,
+    mut run_trigger: ResMut<RunTrigger>,
+) {    
+    info!("function: party_handler_remove_local_player"); 
+    {
+        party.players_remove_local_player();
+    }
+    run_trigger.set_target("party_handler_remove_local_player", false);
+    info!("post response: party_handler_remove_local_player: {}", run_trigger.get("party_handler_remove_local_player"));  
 }
 
 

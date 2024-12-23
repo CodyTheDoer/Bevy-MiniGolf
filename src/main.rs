@@ -115,6 +115,7 @@ use minigolf::{
             party_handler_new_player_remote,
             party_handler_remove_ai,
             party_handler_remove_last_player,
+            party_handler_remove_local_player,
         },
     },
     network_handler::{
@@ -134,6 +135,7 @@ use minigolf::{
             pan_orbit_camera, 
             state_camera_orbit_entity_logic,
         },
+        menu_handler::local_party_interface_visibliity_toggle,
         turn_handler::{
             turn_handler_end_game,
             turn_handler_next_round_prep,
@@ -304,8 +306,9 @@ fn main() {
         .add_systems(Update, party_handler_new_player_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_local()))
         .add_systems(Update, party_handler_new_player_remote.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_remote()))
         
-        .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
         .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
+        .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
+        .add_systems(Update, party_handler_remove_local_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_local_player()))
 
         .add_systems(Update, turn_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_end_game()))
         .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
@@ -328,6 +331,7 @@ fn main() {
         .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
+        .add_systems(Update, local_party_interface_visibliity_toggle)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
         .add_systems(Update, golf_ball_handler_update_locations_while_in_game)
         .add_systems(Update, golf_balls_update_sleep_status)
