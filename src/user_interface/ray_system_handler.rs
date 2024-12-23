@@ -8,6 +8,7 @@ use crate::{
     GameHandler, 
     Interactable, 
     RunTrigger,
+    StatePanOrbit,
 };
 
 pub fn draw_cursor(
@@ -78,6 +79,7 @@ pub fn ray_release(
     mut raycast: Raycast,
     mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
@@ -107,6 +109,8 @@ pub fn ray_release(
         if Some(interactable_query.get(*entity)).is_some() {
             for (target_entity, name) in scene_meshes.iter() {
                 if *entity == target_entity {
+                    let mut menu_camera_adj_left = false;
+                    let mut menu_camera_adj_right = false;
                     info!("Name: {:?} Entity: {:?}", name, &entity);
                     info!("Entity Index: {}, Generation: {}", entity.index(), entity.generation());
                     let owned_name = name.as_str();
@@ -119,23 +123,28 @@ pub fn ray_release(
                         "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
                             game_handler.current_level_set_menu_learderboard();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_left = true;
                         },
                         "main_menu_interface_local" => {
                             run_trigger.set_target("level_handler_purge_protocol", true);
                             game_handler.current_level_set_menu_local();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_right = true;
                         },
                         "main_menu_interface_online" => {
                             game_handler.current_level_set_menu_online();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_right = true;
                         },
                         "main_menu_interface_preferences" => {
                             game_handler.current_level_set_menu_preferences();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_left = true;
                         },
                         "main_menu_player_text" | "main_menu_player_board.0" => {
                             game_handler.current_level_set_menu_player();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_left = true;
                         }
                         /* 
                             // Free Options to Build From
@@ -147,6 +156,7 @@ pub fn ray_release(
                         "main_menu_text" | "main_menu_board.0" => {
                             game_handler.current_level_set(0);
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            menu_camera_adj_left = true;
                         },
 
                         // --- Menu: Leader Board Interface Mapping --- //
@@ -177,6 +187,22 @@ pub fn ray_release(
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
                         },
                         _ => {},
+                    }
+                    if menu_camera_adj_left == true {
+                        for mut state in pan_orbit_camera_query.iter_mut() {
+                            info!("{:?}", state);
+                            state.radius = 38.0;
+                            state.pitch = -12.0f32.to_radians();
+                            state.yaw = -17.0f32.to_radians();
+                        }
+                    }
+                    if menu_camera_adj_right == true {
+                        for mut state in pan_orbit_camera_query.iter_mut() {
+                            info!("{:?}", state);
+                            state.radius = 38.0;
+                            state.pitch = -12.0f32.to_radians();
+                            state.yaw = 17.0f32.to_radians();
+                        }
                     }
                 };
             }

@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     StateLevel, 
     StateMapSet,
+    StatePanOrbit,
 };
 
 // Resources
@@ -24,8 +25,7 @@ use crate::{
 impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
-            // "glb/menu/main_menu.glb",           //  0
-            "glb/menu/main_menu.glb",            //  0
+            "glb/menu/main_menu.glb",           //  0
             "glb/map/level_1.glb",              //  1
             "glb/map/level_2.glb",              //  2
             "glb/map/level_1.glb",              //  3
@@ -105,19 +105,28 @@ pub fn level_handler_init_level_game_handler_current_level(
     lhi_asset_server: Res<AssetServer>,
     lhi_commands: Commands,
     glb_storage: Res<GLBStorageID>,
-    gh: ResMut<GameHandler>,
     mut purge_handler: ResMut<PurgeHandler>,
     mut asset_event_writer: EventWriter<SceneInstanceSpawnedEnvironment>,
+    mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
+    game_handler: Res<GameHandler>
 ) {
-    info!("level_handler_init_level_game_handler_current_level: [{}]", gh.current_level);
+    info!("level_handler_init_level_game_handler_current_level: [{}]", game_handler.current_level);
     {
         info!("Purge Handler: Environment: [{}] Golf Balls [{}]", purge_handler.get("environment_purged"), purge_handler.get("golf_balls_purged"));
         // Write in testing for purge states:
         if purge_handler.get("environment_purged") && purge_handler.get("golf_balls_purged") {
-            level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, gh.current_level, &mut asset_event_writer);
+            level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, game_handler.current_level, &mut asset_event_writer);
             purge_handler.set_target("environment_purged", false);
             run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
-            info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
+            info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));
+            if game_handler.current_level_get() == 0 { // Easy way to fix the boot camera. Probably could do better
+                for mut state in pan_orbit_camera_query.iter_mut() {
+                    info!("{:?}", state);
+                    state.radius = 38.0;
+                    state.pitch = -12.0f32.to_radians();
+                    state.yaw = -17.0f32.to_radians();
+                }
+            }
         } else {
             run_trigger.set_target("level_handler_purge_protocol", true);
         }
