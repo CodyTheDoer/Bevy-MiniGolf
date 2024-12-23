@@ -400,3 +400,47 @@ pub fn game_handler_game_state_start_routines(
     run_trigger.set_target("game_handler_game_state_start_routines", false);
     info!("post response: game_handler_game_state_start_routines: {}", run_trigger.get("game_handler_game_state_start_routines"));  
 }
+
+pub fn game_handler_start_local_back_nine(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: game_handler_start_local_back_nine"); 
+    {
+        
+    }
+    run_trigger.set_target("game_handler_start_local_back_nine", false);
+    info!("post response: game_handler_start_local_back_nine: [{}]", run_trigger.get("game_handler_start_local_back_nine"));  
+}
+
+pub fn game_handler_start_local_front_nine(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: game_handler_start_local_front_nine"); 
+    {
+        
+    }
+    run_trigger.set_target("game_handler_start_local_front_nine", false);
+    info!("post response: game_handler_start_local_front_nine: [{}]", run_trigger.get("game_handler_start_local_front_nine"));  
+}
+
+pub fn game_handler_start_local_select_a_hole(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: game_handler_start_local_select_a_hole"); 
+    {
+        
+    }
+    run_trigger.set_target("game_handler_start_local_select_a_hole", false);
+    info!("post response: game_handler_start_local_select_a_hole: [{}]", run_trigger.get("game_handler_start_local_select_a_hole"));  
+}
+
+pub fn game_handler_start_local_whole_corse(
+    mut run_trigger: ResMut<RunTrigger>,
+) {
+    info!("function: game_handler_start_local_whole_corse"); 
+    {
+        
+    }
+    run_trigger.set_target("game_handler_start_local_whole_corse", false);
+    info!("post response: game_handler_start_local_whole_corse: [{}]", run_trigger.get("game_handler_start_local_whole_corse"));  
+}

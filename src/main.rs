@@ -66,6 +66,10 @@ use minigolf::{
         game_handler_game_start,
         game_handler_game_state_exit_routines,
         game_handler_game_state_start_routines,
+        game_handler_start_local_back_nine,
+        game_handler_start_local_front_nine,
+        game_handler_start_local_select_a_hole,
+        game_handler_start_local_whole_corse,
     },
     level_handler::{
         level_handler::{
@@ -265,6 +269,11 @@ fn main() {
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
         .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
         .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_start_routines()))
+
+        .add_systems(Update, game_handler_start_local_back_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_back_nine()))
+        .add_systems(Update, game_handler_start_local_front_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_front_nine()))
+        .add_systems(Update, game_handler_start_local_select_a_hole.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_select_a_hole()))
+        .add_systems(Update, game_handler_start_local_whole_corse.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_whole_corse()))
 
         .add_systems(Update, golf_ball_handler_update_locations_post_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_update_locations_post_bonk()))
         .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_end_game()))

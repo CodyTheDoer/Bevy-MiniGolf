@@ -166,25 +166,33 @@ pub fn ray_release(
                         // --- Menu: Local Interface Mapping --- //
 
                         "local_button_add_player" | "local_button_add_player_symbol" => {
+                            run_trigger.set_target("party_handler_new_player_local", true);
                         },
                         "local_button_sub_player" | "local_button_sub_player_symbol" => {
+                            run_trigger.set_target("party_handler_remove_last_player", true);
                         },
 
                         "local_button_add_ai" | "local_button_add_ai_symbol" => {
+                            run_trigger.set_target("party_handler_new_player_ai", true);
                         },
                         "local_button_sub_ai" | "local_button_sub_ai_symbol" => {
+                            run_trigger.set_target("party_handler_remove_ai", true);
                         },
 
                         // "local_playstyle_toggle_button_ordered.1" => {commands.insert_resource(NextState(PlayThroughStyleState::SetOrder))},
                         // "local_playstyle_toggle_button_proximity.1" => {commands.insert_resource(NextState(PlayThroughStyleState::Proximity))},
 
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
+                            run_trigger.set_target("game_handler_start_local_whole_corse", true);
                         },
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
+                            run_trigger.set_target("game_handler_start_local_front_nine", true);
                         },
                         "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
+                            run_trigger.set_target("game_handler_start_local_back_nine", true);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
+                            run_trigger.set_target("game_handler_start_local_select_a_hole", true);
                         },
                         _ => {},
                     }

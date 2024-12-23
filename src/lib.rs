@@ -304,17 +304,6 @@ pub enum StateArrow {
     DrawingArrow,
 }
 
-// #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-// pub enum StateCameraMenuTarget {
-//     #[default]
-//     Main,
-//     LeaderBoard,
-//     Local,
-//     Online,
-//     Player,
-//     Preferences,
-// }
-
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateCameraOrbitEntity {
     #[default]
@@ -447,6 +436,10 @@ pub struct RunTrigger{
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
     game_handler_game_state_start_routines: bool,
+    game_handler_start_local_back_nine: bool,
+    game_handler_start_local_front_nine: bool,
+    game_handler_start_local_select_a_hole: bool,
+    game_handler_start_local_whole_corse: bool,
     golf_ball_handler_end_game: bool,
     golf_ball_handler_party_store_locations: bool,
     golf_ball_handler_reset_golf_ball_locations: bool,
