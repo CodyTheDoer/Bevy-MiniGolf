@@ -189,23 +189,26 @@ impl GameHandler {
         self.current_level += 1;
     }
 
-    pub fn current_level_set_mapset_start(&mut self, map_set_state: StateMapSet) {
+    pub fn current_level_set_mapset_start(&mut self, map_set_state: &StateMapSet) {
         let owned_map_state = map_set_state.clone();
         info!("owned_map_state: {:?}", owned_map_state);
         match map_set_state {
-            StateMapSet::Tutorial => {
+            &StateMapSet::ToBeSelected => {
+            }, 
+            &StateMapSet::Tutorial => {
                 self.current_level = 19;
             }, 
-            StateMapSet::WholeCorse => {
+            &StateMapSet::WholeCorse => {
                 self.current_level = 1;
             },
-            StateMapSet::FrontNine => {
+            &StateMapSet::FrontNine => {
                 self.current_level = 1;
             },
-            StateMapSet::BackNine => {
+            &StateMapSet::BackNine => {
                 self.current_level = 10;
             },
-            StateMapSet::SelectAHole => {
+            &StateMapSet::SelectAHole => {
+                self.current_level = 9;
             },
         }
     }
@@ -280,40 +283,51 @@ pub fn game_handler_game_start (
         if game_handler.get("remote_game") {
 
         } else {
+            let mut map_state_selected = false;
             run_trigger.set_target("game_handler_game_state_start_routines", true);
             match state_game.get() {
                 StateGame::NotInGame => {
                     game_handler.set_target("in_game", true);
                     match state_map_set.get() {
+                        StateMapSet::ToBeSelected => {
+                        },
                         StateMapSet::Tutorial => {
-                            game_handler.current_level_set(0);
+                            map_state_selected = true;
+                            game_handler.current_level_set_tutorial();
                             next_level.set(StateLevel::HoleTutorial);
                         },
                         StateMapSet::WholeCorse => {
+                            map_state_selected = true;
                             game_handler.current_level_set(1);
                             next_level.set(StateLevel::Hole1);
                         },
                         StateMapSet::FrontNine => {
+                            map_state_selected = true;
                             game_handler.current_level_set(1);
                             next_level.set(StateLevel::Hole1);
                         },
                         StateMapSet::BackNine => {
+                            map_state_selected = true;
                             game_handler.current_level_set(10);
                             next_level.set(StateLevel::Hole10);
                         },
                         StateMapSet::SelectAHole => {},
                     };
-                    info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
-                    run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                    if map_state_selected == true {
+                        info!("level_handler_init_level_game_handler_current_level: level [{}]", game_handler.current_level_get());
+                        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                        run_trigger.set_target("game_handler_game_start", false);
+                        info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start")); 
+                    };
                 },
                 StateGame::InGame => {
                     warn!("game_handler_game_start: FAILED! Game state already initiated!");
+                    run_trigger.set_target("game_handler_game_start", false);
+                    info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start")); 
                 },
             }; 
         }
     }
-    run_trigger.set_target("game_handler_game_start", false);
-    info!("post response: game_handler_game_start: {}", run_trigger.get("game_handler_game_start")); 
 }
 
 pub fn game_handler_game_state_exit_routines(
@@ -326,6 +340,7 @@ pub fn game_handler_game_state_exit_routines(
     mut next_menu_state: ResMut<NextState<StateMenu>>,
     mut next_camera_state: ResMut<NextState<StateCameraOrbitEntity>>,
     mut next_state_turn: ResMut<NextState<StateTurn>>,
+    mut next_map_set: ResMut<NextState<StateMapSet>>,
     mut pan_orbit_camera_query: Query<&mut StatePanOrbit>,
 ) {
     info!("function: game_handler_game_state_exit_routines"); 
@@ -341,6 +356,7 @@ pub fn game_handler_game_state_exit_routines(
                 party.active_player_set(1);
                 next_state_game.set(StateGame::NotInGame);
                 next_state_turn.set(StateTurn::NotInGame);
+                next_map_set.set(StateMapSet::ToBeSelected);
                 info!("StateGame::NotInGame");
                 info!("StateTurn::NotInGame");
                 game_handler.current_level_set(0);
@@ -401,23 +417,49 @@ pub fn game_handler_game_state_start_routines(
     info!("post response: game_handler_game_state_start_routines: {}", run_trigger.get("game_handler_game_state_start_routines"));  
 }
 
-pub fn game_handler_start_local_back_nine(
+pub fn game_handler_start_tutorial(
+    mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_map_set_state: ResMut<NextState<StateMapSet>>,
+) {
+    info!("function: game_handler_start_tutorial"); 
+    {
+        game_handler.current_level_set_tutorial();
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_map_set_state.set(StateMapSet::Tutorial);
+        run_trigger.set_target("game_handler_game_start", true);
+    }
+    run_trigger.set_target("game_handler_start_tutorial", false);
+    info!("post response: game_handler_start_tutorial: [{}]", run_trigger.get("game_handler_start_tutorial"));  
+}
+
+pub fn game_handler_start_local_back_nine(
+    mut game_handler: ResMut<GameHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
+    mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_local_back_nine"); 
     {
-        
+        game_handler.current_level_set(10);
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_map_set_state.set(StateMapSet::BackNine);
+        run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_local_back_nine", false);
     info!("post response: game_handler_start_local_back_nine: [{}]", run_trigger.get("game_handler_start_local_back_nine"));  
 }
 
 pub fn game_handler_start_local_front_nine(
+    mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_local_front_nine"); 
     {
-        
+        game_handler.current_level_set(1);
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_map_set_state.set(StateMapSet::FrontNine);
+        run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_local_front_nine", false);
     info!("post response: game_handler_start_local_front_nine: [{}]", run_trigger.get("game_handler_start_local_front_nine"));  
@@ -435,11 +477,17 @@ pub fn game_handler_start_local_select_a_hole(
 }
 
 pub fn game_handler_start_local_whole_corse(
+    mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_level_state: ResMut<NextState<StateLevel>>,
+    mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_local_whole_corse"); 
     {
-        
+        game_handler.current_level_set(1);
+        next_level_state.set(StateLevel::Hole1);
+        next_map_set_state.set(StateMapSet::WholeCorse);
+        run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_local_whole_corse", false);
     info!("post response: game_handler_start_local_whole_corse: [{}]", run_trigger.get("game_handler_start_local_whole_corse"));  

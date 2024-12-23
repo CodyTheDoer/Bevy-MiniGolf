@@ -110,6 +110,9 @@ impl Player for PlayerLocal {
 
     fn add_bonk(&mut self, level: usize) {
         let index_adj = (level as i32 - 1) as usize;
+        if level == 19 { // Tutorial level
+            return;
+        }
         self.score[index_adj] += 1;
     }
 

@@ -367,6 +367,7 @@ pub enum StateLevel {
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateMapSet {
     #[default]
+    ToBeSelected,
     Tutorial,
     WholeCorse,
     FrontNine,
@@ -383,6 +384,7 @@ pub enum StateMenu {
     MenuOnline,
     MenuPreferences,
     MenuPlayer,
+    InGame,
 }
 
 #[derive(Component, Debug)]
@@ -440,6 +442,7 @@ pub struct RunTrigger{
     game_handler_start_local_front_nine: bool,
     game_handler_start_local_select_a_hole: bool,
     game_handler_start_local_whole_corse: bool,
+    game_handler_start_tutorial: bool,
     golf_ball_handler_end_game: bool,
     golf_ball_handler_party_store_locations: bool,
     golf_ball_handler_reset_golf_ball_locations: bool,

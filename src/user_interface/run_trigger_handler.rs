@@ -41,6 +41,7 @@ impl RunTrigger {
             game_handler_start_local_front_nine: false,
             game_handler_start_local_select_a_hole: false,
             game_handler_start_local_whole_corse: false,
+            game_handler_start_tutorial: false,
             golf_ball_handler_update_locations_post_bonk: false,
             golf_ball_handler_end_game: false,
             golf_ball_handler_party_store_locations: false,
@@ -101,6 +102,9 @@ impl RunTrigger {
             },
             "game_handler_start_local_whole_corse" => {
                 self.game_handler_start_local_whole_corse
+            },
+            "game_handler_start_tutorial" => {
+                self.game_handler_start_tutorial
             },
             "golf_ball_handler_end_game" => {
                 self.golf_ball_handler_end_game 
@@ -228,6 +232,10 @@ impl RunTrigger {
             "game_handler_start_local_whole_corse" => {
                 self.game_handler_start_local_whole_corse = state;
                 info!("response: game_handler_start_local_whole_corse: {}", self.get("game_handler_start_local_whole_corse"));
+            }
+            "game_handler_start_tutorial" => {
+                self.game_handler_start_tutorial = state;
+                info!("response: game_handler_start_tutorial: {}", self.get("game_handler_start_tutorial"));
             }
             "golf_ball_handler_end_game" => {
                 self.golf_ball_handler_end_game = state;
@@ -377,6 +385,10 @@ impl RunTrigger {
     
     pub fn game_handler_start_local_whole_corse(&self) -> bool {
         self.game_handler_start_local_whole_corse
+    }
+    
+    pub fn game_handler_start_tutorial(&self) -> bool {
+        self.game_handler_start_tutorial
     }
 
     pub fn golf_ball_handler_end_game(&self) -> bool {

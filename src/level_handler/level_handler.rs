@@ -291,6 +291,10 @@ pub fn level_handler_set_state_next_map_set(
     info!("function: level_handler_set_state_next_map_set"); 
     {
         match state_map_set.get() {
+            StateMapSet::ToBeSelected => {
+                info!("StateMapSet::Tutorial");
+                next_state_map_set.set(StateMapSet::Tutorial);
+            },
             StateMapSet::Tutorial => {
                 info!("StateMapSet::WholeCorse");
                 next_state_map_set.set(StateMapSet::WholeCorse);
@@ -308,8 +312,8 @@ pub fn level_handler_set_state_next_map_set(
                 next_state_map_set.set(StateMapSet::SelectAHole);
             },
             StateMapSet::SelectAHole => {
-                info!("StateMapSet::Tutorial");
-                next_state_map_set.set(StateMapSet::Tutorial);
+                info!("StateMapSet::ToBeSelected");
+                next_state_map_set.set(StateMapSet::ToBeSelected);
             },
         };
     }

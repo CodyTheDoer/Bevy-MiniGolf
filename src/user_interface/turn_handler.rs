@@ -38,6 +38,7 @@ pub fn turn_handler_set_turn_next(
                         if owned_finished_count == owned_party_size as i32 {
                             info!("Round Finished: All Players finished!");
                             match state_map_set.get() {
+                                StateMapSet::ToBeSelected => {warn!("Impossible non-selection of map state, crashing..."); panic!()},
                                 StateMapSet::Tutorial => {
                                     run_trigger.set_target("turn_handler_end_game", true);
                                     run_trigger.set_target("golf_ball_handler_end_game", true);

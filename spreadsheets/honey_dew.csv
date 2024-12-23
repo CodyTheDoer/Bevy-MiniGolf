@@ -1,0 +1,5 @@
+Issue and To Do Tracking,Resolved,Additional Info,Updates -->
+Golf Ball Reset to stored locations,N,"Reset doesn't place golfballs where they should be based on last position, currently the board is totally reset.",It seems the next turn trigger could be causing the failed reset. It causes golf_ball_handler_party_store_locations to fire and that could be the issue. Will add text output of point in console logging to verify where if the next turn trigger is a problem.
+Golf Ball Spawn platform and relocation,N,,
+Functional basic menu,N,,
+,,,

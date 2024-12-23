@@ -117,8 +117,7 @@ pub fn ray_release(
                     match owned_name {
                         // --- Menu: Main Interface Mapping --- //
                         "main_menu_interface_tutorial" => {
-                            game_handler.current_level_set_tutorial();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target("game_handler_start_tutorial", true);
                         },
                         "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
                             game_handler.current_level_set_menu_learderboard();

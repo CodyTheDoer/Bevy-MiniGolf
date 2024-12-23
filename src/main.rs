@@ -70,6 +70,7 @@ use minigolf::{
         game_handler_start_local_front_nine,
         game_handler_start_local_select_a_hole,
         game_handler_start_local_whole_corse,
+        game_handler_start_tutorial,
     },
     level_handler::{
         level_handler::{
@@ -197,7 +198,7 @@ fn main() {
         .insert_state(StateGame::NotInGame)
         .insert_state(StateGamePlayStyle::SetOrder)
         .insert_state(StateLevel::MainMenu)
-        .insert_state(StateMapSet::Tutorial)
+        .insert_state(StateMapSet::ToBeSelected)
         .insert_state(StateMenu::MenuMainMenu)
         .insert_state(StateTurn::NotInGame)
 
@@ -274,6 +275,7 @@ fn main() {
         .add_systems(Update, game_handler_start_local_front_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_front_nine()))
         .add_systems(Update, game_handler_start_local_select_a_hole.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_select_a_hole()))
         .add_systems(Update, game_handler_start_local_whole_corse.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_whole_corse()))
+        .add_systems(Update, game_handler_start_tutorial.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_tutorial()))
 
         .add_systems(Update, golf_ball_handler_update_locations_post_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_update_locations_post_bonk()))
         .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_end_game()))
