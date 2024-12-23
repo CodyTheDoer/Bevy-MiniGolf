@@ -25,7 +25,7 @@ impl GLBStorageID {
     pub fn new() -> Self {
         let map_paths = [
             // "glb/menu/main_menu.glb",           //  0
-            "glb/menu/menu_all.glb",            //  0
+            "glb/menu/main_menu.glb",            //  0
             "glb/map/level_1.glb",              //  1
             "glb/map/level_2.glb",              //  2
             "glb/map/level_1.glb",              //  3
@@ -70,8 +70,7 @@ pub fn level_handler_boot_protocals(
     sg_materials: ResMut<Assets<StandardMaterial>>,
     sl_commands: Commands,
 ) {
-    let level: i32 = 0;
-    game_handler.current_level_set(level);
+    game_handler.current_level_set(0);
     run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
     setup_ground(sg_commands, sg_meshes, sg_materials);
     setup_light(sl_commands);
@@ -119,6 +118,8 @@ pub fn level_handler_init_level_game_handler_current_level(
             purge_handler.set_target("environment_purged", false);
             run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
             info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));  
+        } else {
+            run_trigger.set_target("level_handler_purge_protocol", true);
         }
     }
 }

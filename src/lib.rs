@@ -305,16 +305,16 @@ pub enum StateArrow {
     DrawingArrow,
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum StateCameraMenuTarget {
-    #[default]
-    Main,
-    LeaderBoard,
-    Local,
-    Online,
-    Player,
-    Preferences,
-}
+// #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+// pub enum StateCameraMenuTarget {
+//     #[default]
+//     Main,
+//     LeaderBoard,
+//     Local,
+//     Online,
+//     Player,
+//     Preferences,
+// }
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum StateCameraOrbitEntity {

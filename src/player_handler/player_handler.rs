@@ -114,7 +114,7 @@ impl Player for PlayerLocal {
     }
 
     fn get_bonks(&mut self, level: usize) -> i32 {
-        if level == 0 {
+        if level == 0 || level > 17 {
             return 0;
         }
         let index_adj = (level as i32 - 1) as usize;

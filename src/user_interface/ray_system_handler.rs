@@ -5,7 +5,9 @@ use bevy_mod_raycast::prelude::*;
 // --- resource Imports --- //
 use crate::{
     CameraWorld, 
-    Interactable,
+    GameHandler, 
+    Interactable, 
+    RunTrigger,
 };
 
 pub fn draw_cursor(
@@ -74,6 +76,8 @@ pub fn ray_fire(
 
 pub fn ray_release(
     mut raycast: Raycast,
+    mut game_handler: ResMut<GameHandler>,
+    mut run_trigger: ResMut<RunTrigger>,
     camera_query: Query<(&Camera, &GlobalTransform), With<CameraWorld>>, // Only query for the CameraWorld    
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
@@ -108,17 +112,30 @@ pub fn ray_release(
                     let owned_name = name.as_str();
                     match owned_name {
                         // --- Menu: Main Interface Mapping --- //
+                        "main_menu_interface_tutorial" => {
+                            game_handler.current_level_set_tutorial();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                        },
                         "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
+                            game_handler.current_level_set_menu_learderboard();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         },
                         "main_menu_interface_local" => {
+                            run_trigger.set_target("level_handler_purge_protocol", true);
+                            game_handler.current_level_set_menu_local();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         },
                         "main_menu_interface_online" => {
+                            game_handler.current_level_set_menu_online();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         },
                         "main_menu_interface_preferences" => {
-                        },
-                        "main_menu_interface_tutorial" => {
+                            game_handler.current_level_set_menu_preferences();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         },
                         "main_menu_player_text" | "main_menu_player_board.0" => {
+                            game_handler.current_level_set_menu_player();
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         }
                         /* 
                             // Free Options to Build From
@@ -128,6 +145,8 @@ pub fn ray_release(
 
                         // --- Menu: Common Interactions --- //
                         "main_menu_text" | "main_menu_board.0" => {
+                            game_handler.current_level_set(0);
+                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         },
 
                         // --- Menu: Leader Board Interface Mapping --- //

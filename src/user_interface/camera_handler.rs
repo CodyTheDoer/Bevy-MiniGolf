@@ -5,7 +5,9 @@ use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
 // State
 use crate::{
-    StateCameraMenuTarget, StateCameraOrbitEntity, StatePanOrbit
+    // StateCameraMenuTarget, 
+    StateCameraOrbitEntity, 
+    StatePanOrbit,
 };
 
 // Resource
@@ -108,41 +110,41 @@ pub fn camera_handler_cycle_state_camera(
     info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
 }
 
-pub fn camera_handler_cycle_state_camera_menu_target(
-    mut run_trigger: ResMut<RunTrigger>,
-    camera_menu_target_state: Res<State<StateCameraMenuTarget>>,
-    mut next_camera_menu_target_state: ResMut<NextState<StateCameraMenuTarget>>,
-) {
-    info!("function: camera_handler_cycle_state_camera_menu_target"); 
-    match camera_menu_target_state.get() {
-        StateCameraMenuTarget::LeaderBoard => {
-            info!("StateCameraMenuTarget::Local");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::Local);
-        },
-        StateCameraMenuTarget::Local => {
-            info!("StateCameraMenuTarget::Main");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::Main);
-        },
-        StateCameraMenuTarget::Main => {
-            info!("StateCameraMenuTarget::Online");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::Online);
-        },
-        StateCameraMenuTarget::Online => {
-            info!("StateCameraMenuTarget::Player");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::Player);
-        },
-        StateCameraMenuTarget::Player => {
-            info!("StateCameraMenuTarget::Preferences");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::Preferences);
-        },
-        StateCameraMenuTarget::Preferences => {
-            info!("StateCameraMenuTarget::LeaderBoard");
-            next_camera_menu_target_state.set(StateCameraMenuTarget::LeaderBoard);
-        },
-    }
-    run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", false);
-    info!("post response: camera_handler_cycle_state_camera_menu_target: {}", run_trigger.get("camera_handler_cycle_state_camera_menu_target"));  
-}
+// pub fn camera_handler_cycle_state_camera_menu_target(
+//     mut run_trigger: ResMut<RunTrigger>,
+//     camera_menu_target_state: Res<State<StateCameraMenuTarget>>,
+//     mut next_camera_menu_target_state: ResMut<NextState<StateCameraMenuTarget>>,
+// ) {
+//     info!("function: camera_handler_cycle_state_camera_menu_target"); 
+//     match camera_menu_target_state.get() {
+//         StateCameraMenuTarget::LeaderBoard => {
+//             info!("StateCameraMenuTarget::Local");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::Local);
+//         },
+//         StateCameraMenuTarget::Local => {
+//             info!("StateCameraMenuTarget::Main");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::Main);
+//         },
+//         StateCameraMenuTarget::Main => {
+//             info!("StateCameraMenuTarget::Online");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::Online);
+//         },
+//         StateCameraMenuTarget::Online => {
+//             info!("StateCameraMenuTarget::Player");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::Player);
+//         },
+//         StateCameraMenuTarget::Player => {
+//             info!("StateCameraMenuTarget::Preferences");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::Preferences);
+//         },
+//         StateCameraMenuTarget::Preferences => {
+//             info!("StateCameraMenuTarget::LeaderBoard");
+//             next_camera_menu_target_state.set(StateCameraMenuTarget::LeaderBoard);
+//         },
+//     }
+//     run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", false);
+//     info!("post response: camera_handler_cycle_state_camera_menu_target: {}", run_trigger.get("camera_handler_cycle_state_camera_menu_target"));  
+// }
 
 pub fn setup_3d_camera(
     mut commands: Commands,
@@ -161,76 +163,12 @@ pub fn setup_3d_camera(
 }
 
 pub fn state_camera_orbit_entity_logic(
-    camera_menu_target_state: ResMut<State<StateCameraMenuTarget>>,
     camera_orbit_entity_state: ResMut<State<StateCameraOrbitEntity>>,
     mut camera_coord_tracker: ResMut<CameraHandler>,
     scene_meshes: Query<(Entity, &Name, &Transform)>,
     golf_balls: Query<(&GolfBall, &Transform)>,
     party: Res<Party>,
-) {    
-    let mut menu_orbit_direction_x = 0.0;
-    let mut menu_orbit_direction_y = 0.0;
-    if camera_orbit_entity_state.get() == &StateCameraOrbitEntity::Menu {
-        for (_entity, name, transform) in scene_meshes.iter() {
-            let owned_name = name.as_str();
-            match camera_menu_target_state.get() {
-                StateCameraMenuTarget::LeaderBoard => {
-                    match owned_name {
-                        "target_leaderboard" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                }
-                StateCameraMenuTarget::Local => {
-                    match owned_name {
-                        "target_local" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                },
-                StateCameraMenuTarget::Main => {
-                    match owned_name {
-                        "target_main" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                },
-                StateCameraMenuTarget::Online => {
-                    match owned_name {
-                        "target_online" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                },
-                StateCameraMenuTarget::Player => {
-                    match owned_name {
-                        "target_player" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                },
-                StateCameraMenuTarget::Preferences => {
-                    match owned_name {
-                        "target_preferences" => {
-                            menu_orbit_direction_x = transform.translation.x;
-                            menu_orbit_direction_y = transform.translation.y;
-                        },
-                        _ => {},
-                    };
-                },
-            }
-        }
-    }
+) {
     match camera_orbit_entity_state.get() {
         StateCameraOrbitEntity::Ball => {
             let active_player = party.active_player_get_player_id();
@@ -250,29 +188,8 @@ pub fn state_camera_orbit_entity_logic(
         },
         StateCameraOrbitEntity::Menu => {
             for (_entity, name, transform) in scene_meshes.iter() {
-                if name.as_str() == "ball" {
-                    // Translation
-                    let camera_yaw = transform.rotation.to_euler(EulerRot::YXZ).0;
-                    let adjusted_xy = apply_rotation_matrix_menu_camera(&camera_yaw, menu_orbit_direction_x, menu_orbit_direction_y);
-                    let mut normalized_adj: Vec3 = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y).normalize() * 5.0;
-                    normalized_adj.y = 10.0;
-                    camera_coord_tracker.current_coords = transform.translation + normalized_adj;
-
-                    // Rotation
-                    let target_position = Vec3::new(adjusted_xy.x, 0.0, adjusted_xy.y); // Target's position on the plane
-                    let camera_forward = Vec3::new(0.0, 0.0, 1.0); // Camera's forward vector (or current direction)
-                    let direction_vector = target_position - transform.translation; // Vector from camera to target
-
-                    let direction_vector = direction_vector.normalize();
-
-                    // Calculate the angle between the forward vector and the direction vector
-                    let angle = camera_forward.angle_between(direction_vector);
-                    
-                    // Determine the axis of rotation (cross product gives the perpendicular axis)
-                    let rotation_axis = camera_forward.cross(direction_vector).normalize();
-
-                    let rotation = Quat::from_axis_angle(rotation_axis, angle);
-                    camera_coord_tracker.rotation = rotation; // Update the camera's rotation
+                if name.as_str() == "cam_target" {
+                    camera_coord_tracker.current_coords = transform.translation;
                     break;
                 };
             }  

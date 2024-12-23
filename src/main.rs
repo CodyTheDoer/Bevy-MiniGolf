@@ -22,7 +22,7 @@ use bevy_rapier3d::prelude::*;
 // --- States --- //
 use minigolf::{
     StateArrow, 
-    StateCameraMenuTarget,
+    // StateCameraMenuTarget,
     StateCameraOrbitEntity, 
     StateEngineConnection, 
     StateGame, 
@@ -124,7 +124,7 @@ use minigolf::{
     user_interface::{
         camera_handler::{
             camera_handler_cycle_state_camera,
-            camera_handler_cycle_state_camera_menu_target,
+            // camera_handler_cycle_state_camera_menu_target,
             setup_3d_camera,
             pan_orbit_camera, 
             state_camera_orbit_entity_logic,
@@ -187,7 +187,7 @@ fn main() {
     
         // --- State Initialization --- //
         .insert_state(StateArrow::Idle)
-        .insert_state(StateCameraMenuTarget::Main)
+        // .insert_state(StateCameraMenuTarget::Main)
         .insert_state(StateCameraOrbitEntity::Menu)
         .insert_state(StateEngineConnection::Local)
         .insert_state(StateGame::NotInGame)
@@ -260,7 +260,7 @@ fn main() {
         .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))
 
         .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-        .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
+        // .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
 
         .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
         .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))

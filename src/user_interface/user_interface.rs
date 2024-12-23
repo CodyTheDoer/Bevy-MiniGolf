@@ -5,7 +5,7 @@ use bevy_easy_vec_ui::EasyVecUi;
 // --- State Imports --- //
 use crate::{
     StateArrow,
-    StateCameraMenuTarget,
+    // StateCameraMenuTarget,
     StateCameraOrbitEntity, 
     StateEngineConnection, 
     StateGame, 
@@ -200,7 +200,6 @@ pub fn easy_vec_ui(
 
 pub fn updated_states_ref(
     state_arrow: Res<State<StateArrow>>,
-    state_camera_menu_target: Res<State<StateCameraMenuTarget>>,
     state_camera: Res<State<StateCameraOrbitEntity>>,
     state_game: Res<State<StateGame>>,
     state_engine_connection : Res<State<StateEngineConnection>>,
@@ -214,7 +213,6 @@ pub fn updated_states_ref(
     let all_states = vec![
         String::from(format!("state_arrow: {:?}", *state_arrow)),
         String::from(format!("state_camera: {:?}", *state_camera)),
-        String::from(format!("state_camera_menu_target: {:?}", *state_camera_menu_target)),
         String::from(format!("state_game: {:?}", *state_game)),
         String::from(format!("state_engine_connection: {:?}", *state_engine_connection)),
         String::from(format!("state_play_style: {:?}", *state_play_style)),

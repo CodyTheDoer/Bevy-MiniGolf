@@ -220,12 +220,12 @@ impl GameHandler {
         self.current_level = level;
     }
 
-    pub fn current_level_set_tutorial(&mut self) {
-        self.current_level_set(19);
-    }
-
     pub fn current_level_set_menu_main(&mut self) {
         self.current_level_set(0);
+    }
+
+    pub fn current_level_set_tutorial(&mut self) {
+        self.current_level_set(19);
     }
 
     pub fn current_level_set_menu_learderboard(&mut self) {
