@@ -50,7 +50,7 @@ impl Default for PanOrbitSettings {
             orbit_sensitivity: 0.1f32.to_radians(), // 0.1 degree per pixel
             zoom_sensitivity: 0.01,
             pan_key: Some(KeyCode::ControlLeft),
-            orbit_key: Some(KeyCode::AltLeft),
+            orbit_key: Some(MouseButton::Left),
             zoom_key: Some(KeyCode::ShiftLeft),
             scroll_action: Some(PanOrbitAction::Zoom),
             scroll_line_sensitivity: 16.0, // 1 "line" == 16 "pixels of motion"
@@ -141,6 +141,7 @@ pub fn state_camera_orbit_entity_logic(
 
 pub fn pan_orbit_camera(
     kbd: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
     mut evr_motion: EventReader<MouseMotion>,
     mut evr_scroll: EventReader<MouseWheel>,
     mut q_camera: Query<(&PanOrbitSettings, &mut StatePanOrbit, &mut Transform)>,
@@ -196,7 +197,7 @@ pub fn pan_orbit_camera(
         }
 
         // Orbit logic - applicable in all modes
-        if allow_interaction && settings.orbit_key.map(|key| kbd.pressed(key)).unwrap_or(false) {
+        if allow_interaction && settings.orbit_key.map(|key| mouse.pressed(key)).unwrap_or(false) {
             total_orbit -= total_motion * settings.orbit_sensitivity;
         }
         if settings.scroll_action == Some(PanOrbitAction::Orbit) {
@@ -213,7 +214,7 @@ pub fn pan_orbit_camera(
         }
 
         // Handle upside-down orbit reversal
-        if settings.orbit_key.map(|key| kbd.just_pressed(key)).unwrap_or(false) {
+        if settings.orbit_key.map(|key| mouse.just_pressed(key)).unwrap_or(false) {
             state.upside_down = state.pitch < -FRAC_PI_2 || state.pitch > FRAC_PI_2;
         }
         if state.upside_down {

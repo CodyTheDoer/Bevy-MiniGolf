@@ -198,7 +198,7 @@ pub struct PanOrbitSettings {
     /// Key to hold for panning
     pub pan_key: Option<KeyCode>,
     /// Key to hold for orbiting
-    pub orbit_key: Option<KeyCode>,
+    pub orbit_key: Option<MouseButton>,
     /// Key to hold for zooming
     pub zoom_key: Option<KeyCode>,
     /// What action is bound to the scroll wheel?
