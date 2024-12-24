@@ -303,7 +303,6 @@ impl Party {
     
     pub fn players_remove_last_player(&self) {
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-        
         // Only pop if we have more than one player
         if players_lock.len() > 1 {
             players_lock.pop();
@@ -312,15 +311,17 @@ impl Party {
     
     pub fn players_remove_local_player(&self) {
         let mut players_lock = self.players.lock().unwrap(); // Acquire the lock to get mutable access
-        
         // Only pop if we have more than one player
         if players_lock.len() > 1 {
-            if let Some(index) = players_lock.iter().rev().position(|player| {
+            if let Some(rev_index) = players_lock.iter().rev().position(|player| {
                 let player_lock = player.lock().unwrap();
-                player_lock.get_player_type().as_str() == "PlayerLocal"
+                player_lock.get_player_type().as_str() == "PlayerLocal" 
             }) {
-                // Remove the player at the found index
-                players_lock.remove(index);
+                // Convert the reversed index to the original index
+                let original_index = players_lock.len() - 1 - rev_index;
+    
+                // Remove the player at the original index
+                players_lock.remove(original_index);
             }
         }
     }
