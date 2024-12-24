@@ -8,8 +8,8 @@ pub fn local_party_interface_visibliity_toggle(
     mut scene_meshes: Query<(&Name, &mut Visibility)>,
     party: Res<Party>,
 ) {
-    let party_size = party.get_count_party();
     let ai_count = party.get_count_ai();
+    let party_size = party.get_count_local();
     for (name, mut visibility) in &mut scene_meshes {
         let name_owned = name.as_str();
         match party_size {
@@ -201,6 +201,7 @@ pub fn local_party_interface_visibliity_toggle(
     }
 }
 
+/* 
 pub fn local_party_interface_ai_material_toggle(
     mut scene_meshes: Query<(Entity, &Name)>,
     party: Res<Party>,
@@ -307,3 +308,4 @@ fn process_entity_children(
         }
     }
 }
+*/

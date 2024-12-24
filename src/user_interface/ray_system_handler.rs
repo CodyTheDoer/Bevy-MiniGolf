@@ -7,7 +7,8 @@ use crate::{
     CameraWorld, 
     GameHandler, 
     Interactable, 
-    RunTrigger,
+    Party,
+    RunTrigger, 
     StatePanOrbit,
 };
 
@@ -84,6 +85,7 @@ pub fn ray_release(
     interactable_query: Query<Entity, With<Interactable>>,
     scene_meshes: Query<(Entity, &Name)>,
     windows: Query<&Window>,
+    party: Res<Party>,
 ) {    
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
@@ -167,7 +169,12 @@ pub fn ray_release(
                         "local_button_add_player" | "local_button_add_player_symbol" => {
                             run_trigger.set_target("party_handler_new_player_local", true);
                         },
-                        "local_button_sub_player" | "local_button_sub_player_symbol" => {
+                        "button_add_player" => {
+                            if party.get_count_local() < 5 {
+                                run_trigger.set_target("party_handler_new_player_local", true);
+                            };
+                        },
+                        "local_button_sub_player" | "local_button_sub_player_symbol" | "button_sub_player" => {
                             run_trigger.set_target("party_handler_remove_local_player", true);
                         },
 
@@ -193,6 +200,10 @@ pub fn ray_release(
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
                             run_trigger.set_target("game_handler_start_local_select_a_hole", true);
                         },
+
+                        "player_name_name_input_block" => {
+
+                        }
                         _ => {},
                     }
                     if menu_camera_adj_left == true {

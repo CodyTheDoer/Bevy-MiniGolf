@@ -136,7 +136,7 @@ use minigolf::{
             state_camera_orbit_entity_logic,
         },
         menu_handler::{
-            local_party_interface_ai_material_toggle,
+            // local_party_interface_ai_material_toggle,
             local_party_interface_visibliity_toggle,
         },
         turn_handler::{
@@ -187,7 +187,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(BevyEasyVecUiPlugin::init("fonts/MatrixtypeDisplay-KVELZ.ttf")
             .camera_layer(-1)
-            .title("Minigolf Backend Server: UI")
+            .title("Minigolf: The Daily Bonk")
             .title_font_size(42.0) // Default is 42
             .data_font_size(10.0) // Default is 12
             .build()
@@ -334,7 +334,7 @@ fn main() {
         .add_systems(Update, listening_function_purge_events)
         .add_systems(Update, listening_function_spawned_environment_events)
         .add_systems(Update, listening_function_spawned_golf_ball_events)
-        .add_systems(Update, local_party_interface_ai_material_toggle)
+        // .add_systems(Update, local_party_interface_ai_material_toggle)
         .add_systems(Update, local_party_interface_visibliity_toggle)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
         .add_systems(Update, golf_ball_handler_update_locations_while_in_game)

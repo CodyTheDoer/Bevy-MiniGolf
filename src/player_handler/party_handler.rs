@@ -193,6 +193,24 @@ impl Party {
         count
     }
 
+    pub fn get_count_local(&self) -> usize {
+        let mut count: usize = 0;
+        let players_lock = self.players.lock().unwrap();
+        for player in players_lock.iter() {
+            let player_type = player.lock().unwrap().get_player_type();
+            if player_type == String::from("PlayerLocal") {
+                count += 1;
+            }
+        }
+        count
+    }
+
+    pub fn get_count_party(&self) -> usize {
+        let players_lock = self.players.lock().unwrap();
+        let count: usize = players_lock.len();
+        count
+    }
+
     pub fn get_party_ai_index_vec(&self) -> Vec<usize> {
         let mut ai_index: Vec<usize> = Vec::new();
         let players_lock = self.players.lock().unwrap();
@@ -203,16 +221,6 @@ impl Party {
             };
         }
         ai_index
-    }
-
-    pub fn update_ai_index_vec(&mut self) {
-        self.ai_vec = Some(self.get_party_ai_index_vec());
-    }
-
-    pub fn get_count_party(&self) -> usize {
-        let players_lock = self.players.lock().unwrap();
-        let count: usize = players_lock.len();
-        count
     }
 
     pub fn main_player_get_player_id(&self) -> Uuid {
@@ -338,6 +346,10 @@ impl Party {
             let mut player = player_arc.lock().unwrap(); // Lock the player mutex to get a mutable reference to the player
             player.start_game();
         }
+    }
+
+    pub fn update_ai_index_vec(&mut self) {
+        self.ai_vec = Some(self.get_party_ai_index_vec());
     }
 }
 
