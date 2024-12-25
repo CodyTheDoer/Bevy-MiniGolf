@@ -711,22 +711,6 @@ pub fn golf_ball_is_asleep(
         }
     }
     game_handler.all_sleeping()
-    // let mut sleeping: usize = 0;
-    // let mut total: usize = 0;    
-    // for (idx, (_, golf_ball, _)) in golf_balls.iter().enumerate() {
-    //     total = idx + 1;
-    //     if golf_ball.0.sleeping == true {
-    //         sleeping += 1;
-    //     }
-    // }
-    
-    // if sleeping == total {
-    //     game_handler.set_target("all_sleeping", true);
-    //     true
-    // } else {
-    //     game_handler.set_target("all_sleeping", false);
-    //     false
-    // }
 }
 
 pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {

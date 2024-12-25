@@ -183,6 +183,7 @@ fn main() {
 
         // --- Additional Plugins --- //
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(BevyEasyVecUiPlugin::init("fonts/MatrixtypeDisplay-KVELZ.ttf")
             .camera_layer(-1)
             .title("Minigolf: The Daily Bonk")
@@ -190,8 +191,6 @@ fn main() {
             .data_font_size(10.0) // Default is 12
             .build()
         )
-        // .add_plugins(RapierDebugRenderPlugin::default())
-        // .add_plugins(EditorPlugin::default())
     
         // --- State Initialization --- //
         .insert_state(StateArrow::Idle)
@@ -438,7 +437,7 @@ fn golf_ball_handler_respawn_golf_ball(
             game_handler.set_target("golf_balls_reset", true);
             commands.spawn((
                 ResetTimer {
-                    timer: Timer::new(Duration::from_millis(1000), TimerMode::Once), 
+                    timer: Timer::new(Duration::from_millis(1750), TimerMode::Once), 
                 },
             ));
         } else {
