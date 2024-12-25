@@ -376,7 +376,7 @@ pub fn server_parse_message(
                 },
                 "InitPlayerConnection" => {
                     // Handle InitPlayerConnection command
-                    if game_handler.get("network_server_connection") == false {
+                    if game_handler.network_server_connection() == false {
                         let parsed_state = Some(StateUpdateRef::StateEngineConnection(
                             StateEngineConnection::Online,
                         ));

@@ -72,19 +72,20 @@ pub struct Interactable;
 
 #[derive(Resource)]
 pub struct GameHandler {
-    current_level: i32,
     all_sleeping: bool,
     arrow_state: bool,
     environment_loaded: bool,
-    golf_balls_loaded: bool,
     golf_balls_bonk_trigger: bool,
+    golf_balls_loaded: bool,
+    golf_balls_reset: bool,
     golf_balls_store_location: bool,
     in_game: bool,
     round_start: bool,
     network_server_connection: bool,
     remote_game: bool,
-    remotely_pushed_state: Option<StateUpdateRef>,
+    current_level: i32,
     game_id: Option<Uuid>,
+    remotely_pushed_state: Option<StateUpdateRef>,
 }
 
 #[derive(Clone, Resource)]

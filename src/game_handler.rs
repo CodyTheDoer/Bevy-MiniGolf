@@ -28,8 +28,9 @@ impl GameHandler {
             all_sleeping: false,
             arrow_state: false,
             environment_loaded: false,
-            golf_balls_loaded: false,
             golf_balls_bonk_trigger: true,
+            golf_balls_loaded: false,
+            golf_balls_reset: false,
             golf_balls_store_location: true,
             in_game: false,
             round_start: true,
@@ -41,45 +42,6 @@ impl GameHandler {
         }
     }
 
-    pub fn get(&self, target: &str) -> bool {
-        match target {
-            "all_sleeping" => {
-                self.all_sleeping
-            },
-            "arrow_state" => {
-                self.arrow_state
-            },
-            "environment_loaded" => {
-                self.environment_loaded
-            },
-            "golf_balls_loaded" => {
-                self.golf_balls_loaded
-            },
-            "golf_balls_bonk_trigger" => {
-                self.golf_balls_bonk_trigger
-            },
-            "golf_balls_store_location" => {
-                self.golf_balls_store_location
-            },
-            "in_game" => {
-                self.in_game
-            },
-            "round_start" => {
-                self.round_start
-            },
-            "network_server_connection" => {
-                self.network_server_connection
-            },
-            "remote_game" => {
-                self.remote_game
-            },
-            _ => {
-                warn!("Target: [{}] does not exist!!!", target); 
-                false
-            },
-        }
-    }
-
     pub fn set_target(&mut self, target: &str, state: bool) {
         match target {
             "all_sleeping" => {
@@ -88,39 +50,43 @@ impl GameHandler {
             },
             "arrow_state" => {
                 self.arrow_state = state;
-                info!("response: arrow_state: {}", self.get("arrow_state"));  
+                info!("response: arrow_state: {}", self.arrow_state());  
             },
             "environment_loaded" => {
                 self.environment_loaded = state;
-                info!("response: environment_loaded: {}", self.get("environment_loaded"));  
-            },
-            "golf_balls_loaded" => {
-                self.golf_balls_loaded = state;
-                info!("response: golf_balls_loaded: {}", self.get("golf_balls_loaded"));  
+                info!("response: environment_loaded: {}", self.environment_loaded());  
             },
             "golf_balls_bonk_trigger" => {
                 self.golf_balls_bonk_trigger = state;
-                info!("response: golf_balls_bonk_trigger: {}", self.get("golf_balls_bonk_trigger"));  
+                info!("response: golf_balls_bonk_trigger: {}", self.golf_balls_bonk_trigger());  
+            },
+            "golf_balls_loaded" => {
+                self.golf_balls_loaded = state;
+                info!("response: golf_balls_loaded: {}", self.golf_balls_loaded());  
+            },
+            "golf_balls_reset" => {
+                self.golf_balls_reset = state;
+                info!("response: golf_balls_reset: {}", self.golf_balls_reset());  
             },
             "golf_balls_store_location" => {
                 self.golf_balls_store_location = state;
-                info!("response: golf_balls_store_location: {}", self.get("golf_balls_store_location"));  
+                info!("response: golf_balls_store_location: {}", self.golf_balls_store_location());  
             },
             "in_game" => {
                 self.in_game = state;
-                info!("response: in_game: {}", self.get("in_game"));  
+                info!("response: in_game: {}", self.in_game());  
             },
             "round_start" => {
                 self.round_start = state;
-                info!("response: round_start: {}", self.get("round_start"));  
+                info!("response: round_start: {}", self.round_start());  
             },
             "network_server_connection" => {
                 self.network_server_connection = state;
-                info!("response: network_server_connection: {}", self.get("network_server_connection"));  
+                info!("response: network_server_connection: {}", self.network_server_connection());  
             },
             "remote_game" => {
                 self.remote_game = state;
-                info!("response: remote_game: {}", self.get("remote_game"));  
+                info!("response: remote_game: {}", self.remote_game());  
             },
             _ => {},
         }
@@ -138,16 +104,20 @@ impl GameHandler {
         self.environment_loaded
     }
 
-    pub fn golf_balls_loaded(&self) -> bool {
-        self.golf_balls_loaded
-    }
-
     pub fn golf_balls_bonk_trigger(&self) -> bool {
         self.golf_balls_bonk_trigger
     }
 
+    pub fn golf_balls_loaded(&self) -> bool {
+        self.golf_balls_loaded
+    }
+
     pub fn golf_balls_store_location(&self) -> bool {
         self.golf_balls_store_location
+    }
+
+    pub fn golf_balls_reset(&self) -> bool {
+        self.golf_balls_reset
     }
 
     pub fn in_game(&self) -> bool {
@@ -280,7 +250,7 @@ pub fn game_handler_game_start (
 ) {
     info!("function: game_handler_game_start "); 
     {
-        if game_handler.get("remote_game") {
+        if game_handler.remote_game() {
 
         } else {
             let mut map_state_selected = false;
@@ -393,7 +363,7 @@ pub fn game_handler_game_state_start_routines(
         info!("Current Game State: {:?}", state_game.get());
         match state_game.get() {
             StateGame::NotInGame => {
-                if game_handler.get("remote_game") {
+                if game_handler.remote_game() {
                     info!("StateTurn::Idle");
                     next_state_turn.set(StateTurn::Idle);
                 } else {

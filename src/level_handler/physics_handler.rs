@@ -94,8 +94,8 @@ pub fn add_physics_query_and_update_scene(
     mut run_trigger: ResMut<RunTrigger>,
     game_handler: Res<GameHandler>,
 ) {
-    info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.get("environment_loaded")); 
-    if game_handler.get("environment_loaded") && game_handler.get("golf_balls_loaded") {
+    info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.environment_loaded()); 
+    if game_handler.environment_loaded() && game_handler.golf_balls_loaded() {
         {
             commands
                 .spawn(Collider::cylinder(0.1, 2000.0))
@@ -298,7 +298,7 @@ pub fn bonk_step_end( // Fires bonk
     playstyle: Res<State<StateGamePlayStyle>>,
     golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
 ) {
-    if game_handler.get("arrow_state") {
+    if game_handler.arrow_state() {
         toggle_arrow_state(&mut game_handler, arrow_state, next_arrow_state);
     }
 
@@ -454,7 +454,7 @@ pub fn golf_ball_handler_update_locations_post_bonk(
 ) {
     info!("function: golf_ball_handler_update_locations_post_bonk "); 
     {
-        if game_handler.get("golf_balls_bonk_trigger") {
+        if game_handler.golf_balls_bonk_trigger() {
             info!("golf_ball_handler_update_locations_post_bonk: ");
             let player_id = party.active_player_get_player_id();
             for (mut golf_ball, transform) in gb_query.iter_mut() {
@@ -587,7 +587,7 @@ pub fn golf_ball_handler_party_store_locations(
 ) {
     info!("function: golf_ball_handler_party_store_locations "); 
     {
-        if game_handler.get("golf_balls_store_location") {
+        if game_handler.golf_balls_store_location() {
             for mut golf_ball in gb_query.iter_mut() {
                 info!("golf_ball before: [{:?}]", golf_ball.0);
                 golf_ball.0.last_position = golf_ball.0.position;
@@ -704,7 +704,7 @@ pub fn golf_ball_is_asleep(
             }
         }
     }
-    game_handler.get("all_sleeping")
+    game_handler.all_sleeping()
     // let mut sleeping: usize = 0;
     // let mut total: usize = 0;    
     // for (idx, (_, golf_ball, _)) in golf_balls.iter().enumerate() {

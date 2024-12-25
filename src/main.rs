@@ -243,7 +243,7 @@ fn main() {
         // // Network //
         // .add_systems(Startup, start_socket)
         // .add_systems(Update, auth_server_handshake
-        //     .run_if(|game_handler: Res<GameHandler>|!game_handler.get("network_server_connection"))
+        //     .run_if(|game_handler: Res<GameHandler>|!game_handler.network_server_connection())
         //     .run_if(on_timer(Duration::from_millis(500))))
         // .add_systems(Update, heartbeat_system)
         // .add_systems(Update, receive_messages)
@@ -372,13 +372,22 @@ fn golf_ball_handler_update_locations_while_in_game(
     };
 }
 
+#[derive(Component)]
+struct ResetTimer {
+    /// track if resets occur within a certain time passed
+    timer: Timer,
+}
+
 fn golf_ball_handler_respawn_golf_ball(
     mut commands: Commands,
+    mut run_trigger: ResMut<RunTrigger>,
     asset_server: Res<AssetServer>,
     glb_storage: Res<GLBStorageID>, //Arc<[MapID]> //map: Arc<str>,
     mut oob_event_reader: EventReader<SceneInstanceOutOfBoundGolfBall>,
     mut asset_event_writer: EventWriter<SceneInstanceRespawnedGolfBall>,
     mut game_handler: ResMut<GameHandler>,
+    mut q: Query<(Entity, &mut ResetTimer)>,
+    time: Res<Time>,
 ) {
     for event in oob_event_reader.read() {
         info!("golf Ball Out Of Bounds: [{:?}]", event);
@@ -388,6 +397,28 @@ fn golf_ball_handler_respawn_golf_ball(
             let location = player.1;
             golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &player_id, &location, &mut asset_event_writer, &mut game_handler);
         };
+        if !game_handler.golf_balls_reset() {
+            game_handler.set_target("golf_balls_reset", true);
+            commands.spawn((
+                ResetTimer {
+                    timer: Timer::new(Duration::from_millis(1000), TimerMode::Once), 
+                },
+            ));
+            for (entity, mut reset_timer) in q.iter_mut() {
+                // timers gotta be ticked, to work
+                reset_timer.timer.tick(time.delta());
+        
+                // if it finished, despawn the bomb
+                if reset_timer.timer.finished() {
+                    game_handler.set_target("golf_balls_reset", false);
+                    commands.entity(entity).despawn();
+                }
+            }
+        } else {
+            if game_handler.in_game() && game_handler.golf_balls_reset() {
+                run_trigger.set_target("add_physics_query_and_update_scene", true);
+            }
+        }
     }
 }
 
@@ -410,7 +441,7 @@ fn listening_function_local_all_finished(
     game_handler: Res<GameHandler>,
     party: Res<Party>,
 ) {
-    if party.all_finished() && !game_handler.get("remote_game") {
+    if party.all_finished() && !game_handler.remote_game() {
         run_trigger.set_target("turn_handler_set_turn_next", true);
     }
 }
@@ -447,7 +478,7 @@ fn listening_function_local_add_physics(
     for _ in query.iter() {
         count += 1;
     }
-    if !game_handler.get("remote_game") && game_handler.get("in_game") && game_handler.get("round_start") && count == 0 {
+    if !game_handler.remote_game() && game_handler.in_game() && game_handler.round_start() && count == 0 {
         game_handler.set_target("round_start", false);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
@@ -520,7 +551,7 @@ fn listening_function_spawned_environment_events(
         info!("Entity: [{:?}]", event);
         purge_handler.set_target("environment_purged", false);
         game_handler.set_target("environment_loaded", true);
-        match game_handler.get("in_game") {
+        match game_handler.in_game() {
             true => {
                 info!("listening_function_spawned_environment_events: In Game: Triggering Golf Ball pipeline");
                 run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
@@ -555,9 +586,9 @@ fn start_movement_listener_turn_handler_set_turn_next(
     mut run_trigger: ResMut<RunTrigger>,
     game_handler: Res<GameHandler>,
 ) {
-    info!("function: start_movement_listener_turn_handler_set_turn_next"); 
     {
-        if game_handler.get("all_sleeping") {
+        if game_handler.all_sleeping() {
+            info!("function: start_movement_listener_turn_handler_set_turn_next"); 
             run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
             run_trigger.set_target("golf_ball_handler_party_store_locations", true);
             run_trigger.set_target("turn_handler_set_turn_next", true);
