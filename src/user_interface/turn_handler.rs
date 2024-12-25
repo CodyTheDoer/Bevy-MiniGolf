@@ -1,17 +1,25 @@
-use bevy::prelude::*;
+use bevy::{prelude::*,
+    utils::Duration, 
+};
 
 // States
 use crate::{ 
-    Party, StateGame, StateLevel, StateMapSet, StateTurn
+    StateGame, 
+    StateLevel, 
+    StateMapSet, 
+    StateTurn,
 };
 
 // Resources
 use crate::{
     GameHandler,
+    Party, 
     RunTrigger,
+    SpawnPhysicsCheckTimer,
 };
 
 pub fn turn_handler_set_turn_next(
+    mut commands: Commands,
     mut run_trigger: ResMut<RunTrigger>,
     mut game_handler: ResMut<GameHandler>,
     state_game: Res<State<StateGame>>,
@@ -21,6 +29,7 @@ pub fn turn_handler_set_turn_next(
     party: ResMut<Party>,
 ) {
     info!("function: turn_handler_set_turn_next"); 
+    let mut physics_timer_check = false;
     {
         match state_game.get() {
             StateGame::InGame => {
@@ -101,6 +110,7 @@ pub fn turn_handler_set_turn_next(
                             next_state_turn.set(StateTurn::Active);
                         }   
                         if load_next_level == true {
+                            physics_timer_check = true;
                             game_handler.current_level_set_next_level();
                             run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
                         }         
@@ -110,6 +120,13 @@ pub fn turn_handler_set_turn_next(
             StateGame::NotInGame => {},
         };
     }
+    if physics_timer_check == true {
+        commands.spawn((
+            SpawnPhysicsCheckTimer {
+                timer: Timer::new(Duration::from_millis(2500), TimerMode::Once), 
+            },
+        ));
+    };
     run_trigger.set_target("turn_handler_set_turn_next", false);
     info!("post response: turn_handler_set_turn_next: [{}]", run_trigger.get("turn_handler_set_turn_next"));  
 }

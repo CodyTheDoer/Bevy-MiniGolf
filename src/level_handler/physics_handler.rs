@@ -92,8 +92,14 @@ pub fn add_physics_query_and_update_scene(
     scene_meshes: Query<(Entity, &Name, &Handle<Mesh>)>,
     mut gb_query: Query<(Entity, &mut GolfBall)>,
     mut run_trigger: ResMut<RunTrigger>,
-    game_handler: Res<GameHandler>,
+    mut game_handler: ResMut<GameHandler>,
 ) {
+    game_handler.add_physics_attempts_add_one();
+    if game_handler.add_physics_attempts_get() >= 3 {
+        // run load map again and reset count
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        game_handler.add_physics_attempts_reset();
+    }
     info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.environment_loaded()); 
     if game_handler.environment_loaded() && game_handler.golf_balls_loaded() {
         {

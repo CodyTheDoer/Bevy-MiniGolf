@@ -194,7 +194,7 @@ pub fn ray_release(
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
                             run_trigger.set_target("game_handler_start_local_front_nine", true);
                         },
-                        "map_set_back_nine_text" | "map_set_back_nine_board.0" => {
+                        "map_set_back_nine_text" | "map_set_back_nine_text_board" | "map_set_back_nine_board.0" => {
                             run_trigger.set_target("game_handler_start_local_back_nine", true);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {

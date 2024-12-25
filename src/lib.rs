@@ -84,6 +84,7 @@ pub struct GameHandler {
     network_server_connection: bool,
     remote_game: bool,
     current_level: i32,
+    add_physics_attempts: i32,
     game_id: Option<Uuid>,
     remotely_pushed_state: Option<StateUpdateRef>,
 }
@@ -269,6 +270,11 @@ pub struct PurgeHandler {
     pub golf_balls_purged: bool,
 }
 
+#[derive(Component)]
+pub struct ResetTimer {
+    pub timer: Timer,
+}
+
 #[derive(Debug, Event)]
 pub struct SceneInstancePurgedEnvironment {}
 
@@ -295,6 +301,11 @@ pub struct SceneInstanceSpawnedEnvironment {
 #[derive(Debug, Event)]
 pub struct SceneInstanceSpawnedGolfBalls {
     pub entity: Entity,
+}
+
+#[derive(Component)]
+pub struct SpawnPhysicsCheckTimer {
+    pub timer: Timer,
 }
 
 // --- State Enums --- //

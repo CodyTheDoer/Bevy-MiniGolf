@@ -37,6 +37,7 @@ impl GameHandler {
             network_server_connection: false,
             remote_game: false,
             current_level: 0,
+            add_physics_attempts: 0,
             game_id: None,
             remotely_pushed_state: None,
         }
@@ -134,6 +135,20 @@ impl GameHandler {
 
     pub fn remote_game(&self) -> bool {
         self.remote_game
+    }
+
+    // add_physics_attempts logic 
+
+    pub fn add_physics_attempts_get(&self) -> i32 {
+        self.add_physics_attempts
+    }
+
+    pub fn add_physics_attempts_add_one(&mut self) {
+        self.add_physics_attempts += 1;
+    }
+
+    pub fn add_physics_attempts_reset(&mut self) {
+        self.add_physics_attempts = 0;
     }
 
     // Game ID Logic

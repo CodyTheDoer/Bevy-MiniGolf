@@ -1,17 +1,13 @@
 // --- Internal Bevy Plugins --- //
-use bevy::{prelude::*,
-    input::common_conditions::{
+use bevy::{input::common_conditions::{
         input_just_pressed, 
         input_just_released,
         input_pressed,
-    },
-    time::common_conditions::on_timer,
-    utils::Duration, 
-    window::{
+    }, prelude::*, time::common_conditions::on_timer, utils::Duration, window::{
         PresentMode, 
         // WindowMode::BorderlessFullscreen, 
         WindowTheme,
-    },
+    }
 };
 
 // --- External Plugins --- //
@@ -48,6 +44,7 @@ use minigolf::{
     Party,
     PhysicsHandler,
     PurgeHandler,
+    ResetTimer,
     RunTrigger,
     SceneInstanceOutOfBoundGolfBall,
     SceneInstancePurgedEnvironment,
@@ -55,6 +52,7 @@ use minigolf::{
     SceneInstanceRespawnedGolfBall,
     SceneInstanceSpawnedEnvironment,
     SceneInstanceSpawnedGolfBalls,
+    SpawnPhysicsCheckTimer,
     StatesRef,
     UpdateIdResource,
 };
@@ -325,6 +323,7 @@ fn main() {
         .add_systems(Update, golf_ball_query.run_if(input_just_pressed(KeyCode::KeyU)))
         .add_systems(Update, debug_names_query.run_if(input_just_pressed(KeyCode::KeyO)))
         .add_systems(Update, party_query.run_if(input_just_pressed(KeyCode::KeyP)))
+        .add_systems(Update, level_init_spawn_physics_check_timer_listener)
         .add_systems(Update, listening_function_local_all_sleeping)
         .add_systems(Update, listening_function_local_add_physics
             .run_if(on_timer(Duration::from_millis(500))))
@@ -337,6 +336,7 @@ fn main() {
         // .add_systems(Update, local_party_interface_ai_material_toggle)
         .add_systems(Update, local_party_interface_visibliity_toggle)
         .add_systems(Update, golf_ball_handler_respawn_golf_ball)
+        .add_systems(Update, golf_ball_handler_respawn_timer_listener)
         .add_systems(Update, golf_ball_handler_update_locations_while_in_game)
         .add_systems(Update, golf_balls_update_sleep_status)
         .add_systems(Update, |mut party: ResMut<Party>|party.update_ai_index_vec())
@@ -372,10 +372,49 @@ fn golf_ball_handler_update_locations_while_in_game(
     };
 }
 
-#[derive(Component)]
-struct ResetTimer {
-    /// track if resets occur within a certain time passed
-    timer: Timer,
+fn level_init_spawn_physics_check_timer_listener(
+    mut commands: Commands,
+    mut run_trigger: ResMut<RunTrigger>,
+    mut q: Query<(Entity, &mut SpawnPhysicsCheckTimer)>,
+    golf_balls: Query<&Transform, With<GolfBall>>,
+    time: Res<Time>,
+) {
+    for (entity, mut spawn_physics_check_timer) in q.iter_mut() {
+        // timers gotta be ticked, to work
+        spawn_physics_check_timer.timer.tick(time.delta());
+
+        // if it finished, despawn the bomb
+        if spawn_physics_check_timer.timer.finished() {
+            let mut still_at_zero = false;
+            for transform in golf_balls.iter() {
+                if transform.translation == Vec3::ZERO {
+                    still_at_zero = true;
+                }
+            }
+            if still_at_zero == true {
+                run_trigger.set_target("add_physics_query_and_update_scene", true);
+            }
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+fn golf_ball_handler_respawn_timer_listener(
+    mut commands: Commands,
+    mut game_handler: ResMut<GameHandler>,
+    mut q: Query<(Entity, &mut ResetTimer)>,
+    time: Res<Time>,
+) {
+    for (entity, mut reset_timer) in q.iter_mut() {
+        // timers gotta be ticked, to work
+        reset_timer.timer.tick(time.delta());
+
+        // if it finished, despawn the bomb
+        if reset_timer.timer.finished() {
+            game_handler.set_target("golf_balls_reset", false);
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 fn golf_ball_handler_respawn_golf_ball(
@@ -386,8 +425,6 @@ fn golf_ball_handler_respawn_golf_ball(
     mut oob_event_reader: EventReader<SceneInstanceOutOfBoundGolfBall>,
     mut asset_event_writer: EventWriter<SceneInstanceRespawnedGolfBall>,
     mut game_handler: ResMut<GameHandler>,
-    mut q: Query<(Entity, &mut ResetTimer)>,
-    time: Res<Time>,
 ) {
     for event in oob_event_reader.read() {
         info!("golf Ball Out Of Bounds: [{:?}]", event);
@@ -404,16 +441,6 @@ fn golf_ball_handler_respawn_golf_ball(
                     timer: Timer::new(Duration::from_millis(1000), TimerMode::Once), 
                 },
             ));
-            for (entity, mut reset_timer) in q.iter_mut() {
-                // timers gotta be ticked, to work
-                reset_timer.timer.tick(time.delta());
-        
-                // if it finished, despawn the bomb
-                if reset_timer.timer.finished() {
-                    game_handler.set_target("golf_balls_reset", false);
-                    commands.entity(entity).despawn();
-                }
-            }
         } else {
             if game_handler.in_game() && game_handler.golf_balls_reset() {
                 run_trigger.set_target("add_physics_query_and_update_scene", true);
