@@ -28,22 +28,22 @@ impl GLBStorageID {
             "glb/menu/main_menu.glb",           //  0
             "glb/map/level_1.glb",              //  1
             "glb/map/level_2.glb",              //  2
-            "glb/map/level_1.glb",              //  3
-            "glb/map/level_2.glb",              //  4
-            "glb/map/level_1.glb",              //  5
-            "glb/map/level_2.glb",              //  6
-            "glb/map/level_1.glb",              //  7
-            "glb/map/level_2.glb",              //  8
-            "glb/map/level_1.glb",              //  9
-            "glb/map/level_2.glb",              // 10
-            "glb/map/level_1.glb",              // 11
-            "glb/map/level_2.glb",              // 12
-            "glb/map/level_1.glb",              // 13
-            "glb/map/level_2.glb",              // 14
-            "glb/map/level_1.glb",              // 15
-            "glb/map/level_2.glb",              // 16
-            "glb/map/level_1.glb",              // 17
-            "glb/map/level_2.glb",              // 18
+            "glb/map/level_3.glb",              //  3
+            "glb/map/level_4.glb",              //  4
+            "glb/map/level_5.glb",              //  5
+            "glb/map/level_6.glb",              //  6
+            "glb/map/level_7.glb",              //  7
+            "glb/map/level_8.glb",              //  8
+            "glb/map/level_9.glb",              //  9
+            "glb/map/level_10.glb",              // 10
+            "glb/map/level_11.glb",              // 11
+            "glb/map/level_12.glb",              // 12
+            "glb/map/level_13.glb",              // 13
+            "glb/map/level_14.glb",              // 14
+            "glb/map/level_15.glb",              // 15
+            "glb/map/level_16.glb",              // 16
+            "glb/map/level_17.glb",              // 17
+            "glb/map/level_18.glb",              // 18
             "glb/map/level_tutorial.glb",       // 19
             "glb/menu/menu_leader_board.glb",   // 20
             "glb/menu/menu_local.glb",          // 21

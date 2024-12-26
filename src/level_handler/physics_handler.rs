@@ -717,7 +717,7 @@ pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>)
     // Set fixed timestep mode
     rapier_config.timestep_mode = TimestepMode::Fixed {
         dt: 1.0 / 60.0,       // Physics update rate
-        substeps: 4,          // Number of physics steps per frame
+        substeps: 8,          // Number of physics steps per frame
     };
 
     // Enable/disable physics systems
