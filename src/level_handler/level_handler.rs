@@ -209,72 +209,72 @@ pub fn level_handler_set_state_next_level(
     {
         match state_level.get() {
             StateLevel::Hole1 => {
-                game_handler.current_level_set(2);
                 next_level.set(StateLevel::Hole2);
+                game_handler.current_level_set(2);
             },
             StateLevel::Hole2 => {
-                game_handler.current_level_set(3);
                 next_level.set(StateLevel::Hole3);
+                game_handler.current_level_set(3);
             },
             StateLevel::Hole3 => {
-                game_handler.current_level_set(4);
                 next_level.set(StateLevel::Hole4);
+                game_handler.current_level_set(4);
             },
             StateLevel::Hole4 => {
-                game_handler.current_level_set(5);
                 next_level.set(StateLevel::Hole5);
+                game_handler.current_level_set(5);
             },
             StateLevel::Hole5 => {
-                game_handler.current_level_set(6);
                 next_level.set(StateLevel::Hole6);
+                game_handler.current_level_set(6);
             },
             StateLevel::Hole6 => {
-                game_handler.current_level_set(7);
                 next_level.set(StateLevel::Hole7);
+                game_handler.current_level_set(7);
             },
             StateLevel::Hole7 => {
-                game_handler.current_level_set(8);
                 next_level.set(StateLevel::Hole8);
+                game_handler.current_level_set(8);
             },
             StateLevel::Hole8 => {
-                game_handler.current_level_set(9);
                 next_level.set(StateLevel::Hole9);
+                game_handler.current_level_set(9);
             },
             StateLevel::Hole9 => {
-                game_handler.current_level_set(10);
                 next_level.set(StateLevel::Hole10);
+                game_handler.current_level_set(10);
             },
             StateLevel::Hole10 => {
-                game_handler.current_level_set(11);
                 next_level.set(StateLevel::Hole11);
+                game_handler.current_level_set(11);
             },
             StateLevel::Hole11 => {
-                game_handler.current_level_set(12);
                 next_level.set(StateLevel::Hole12);
+                game_handler.current_level_set(12);
             },
             StateLevel::Hole12 => {
-                game_handler.current_level_set(13);
                 next_level.set(StateLevel::Hole13);
+                game_handler.current_level_set(13);
             },
             StateLevel::Hole13 => {
-                game_handler.current_level_set(14);
                 next_level.set(StateLevel::Hole14);
+                game_handler.current_level_set(14);
             },
             StateLevel::Hole14 => {
-                game_handler.current_level_set(15);
                 next_level.set(StateLevel::Hole15);
+                game_handler.current_level_set(15);
             },
             StateLevel::Hole15 => {
-                game_handler.current_level_set(16);
                 next_level.set(StateLevel::Hole16);
+                game_handler.current_level_set(16);
             },
             StateLevel::Hole16 => {
-                game_handler.current_level_set(17);
                 next_level.set(StateLevel::Hole17);
+                game_handler.current_level_set(17);
             },
             StateLevel::Hole17 => {
-                game_handler.current_level_set(18);
                 next_level.set(StateLevel::Hole18);
+                game_handler.current_level_set(18);
             },
             _ => {},
         };

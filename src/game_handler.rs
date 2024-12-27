@@ -405,13 +405,15 @@ pub fn game_handler_game_state_start_routines(
 pub fn game_handler_start_tutorial(
     mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_level_state: ResMut<NextState<StateLevel>>,
     mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_tutorial"); 
     {
         game_handler.current_level_set_tutorial();
-        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_level_state.set(StateLevel::HoleTutorial);
         next_map_set_state.set(StateMapSet::Tutorial);
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
         run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_tutorial", false);
@@ -421,13 +423,15 @@ pub fn game_handler_start_tutorial(
 pub fn game_handler_start_local_back_nine(
     mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_level_state: ResMut<NextState<StateLevel>>,
     mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_local_back_nine"); 
     {
         game_handler.current_level_set(10);
-        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_level_state.set(StateLevel::Hole10);
         next_map_set_state.set(StateMapSet::BackNine);
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
         run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_local_back_nine", false);
@@ -437,13 +441,15 @@ pub fn game_handler_start_local_back_nine(
 pub fn game_handler_start_local_front_nine(
     mut game_handler: ResMut<GameHandler>,
     mut run_trigger: ResMut<RunTrigger>,
+    mut next_level_state: ResMut<NextState<StateLevel>>,
     mut next_map_set_state: ResMut<NextState<StateMapSet>>,
 ) {
     info!("function: game_handler_start_local_front_nine"); 
     {
         game_handler.current_level_set(1);
-        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        next_level_state.set(StateLevel::Hole1);
         next_map_set_state.set(StateMapSet::FrontNine);
+        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
         run_trigger.set_target("game_handler_game_start", true);
     }
     run_trigger.set_target("game_handler_start_local_front_nine", false);
