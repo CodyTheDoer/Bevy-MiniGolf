@@ -118,7 +118,7 @@ pub fn easy_vec_ui(
                 left_data_vec.push(String::from(format!("last_position: [{:?}], position: [{:?}]", golf_ball.0.last_position, golf_ball.0.position )));
             }
         }
-        left_data_vec.push(String::from(format!("______________________________________________________________________________________________________________________")));
+        left_data_vec.push(String::from(format!("___________________________________________________________________________________________________________________________")));
     }
 
     let all_states = &all_states_ref.all_states;
@@ -127,7 +127,7 @@ pub fn easy_vec_ui(
     }
 
     let dedicated_data_vec = vec![
-        String::from(format!("______________________________________________________________________________________________________________________")),
+        String::from(format!("___________________________________________________________________________________________________________________________")),
         String::from(format!("Remote Game: {:?}", game_handler.remote_game())),
         String::from(format!("Current Level: {:?}", game_handler.current_level_get())),
         String::from(format!("Party Size: {:?}", party.party_size())),
@@ -138,7 +138,7 @@ pub fn easy_vec_ui(
         String::from(format!("Active Player: hole_completion_state: {:?}", party.active_player_get_hole_completion_state())),
         String::from(format!("Leader Board: Stored Game Records: {:?}", leader_board.get_game_count())),
         String::from(format!("Active Player Scorecard: {:?}", party.active_player_get_score())),
-        String::from(format!("______________________________________________________________________________________________________________________")),
+        String::from(format!("___________________________________________________________________________________________________________________________")),
         String::from(format!("Num1: RemoveLastPlayer,   Num3: RemoveAi,")),
         String::from(format!("Num7: Add: PlayerLocal,   Num8: Add: PlayerRemote,   Num9: Add: PlayerAI")),
         String::from(format!("KeyB: party.active_player_add_bonk,   Space: toggle_state_game")),
