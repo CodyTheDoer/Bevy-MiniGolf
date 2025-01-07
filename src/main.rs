@@ -33,10 +33,12 @@ use minigolf::{
 use minigolf::{
     BonkHandler,
     CameraHandler,
+    CheckStateGH,
+    CheckStatePH,
+    CheckStateRT,
     ClientProtocol,
     DatabaseConnection,
     GameHandler,
-    CheckStateGH,
     GLBStorageID,
     GolfBall,
     LeaderBoard,
@@ -265,57 +267,56 @@ fn main() {
         .add_systems(Update, easy_vec_ui)
 
         // Run Trigger Systems //
-        .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.add_physics_query_and_update_scene()))
+        .add_systems(Update, add_physics_query_and_update_scene.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::AddPhysicsQueryAndUpdateScene)))
 
-        .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera()))
-        // .add_systems(Update, camera_handler_cycle_state_camera_menu_target.run_if(|run_trigger: Res<RunTrigger>|run_trigger.camera_handler_cycle_state_camera_menu_target()))
+        .add_systems(Update, camera_handler_cycle_state_camera.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::CameraHandlerCycleStateCamera)))
 
-        .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_start()))
-        .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_exit_routines()))
-        .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_game_state_start_routines()))
+        .add_systems(Update, game_handler_game_start.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerGameStart)))
+        .add_systems(Update, game_handler_game_state_exit_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerGameStateExitRoutines)))
+        .add_systems(Update, game_handler_game_state_start_routines.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerGameStateStartRoutines)))
 
-        .add_systems(Update, game_handler_start_local_back_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_back_nine()))
-        .add_systems(Update, game_handler_start_local_front_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_front_nine()))
-        .add_systems(Update, game_handler_start_local_select_a_hole.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_select_a_hole()))
-        .add_systems(Update, game_handler_start_local_whole_corse.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_local_whole_corse()))
-        .add_systems(Update, game_handler_start_tutorial.run_if(|run_trigger: Res<RunTrigger>|run_trigger.game_handler_start_tutorial()))
+        .add_systems(Update, game_handler_start_local_back_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerStartLocalBackNine)))
+        .add_systems(Update, game_handler_start_local_front_nine.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerStartLocalFrontNine)))
+        .add_systems(Update, game_handler_start_local_select_a_hole.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerStartLocalSelectAHole)))
+        .add_systems(Update, game_handler_start_local_whole_corse.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerStartLocalWholeCorse)))
+        .add_systems(Update, game_handler_start_tutorial.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GameHandlerStartTutorial)))
 
-        .add_systems(Update, golf_ball_handler_update_locations_post_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_update_locations_post_bonk()))
-        .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_end_game()))
-        .add_systems(Update, golf_ball_handler_party_store_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_party_store_locations()))
-        .add_systems(Update, golf_ball_handler_reset_golf_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_reset_golf_ball_locations()))
-        .add_systems(Update, golf_ball_handler_spawn_golf_balls_for_party_members.run_if(|run_trigger: Res<RunTrigger>|run_trigger.golf_ball_handler_spawn_golf_balls_for_party_members()))
+        .add_systems(Update, golf_ball_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GolfBallHandlerEndGame)))
+        .add_systems(Update, golf_ball_handler_party_store_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GolfBallHandlerPartyStoreLocations)))
+        .add_systems(Update, golf_ball_handler_reset_golf_ball_locations.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GolfBallHandlerResetGolfBallLocations)))
+        .add_systems(Update, golf_ball_handler_spawn_golf_balls_for_party_members.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers)))
+        .add_systems(Update, golf_ball_handler_update_locations_post_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk)))
 
-        .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_log_game()))
-        .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.leader_board_review_last_game()))
+        .add_systems(Update, leader_board_log_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LeaderBoardLogGame)))
+        .add_systems(Update, leader_board_review_last_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LeaderBoardReviewLastGame)))
         
-        .add_systems(Update, level_handler_init_level_game_handler_current_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_init_level_game_handler_current_level()))
-        .add_systems(Update, level_handler_next_turn_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_next_turn_protocol()))
-        .add_systems(Update, level_handler_purge_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_purge_protocol()))
-        .add_systems(Update, level_handler_set_state_next_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_level()))
-        .add_systems(Update, level_handler_set_state_next_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.level_handler_set_state_next_map_set()))
+        .add_systems(Update, level_handler_init_level_game_handler_current_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel)))
+        .add_systems(Update, level_handler_next_turn_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LevelHandlerNextTurnProtocol)))
+        .add_systems(Update, level_handler_purge_protocol.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LevelHandlerPurgeProtocol)))
+        .add_systems(Update, level_handler_set_state_next_level.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LevelHandlerSetStateNextLevel)))
+        .add_systems(Update, level_handler_set_state_next_map_set.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::LevelHandlerSetStateNextMapSet)))
 
-        .add_systems(Update, network_get_client_state_all.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_all()))
-        .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.network_get_client_state_game()))
+        .add_systems(Update, network_get_client_state_all.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::NetworkGetClientStateAll)))
+        .add_systems(Update, network_get_client_state_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::NetworkGetClientStateGame)))
 
-        .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_add_bonk()))
-        .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_active_player_set_hole_completion_state_true()))
+        .add_systems(Update, party_handler_active_player_add_bonk.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerActivePlayerAddBonk)))
+        .add_systems(Update, party_handler_active_player_set_hole_completion_state_true.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue)))
         
-        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_cycle_active_player()))
+        .add_systems(Update, party_handler_cycle_active_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerCycleActivePlayer)))
         
-        .add_systems(Update, party_handler_new_player_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_ai()))
-        .add_systems(Update, party_handler_new_player_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_local()))
-        .add_systems(Update, party_handler_new_player_remote.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_new_player_remote()))
+        .add_systems(Update, party_handler_new_player_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerNewPlayerAi)))
+        .add_systems(Update, party_handler_new_player_local.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerNewPlayerLocal)))
+        .add_systems(Update, party_handler_new_player_remote.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerNewPlayerRemote)))
         
-        .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_ai()))
-        .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_last_player()))
-        .add_systems(Update, party_handler_remove_local_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.party_handler_remove_local_player()))
+        .add_systems(Update, party_handler_remove_ai.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerRemoveAi)))
+        .add_systems(Update, party_handler_remove_last_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerRemoveLastPlayer)))
+        .add_systems(Update, party_handler_remove_local_player.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::PartyHandlerRemoveLocalPlayer)))
 
-        .add_systems(Update, turn_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_end_game()))
-        .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_next_round_prep()))
-        .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.turn_handler_set_turn_next()))
+        .add_systems(Update, turn_handler_end_game.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::TurnHandlerEndGame)))
+        .add_systems(Update, turn_handler_next_round_prep.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::TurnHandlerNextRoundPrep)))
+        .add_systems(Update, turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::TurnHandlerSetTurnNext)))
 
-        .add_systems(Update, start_movement_listener_turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.start_movement_listener_turn_handler_set_turn_next()))
+        .add_systems(Update, start_movement_listener_turn_handler_set_turn_next.run_if(|run_trigger: Res<RunTrigger>|run_trigger.get(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext)))
 
         .add_systems(Update, temp_interface)
         .add_systems(Update, debug_with_optional_parent.run_if(input_just_pressed(KeyCode::KeyT)))
@@ -392,7 +393,7 @@ fn level_init_spawn_physics_check_timer_listener(
                 }
             }
             if still_at_zero == true {
-                run_trigger.set_target("add_physics_query_and_update_scene", true);
+                run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
             }
             commands.entity(entity).despawn();
         }
@@ -443,7 +444,7 @@ fn golf_ball_handler_respawn_golf_ball(
             ));
         } else {
             if game_handler.get(CheckStateGH::InGame) && game_handler.get(CheckStateGH::GolfBallsReset) {
-                run_trigger.set_target("add_physics_query_and_update_scene", true);
+                run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
             }
         }
     }
@@ -460,7 +461,7 @@ fn golf_ball_query(
 fn last_game_record(
     mut run_trigger: ResMut<RunTrigger>,
 ) {
-    run_trigger.set_target("leader_board_review_last_game", true);
+    run_trigger.set_target(CheckStateRT::LeaderBoardReviewLastGame, true);
 }
 
 fn listening_function_local_all_finished(
@@ -469,7 +470,7 @@ fn listening_function_local_all_finished(
     party: Res<Party>,
 ) {
     if party.all_finished() && !game_handler.get(CheckStateGH::RemoteGame) {
-        run_trigger.set_target("turn_handler_set_turn_next", true);
+        run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);
     }
 }
 
@@ -508,7 +509,7 @@ fn listening_function_local_add_physics(
     }
     if !game_handler.get(CheckStateGH::RemoteGame) && game_handler.get(CheckStateGH::InGame) && game_handler.get(CheckStateGH::RoundStart) && count == 0 {
         game_handler.set_target(CheckStateGH::RoundStart, false);
-        run_trigger.set_target("add_physics_query_and_update_scene", true);
+        run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
     }
 }
 
@@ -559,12 +560,12 @@ fn listening_function_purge_events(
 ) {
     for event in purge_event_reader_environment.read() {
         info!("Environment Purged: [{:?}]", event);
-        purge_handler.set_target("environment_purged", true);
+        purge_handler.set_target(CheckStatePH::EnvironmentPurged, true);
         game_handler.set_target(CheckStateGH::EnvironmentLoaded, false);
     }
     for event in purge_event_reader_golf_balls.read() {
         info!("Environment Purged: [{:?}]", event);
-        purge_handler.set_target("golf_balls_purged", true);
+        purge_handler.set_target(CheckStatePH::GolfBallsPurged, true);
         game_handler.set_target(CheckStateGH::GolfBallsLoaded, false);
     }
 }
@@ -577,12 +578,12 @@ fn listening_function_spawned_environment_events(
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
-        purge_handler.set_target("environment_purged", false);
+        purge_handler.set_target(CheckStatePH::EnvironmentPurged, false);
         game_handler.set_target(CheckStateGH::EnvironmentLoaded, true);
         match game_handler.get(CheckStateGH::InGame) {
             true => {
                 info!("listening_function_spawned_environment_events: In Game: Triggering Golf Ball pipeline");
-                run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
+                run_trigger.set_target(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers, true);
             },
             false => {
                 info!("listening_function_spawned_environment_events: Not In Game");},
@@ -598,9 +599,9 @@ fn listening_function_spawned_golf_ball_events(
 ) {
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
-        purge_handler.set_target("golf_balls_purged", false);
+        purge_handler.set_target(CheckStatePH::GolfBallsPurged, false);
         game_handler.set_target(CheckStateGH::GolfBallsLoaded, true);
-        run_trigger.set_target("add_physics_query_and_update_scene", true);
+        run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
     }
 }
 
@@ -617,11 +618,11 @@ fn start_movement_listener_turn_handler_set_turn_next(
     {
         if game_handler.get(CheckStateGH::AllSleeping) {
             info!("function: start_movement_listener_turn_handler_set_turn_next"); 
-            run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
-            run_trigger.set_target("golf_ball_handler_party_store_locations", true);
-            run_trigger.set_target("turn_handler_set_turn_next", true);
-            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
-            info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get("start_movement_listener_turn_handler_set_turn_next"));  
+            run_trigger.set_target(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk, true);
+            run_trigger.set_target(CheckStateRT::GolfBallHandlerPartyStoreLocations, true);
+            run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);
+            run_trigger.set_target(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext, false);
+            info!("post response: start_movement_listener_turn_handler_set_turn_next: [{}]", run_trigger.get(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext));  
         }
     }
 }
@@ -638,7 +639,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue, true);
             },
         };
     };
@@ -647,24 +648,24 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("party_handler_active_player_add_bonk", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerAddBonk, true);
             },
         };
     };
     if keys.just_released(KeyCode::KeyC) {
         info!("just_released: KeyC");
-        run_trigger.set_target("camera_handler_cycle_state_camera", true);
+        run_trigger.set_target(CheckStateRT::CameraHandlerCycleStateCamera, true);
     };
     if keys.just_released(KeyCode::KeyI) {
         info!("just_released: KeyI");
-        run_trigger.set_target("add_physics_query_and_update_scene", true);
+        run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
     };
     if keys.just_released(KeyCode::KeyM) {
         info!("just_released: KeyM");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("level_handler_set_state_next_map_set", true);
+                run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextMapSet, true);
             },
         };
     };
@@ -673,7 +674,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("turn_handler_set_turn_next", true);
+                run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);
             },
         };
     };
@@ -682,34 +683,30 @@ fn temp_interface(
         match state_game.get() {
             StateGame::NotInGame => {},
             StateGame::InGame => {
-                run_trigger.set_target("party_handler_cycle_active_player", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerCycleActivePlayer, true);
             },
         };
     };
     if keys.just_released(KeyCode::KeyQ) {
         info!("just_released: KeyQ");  
-        run_trigger.set_target("network_get_client_state_all", true);
+        run_trigger.set_target(CheckStateRT::NetworkGetClientStateAll, true);
     };
     if keys.just_released(KeyCode::KeyS) {
         info!("just_released: KeyS");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("level_handler_purge_protocol", true);
-                run_trigger.set_target("game_handler_game_start", true);
+                run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, true);
+                run_trigger.set_target(CheckStateRT::GameHandlerGameStart, true);
             },
         };
-    };
-    if keys.just_released(KeyCode::KeyV) {
-        info!("just_released: KeyV");  
-        run_trigger.set_target("camera_handler_cycle_state_camera_menu_target", true);
     };
     if keys.just_released(KeyCode::Numpad1) {
         info!("just_released: Numpad1");  
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("party_handler_remove_last_player", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLastPlayer, true);
             },
         };
     };
@@ -718,7 +715,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("party_handler_remove_ai", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerRemoveAi, true);
             },
         };
     };
@@ -727,7 +724,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("party_handler_new_player_local", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerLocal, true);
             },
         };
     };
@@ -736,7 +733,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("party_handler_new_player_remote", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerRemote, true);
             },
         };
     };
@@ -745,7 +742,7 @@ fn temp_interface(
         match state_game.get() {
             StateGame::InGame => {},
             StateGame::NotInGame => {
-                run_trigger.set_target("party_handler_new_player_ai", true);
+                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerAi, true);
             },
         };
     };

@@ -10,6 +10,7 @@ use crate::StateGame;
 
 // Resources
 use crate::{
+    CheckStateRT,
     GameHandler,
     Party,
     Player,
@@ -369,8 +370,8 @@ pub fn party_handler_active_player_add_bonk(
             _ => {},
         }
     }
-    run_trigger.set_target("party_handler_active_player_add_bonk", false);
-    info!("post response: party_handler_active_player_add_bonk: {}", run_trigger.get("party_handler_active_player_add_bonk"));   
+    run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerAddBonk, false);
+    info!("post response: party_handler_active_player_add_bonk: {}", run_trigger.get(CheckStateRT::PartyHandlerActivePlayerAddBonk));   
 }
 
 pub fn party_handler_active_player_set_hole_completion_state_true(
@@ -387,8 +388,8 @@ pub fn party_handler_active_player_set_hole_completion_state_true(
             StateGame::NotInGame => {},
         };
     }
-    run_trigger.set_target("party_handler_active_player_set_hole_completion_state_true", false);
-    info!("post response: party_handler_active_player_set_hole_completion_state_true: {}", run_trigger.get("party_handler_active_player_set_hole_completion_state_true"));   
+    run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue, false);
+    info!("post response: party_handler_active_player_set_hole_completion_state_true: {}", run_trigger.get(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue));   
 }
 
 pub fn party_handler_cycle_active_player( 
@@ -397,7 +398,7 @@ pub fn party_handler_cycle_active_player(
 ) {
     info!("function: party_handler_cycle_active_player"); 
     {
-        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
+        run_trigger.set_target(CheckStateRT::GolfBallHandlerPartyStoreLocations, true);
 
         let finished_count = party.all_players_get_finished_count() as usize;
         let party_size = party.party_size();
@@ -414,8 +415,8 @@ pub fn party_handler_cycle_active_player(
             }
         }
     }
-    run_trigger.set_target("party_handler_cycle_active_player", false);
-    info!("post response: party_handler_cycle_active_player: {}", run_trigger.get("party_handler_cycle_active_player"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerCycleActivePlayer, false);
+    info!("post response: party_handler_cycle_active_player: {}", run_trigger.get(CheckStateRT::PartyHandlerCycleActivePlayer));  
 }
 
 pub fn party_handler_new_player_ai(
@@ -428,8 +429,8 @@ pub fn party_handler_new_player_ai(
         let new_player = Arc::new(Mutex::new(new_player_ai));
         party.players_add_player(new_player);
     }
-    run_trigger.set_target("party_handler_new_player_ai", false);
-    info!("post response: party_handler_new_player_ai: {}", run_trigger.get("party_handler_new_player_ai"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerAi, false);
+    info!("post response: party_handler_new_player_ai: {}", run_trigger.get(CheckStateRT::PartyHandlerNewPlayerAi));  
 }
 
 pub fn party_handler_new_player_local(
@@ -447,8 +448,8 @@ pub fn party_handler_new_player_local(
             party.players_add_player(new_player);
         };
     }
-    run_trigger.set_target("party_handler_new_player_local", false);
-    info!("post response: party_handler_new_player_local: {}", run_trigger.get("party_handler_new_player_local"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerLocal, false);
+    info!("post response: party_handler_new_player_local: {}", run_trigger.get(CheckStateRT::PartyHandlerNewPlayerLocal));  
 }
 
 pub fn party_handler_new_player_remote(
@@ -461,8 +462,8 @@ pub fn party_handler_new_player_remote(
         let new_player = Arc::new(Mutex::new(new_player_remote));
         party.players_add_player(new_player);
     }
-    run_trigger.set_target("party_handler_new_player_remote", false);
-    info!("post response: party_handler_new_player_remote: {}", run_trigger.get("party_handler_new_player_remote"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerRemote, false);
+    info!("post response: party_handler_new_player_remote: {}", run_trigger.get(CheckStateRT::PartyHandlerNewPlayerRemote));  
 
 }
 
@@ -474,8 +475,8 @@ pub fn party_handler_remove_ai(
     {
         party.players_remove_ai();
     }
-    run_trigger.set_target("party_handler_remove_ai", false);
-    info!("post response: party_handler_remove_ai: {}", run_trigger.get("party_handler_remove_ai"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerRemoveAi, false);
+    info!("post response: party_handler_remove_ai: {}", run_trigger.get(CheckStateRT::PartyHandlerRemoveAi));  
 }
 
 pub fn party_handler_remove_last_player(
@@ -486,8 +487,8 @@ pub fn party_handler_remove_last_player(
     {
         party.players_remove_last_player();
     }
-    run_trigger.set_target("party_handler_remove_last_player", false);
-    info!("post response: party_handler_remove_last_player: {}", run_trigger.get("party_handler_remove_last_player"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLastPlayer, false);
+    info!("post response: party_handler_remove_last_player: {}", run_trigger.get(CheckStateRT::PartyHandlerRemoveLastPlayer));  
 }
 
 pub fn party_handler_remove_local_player(
@@ -498,8 +499,8 @@ pub fn party_handler_remove_local_player(
     {
         party.players_remove_local_player();
     }
-    run_trigger.set_target("party_handler_remove_local_player", false);
-    info!("post response: party_handler_remove_local_player: {}", run_trigger.get("party_handler_remove_local_player"));  
+    run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLocalPlayer, false);
+    info!("post response: party_handler_remove_local_player: {}", run_trigger.get(CheckStateRT::PartyHandlerRemoveLocalPlayer));  
 }
 
 

@@ -5,7 +5,6 @@ use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
 // State
 use crate::{
-    // StateCameraMenuTarget, 
     StateCameraOrbitEntity, 
     StatePanOrbit,
 };
@@ -14,6 +13,7 @@ use crate::{
 use crate::{
     CameraHandler, 
     CameraWorld,
+    CheckStateRT,
     GolfBall,
     PanOrbitAction,
     PanOrbitCameraBundle,
@@ -83,8 +83,8 @@ pub fn camera_handler_cycle_state_camera(
             next_camera_orbit_entity_state.set(StateCameraOrbitEntity::Menu);
         },
     }
-    run_trigger.set_target("camera_handler_cycle_state_camera", false);
-    info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get("camera_handler_cycle_state_camera"));  
+    run_trigger.set_target(CheckStateRT::CameraHandlerCycleStateCamera, false);
+    info!("post response: camera_handler_cycle_state_camera: {}", run_trigger.get(CheckStateRT::CameraHandlerCycleStateCamera));  
 }
 
 pub fn setup_3d_camera(

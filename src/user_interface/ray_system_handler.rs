@@ -4,7 +4,8 @@ use bevy_mod_raycast::prelude::*;
 
 // --- resource Imports --- //
 use crate::{
-    CameraWorld, 
+    CameraWorld,
+    CheckStateRT, 
     GameHandler, 
     Interactable, 
     Party,
@@ -119,32 +120,32 @@ pub fn ray_release(
                     match owned_name {
                         // --- Menu: Main Interface Mapping --- //
                         "main_menu_interface_tutorial" => {
-                            run_trigger.set_target("game_handler_start_tutorial", true);
+                            run_trigger.set_target(CheckStateRT::GameHandlerStartTutorial, true);
                         },
                         "main_menu_interface_leaderboard" | "main_menu_interface_leaderboard_board.0" => {
                             game_handler.current_level_set_menu_learderboard();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_left = true;
                         },
                         "main_menu_interface_local" => {
-                            run_trigger.set_target("level_handler_purge_protocol", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, true);
                             game_handler.current_level_set_menu_local();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_right = true;
                         },
                         "main_menu_interface_online" => {
                             game_handler.current_level_set_menu_online();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_right = true;
                         },
                         "main_menu_interface_preferences" => {
                             game_handler.current_level_set_menu_preferences();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_left = true;
                         },
                         "main_menu_player_text" | "main_menu_player_board.0" => {
                             game_handler.current_level_set_menu_player();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_left = true;
                         }
                         /* 
@@ -156,7 +157,7 @@ pub fn ray_release(
                         // --- Menu: Common Interactions --- //
                         "main_menu_text" | "main_menu_board.0" => {
                             game_handler.current_level_set(0);
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                             menu_camera_adj_left = true;
                         },
 
@@ -167,38 +168,38 @@ pub fn ray_release(
                         // --- Menu: Local Interface Mapping --- //
 
                         "local_button_add_player" | "local_button_add_player_symbol" => {
-                            run_trigger.set_target("party_handler_new_player_local", true);
+                            run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerLocal, true);
                         },
                         "button_add_player" => {
                             if party.get_count_local() < 5 {
-                                run_trigger.set_target("party_handler_new_player_local", true);
+                                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerLocal, true);
                             };
                         },
                         "local_button_sub_player" | "local_button_sub_player_symbol" | "button_sub_player" => {
-                            run_trigger.set_target("party_handler_remove_local_player", true);
+                            run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLocalPlayer, true);
                         },
 
                         "local_button_add_ai" | "local_button_add_ai_symbol" => {
-                            run_trigger.set_target("party_handler_new_player_ai", true);
+                            run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerAi, true);
                         },
                         "local_button_sub_ai" | "local_button_sub_ai_symbol" => {
-                            run_trigger.set_target("party_handler_remove_ai", true);
+                            run_trigger.set_target(CheckStateRT::PartyHandlerRemoveAi, true);
                         },
 
                         // "local_playstyle_toggle_button_ordered.1" => {commands.insert_resource(NextState(PlayThroughStyleState::SetOrder))},
                         // "local_playstyle_toggle_button_proximity.1" => {commands.insert_resource(NextState(PlayThroughStyleState::Proximity))},
 
                         "map_set_whole_course_text" | "map_set_whole_course_board.0" => {
-                            run_trigger.set_target("game_handler_start_local_whole_corse", true);
+                            run_trigger.set_target(CheckStateRT::GameHandlerStartLocalWholeCorse, true);
                         },
                         "map_set_front_nine_text" | "map_set_front_nine_board.0" => {
-                            run_trigger.set_target("game_handler_start_local_front_nine", true);
+                            run_trigger.set_target(CheckStateRT::GameHandlerStartLocalFrontNine, true);
                         },
                         "map_set_back_nine_text" | "map_set_back_nine_text_board" | "map_set_back_nine_board.0" => {
-                            run_trigger.set_target("game_handler_start_local_back_nine", true);
+                            run_trigger.set_target(CheckStateRT::GameHandlerStartLocalBackNine, true);
                         },
                         "map_set_select_a_hole_text" | "map_set_select_a_hole_board.0" => {
-                            run_trigger.set_target("game_handler_start_local_select_a_hole", true);
+                            run_trigger.set_target(CheckStateRT::GameHandlerStartLocalSelectAHole, true);
                         },
 
                         "player_name_name_input_block" => {

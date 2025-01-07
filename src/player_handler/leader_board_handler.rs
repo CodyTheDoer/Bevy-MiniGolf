@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    CheckStateRT,
     GameHandler, 
     GameRecord, 
     LeaderBoard, 
@@ -72,8 +73,8 @@ pub fn leader_board_log_game(
     {
         leader_board.log_game(game_handler, party); 
     }
-    run_trigger.set_target("leader_board_log_game", false);
-    info!("post response: leader_board_log_game: [{}]", run_trigger.get("leader_board_log_game"));  
+    run_trigger.set_target(CheckStateRT::LeaderBoardLogGame, false);
+    info!("post response: leader_board_log_game: [{}]", run_trigger.get(CheckStateRT::LeaderBoardLogGame));  
 }
 
 pub fn leader_board_review_last_game(
@@ -87,6 +88,6 @@ pub fn leader_board_review_last_game(
             leader_board.review_game(record);
         }
     }
-    run_trigger.set_target("leader_board_review_last_game", false);
-    info!("post response: leader_board_review_last_game: [{}]", run_trigger.get("leader_board_review_last_game"));  
+    run_trigger.set_target(CheckStateRT::LeaderBoardReviewLastGame, false);
+    info!("post response: leader_board_review_last_game: [{}]", run_trigger.get(CheckStateRT::LeaderBoardReviewLastGame));  
 }

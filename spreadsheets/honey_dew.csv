@@ -21,4 +21,7 @@ Menu Online: Interface - Party display Minus button to load clipboard interface 
 "Menu Online: Interface - Party board on left to display player names and an image of their golfballs, the party display will have their custom golf ball on display as well.",N,,
 turn transfer - Occasionally players other than number 1 will be first,N,,
 "turn transfer - Game doesn't always end at front 9 end of 9, when so it never ends",N,,
-"online play - Start thinking about mmr systems, location/power tracking, heat maps, time played metrics, etc.",n,,
+"online play - Start thinking about mmr systems, location/power tracking, heat maps, time played metrics, etc.",N,,
+Camera and level - Create walls in glb files and then write shader to turn invsible when intersecting rays hit a green,N,,
+network handler - Update run trigger input from remote call to read the proper enum instead of the str currently used. Commented while refactoring,Y,,Resolved issue with manual parse and call with proper enum call based on remote entry
+golf_ball_handler_update_locations_post_bonk - Locations aren't always being stored correctly,N,,

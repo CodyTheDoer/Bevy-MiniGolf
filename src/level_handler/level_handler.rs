@@ -9,6 +9,8 @@ use crate::{
 
 // Resources
 use crate::{
+    CheckStatePH,
+    CheckStateRT,
     Interactable,
     GameHandler,
     GLBStorageID,
@@ -71,7 +73,7 @@ pub fn level_handler_boot_protocals(
     sl_commands: Commands,
 ) {
     game_handler.current_level_set(0);
-    run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+    run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
     setup_ground(sg_commands, sg_meshes, sg_materials);
     setup_light(sl_commands);
 }
@@ -89,15 +91,15 @@ pub fn level_handler_purge_protocol(
     
     info!("function: level_handler_purge_protocol"); 
     {
-        if purge_handler.get("environment_purged") == false {
+        if purge_handler.get(CheckStatePH::EnvironmentPurged) == false {
             level_handler_purge_env_glb_all(sm_commands, scene_meshes, purge_event_writer_environment);
         }
-        if purge_handler.get("golf_balls_purged") == false {
+        if purge_handler.get(CheckStatePH::GolfBallsPurged) == false {
             level_handler_purge_golf_ball_all(gb_commands, golf_balls, purge_event_writer_golf_ball);
         }
     }
-    run_trigger.set_target("level_handler_purge_protocol", false);
-    info!("post response: level_handler_purge_protocol: [{}]", run_trigger.get("level_handler_purge_protocol"));  
+    run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, false);
+    info!("post response: level_handler_purge_protocol: [{}]", run_trigger.get(CheckStateRT::LevelHandlerPurgeProtocol));  
 }
 
 pub fn level_handler_init_level_game_handler_current_level(
@@ -112,13 +114,13 @@ pub fn level_handler_init_level_game_handler_current_level(
 ) {
     info!("level_handler_init_level_game_handler_current_level: [{}]", game_handler.current_level);
     {
-        info!("Purge Handler: Environment: [{}] Golf Balls [{}]", purge_handler.get("environment_purged"), purge_handler.get("golf_balls_purged"));
+        info!("Purge Handler: Environment: [{}] Golf Balls [{}]", purge_handler.get(CheckStatePH::EnvironmentPurged), purge_handler.get(CheckStatePH::GolfBallsPurged));
         // Write in testing for purge states:
-        if purge_handler.get("environment_purged") && purge_handler.get("golf_balls_purged") {
+        if purge_handler.get(CheckStatePH::EnvironmentPurged) && purge_handler.get(CheckStatePH::GolfBallsPurged) {
             level_handler_init_level(lhi_asset_server, lhi_commands, glb_storage, game_handler.current_level, &mut asset_event_writer);
-            purge_handler.set_target("environment_purged", false);
-            run_trigger.set_target("level_handler_init_level_game_handler_current_level", false);
-            info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get("level_handler_init_level_game_handler_current_level"));
+            purge_handler.set_target(CheckStatePH::EnvironmentPurged, false);
+            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, false);
+            info!("post response: level_handler_init_level_game_handler_current_level: [{}]", run_trigger.get(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel));
             if game_handler.current_level_get() == 0 { // Easy way to fix the boot camera. Probably could do better
                 for mut state in pan_orbit_camera_query.iter_mut() {
                     info!("{:?}", state);
@@ -128,7 +130,7 @@ pub fn level_handler_init_level_game_handler_current_level(
                 }
             }
         } else {
-            run_trigger.set_target("level_handler_purge_protocol", true);
+            run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, true);
         }
     }
 }
@@ -279,8 +281,8 @@ pub fn level_handler_set_state_next_level(
             _ => {},
         };
     }
-    run_trigger.set_target("level_handler_set_state_next_level", false);
-    info!("post response: level_handler_set_state_next_level: {}", run_trigger.get("level_handler_set_state_next_level")); 
+    run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextLevel, false);
+    info!("post response: level_handler_set_state_next_level: {}", run_trigger.get(CheckStateRT::LevelHandlerSetStateNextLevel)); 
 }
 
 pub fn level_handler_set_state_next_map_set(
@@ -317,8 +319,8 @@ pub fn level_handler_set_state_next_map_set(
             },
         };
     }
-    run_trigger.set_target("level_handler_set_state_next_map_set", false);
-    info!("post response: level_handler_set_state_next_map_set: {}", run_trigger.get("level_handler_set_state_next_map_set"));  
+    run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextMapSet, false);
+    info!("post response: level_handler_set_state_next_map_set: {}", run_trigger.get(CheckStateRT::LevelHandlerSetStateNextMapSet));  
 }
 
 pub fn level_handler_next_turn_protocol(
@@ -326,11 +328,11 @@ pub fn level_handler_next_turn_protocol(
 ) {
     info!("function: level_handler_next_turn_protocol"); 
     {
-        run_trigger.set_target("level_handler_set_state_next_level", true);
-        run_trigger.set_target("level_handler_purge_protocol", true);
+        run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextLevel, true);
+        run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, true);
     }
-    run_trigger.set_target("level_handler_next_turn_protocol", false);
-    info!("post response: level_handler_next_turn_protocol: [{}]", run_trigger.get("level_handler_next_turn_protocol"));  
+    run_trigger.set_target(CheckStateRT::LevelHandlerNextTurnProtocol, false);
+    info!("post response: level_handler_next_turn_protocol: [{}]", run_trigger.get(CheckStateRT::LevelHandlerNextTurnProtocol));  
 }
 
 // When exiting state 
@@ -378,40 +380,28 @@ impl PurgeHandler {
         }
     }
     
-    pub fn get(&self, target: &str) -> bool {
+    pub fn get(&self, target: CheckStatePH) -> bool {
         match target {
-            "environment_purged" => {
+            CheckStatePH::EnvironmentPurged => {
                 self.environment_purged
             },
-            "golf_balls_purged" => {
+            CheckStatePH::GolfBallsPurged => {
                 self.golf_balls_purged
             },
-            _ => {false},
         }
     }
 
-    pub fn set_target(&mut self, target: &str, state: bool) {
+    pub fn set_target(&mut self, target: CheckStatePH, state: bool) {
         match target {
-            "environment_purged" => {
+            CheckStatePH::EnvironmentPurged => {
                 self.environment_purged = state;
-                info!("response: environment_purged: {}", self.get("environment_purged"));  
+                info!("response: environment_purged: {}", self.get(CheckStatePH::EnvironmentPurged));  
             },
-            "golf_balls_purged" => {
+            CheckStatePH::GolfBallsPurged => {
                 self.golf_balls_purged = state;
-                info!("response: golf_balls_purged: {}", self.get("golf_balls_purged"));  
-            },
-            _ => {
-                info!("Unrecognized Input: PurgeHandler: {:?}", target);
+                info!("response: golf_balls_purged: {}", self.get(CheckStatePH::GolfBallsPurged));  
             },
         }
-    }
-
-    pub fn environment_purged(&self) -> bool {
-        self.environment_purged
-    }
-
-    pub fn golf_balls_purged(&self) -> bool {
-        self.golf_balls_purged
     }
 }
 

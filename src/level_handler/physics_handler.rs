@@ -15,6 +15,7 @@ use crate::{
 use crate::{
     BonkHandler,
     CheckStateGH,
+    CheckStateRT,
     GameHandler,
     GLBStorageID,
     GolfBall,
@@ -98,7 +99,7 @@ pub fn add_physics_query_and_update_scene(
     game_handler.add_physics_attempts_add_one();
     if game_handler.add_physics_attempts_get() >= 3 {
         // run load map again and reset count
-        run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+        run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
         game_handler.add_physics_attempts_reset();
     }
     info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.get(CheckStateGH::EnvironmentLoaded)); 
@@ -190,8 +191,8 @@ pub fn add_physics_query_and_update_scene(
                 }
             }
         }
-        run_trigger.set_target("add_physics_query_and_update_scene", false);
-        info!("post response: add_physics_query_and_update_scene: [{}]", run_trigger.get("add_physics_query_and_update_scene"));
+        run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, false);
+        info!("post response: add_physics_query_and_update_scene: [{}]", run_trigger.get(CheckStateRT::AddPhysicsQueryAndUpdateScene));
     }  
 }
 
@@ -211,11 +212,11 @@ pub fn bonk(
             torque_impulse: Vec3::new(0.0, 0.0, 0.0),
         }
     );   
-    run_trigger.set_target("party_handler_active_player_add_bonk", true); 
+    run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerAddBonk, true); 
     match playstyle.get() {
         StateGamePlayStyle::SetOrder => {
             game_handler.set_target(CheckStateGH::AllSleeping, false);
-            run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", true);
+            run_trigger.set_target(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext, true);
         }
         StateGamePlayStyle::Proximity => {}
     }
@@ -355,8 +356,8 @@ pub fn collision_events_listener(
                                         info!("1: Golf Ball: [{:?}]", golf_ball.0);
                                         party.player_set_hole_completion_state(golf_ball.0.uuid, true);
                                         commands.entity(golf_ball_ent).despawn();
-                                        run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
-                                        run_trigger.set_target("turn_handler_set_turn_next", true);
+                                        run_trigger.set_target(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext, false);
+                                        run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);
                                     },
                                     "ground_sensor" => {
                                         info!("1: Ooof grounded...");
@@ -377,8 +378,8 @@ pub fn collision_events_listener(
                                         info!("1: Golf Ball: [{:?}]", golf_ball.0);
                                         party.player_set_hole_completion_state(golf_ball.0.uuid, true);
                                         commands.entity(golf_ball_ent).despawn();
-                                        run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", false);
-                                        run_trigger.set_target("turn_handler_set_turn_next", true);
+                                        run_trigger.set_target(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext, false);
+                                        run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);
                                     },
                                     "ground_sensor" => {
                                         info!("1: Ooof grounded...");
@@ -408,6 +409,8 @@ pub fn collision_events_listener(
         for (golf_ball_ent, _) in golf_balls.iter() {
             commands.entity(golf_ball_ent).despawn();
         };
+
+        info!("out_of_bounds: respawn_event_writer[InfoVec] \n {:?}", info_vec);
         
         respawn_event_writer.send(SceneInstanceOutOfBoundGolfBall {
             info_vec: info_vec,
@@ -471,12 +474,12 @@ pub fn golf_ball_handler_update_locations_post_bonk(
                 };
                 info!("golf_ball after: [{:?}]", golf_ball.0);
             };
+            run_trigger.set_target(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk, false);
+            info!("post response: golf_ball_handler_update_locations_post_bonk: {}", run_trigger.get(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk));  
         } else {
             game_handler.set_target(CheckStateGH::GolfBallsBonkTrigger, true);
         }
     }
-    run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", false);
-    info!("post response: golf_ball_handler_update_locations_post_bonk: {}", run_trigger.get("golf_ball_handler_update_locations_post_bonk"));  
 }
 
 pub fn golf_ball_handler_end_game(
@@ -489,8 +492,8 @@ pub fn golf_ball_handler_end_game(
     {
         level_handler_purge_golf_ball_all(commands, golf_balls, purge_event_writer);
     }
-    run_trigger.set_target("golf_ball_handler_end_game", false);
-    info!("post response: golf_ball_handler_end_game: {}", run_trigger.get("golf_ball_handler_end_game"));  
+    run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, false);
+    info!("post response: golf_ball_handler_end_game: {}", run_trigger.get(CheckStateRT::GolfBallHandlerEndGame));  
 }
 
 // Helper: golf_ball_handler_spawn_golf_balls_for_party_members
@@ -605,8 +608,8 @@ pub fn golf_ball_handler_party_store_locations(
             game_handler.set_target(CheckStateGH::GolfBallsStoreLocation, true);
         };
     }
-    run_trigger.set_target("golf_ball_handler_party_store_locations", false);
-    info!("post response: golf_ball_handler_party_store_locations: {}", run_trigger.get("golf_ball_handler_party_store_locations"));  
+    run_trigger.set_target(CheckStateRT::GolfBallHandlerPartyStoreLocations, false);
+    info!("post response: golf_ball_handler_party_store_locations: {}", run_trigger.get(CheckStateRT::GolfBallHandlerPartyStoreLocations));  
 }
 
 pub fn golf_ball_handler_reset_golf_ball_locations(
@@ -620,8 +623,8 @@ pub fn golf_ball_handler_reset_golf_ball_locations(
             info!("golf_ball: [{:?}]", golf_ball.0);
         };
     }
-    run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", false);
-    info!("post response: golf_ball_handler_reset_golf_ball_locations: {}", run_trigger.get("golf_ball_handler_reset_golf_ball_locations"));  
+    run_trigger.set_target(CheckStateRT::GolfBallHandlerResetGolfBallLocations, false);
+    info!("post response: golf_ball_handler_reset_golf_ball_locations: {}", run_trigger.get(CheckStateRT::GolfBallHandlerResetGolfBallLocations));  
 }
 
 pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
@@ -654,8 +657,8 @@ pub fn golf_ball_handler_spawn_golf_balls_for_party_members(
             };
         };   
     }
-    run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", false);
-    info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get("golf_ball_handler_spawn_golf_balls_for_party_members"));  
+    run_trigger.set_target(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers, false);
+    info!("post response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", run_trigger.get(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers));  
 }
 
 pub fn golf_balls_update_sleep_status(

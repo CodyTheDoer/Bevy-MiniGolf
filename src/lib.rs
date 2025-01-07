@@ -52,14 +52,105 @@ pub enum CheckStateGH {
     RoundStart,
     NetworkServerConnection,
     RemoteGame,
-}
-
+}/*
+CheckStateGH::AllSleeping
+CheckStateGH::ArrowState
+CheckStateGH::EnvironmentLoaded
+CheckStateGH::GolfBallsBonkTrigger
+CheckStateGH::GolfBallsLoaded
+CheckStateGH::GolfBallsReset
+CheckStateGH::GolfBallsStoreLocation
+CheckStateGH::InGame
+CheckStateGH::RoundStart
+CheckStateGH::NetworkServerConnection
+CheckStateGH::RemoteGame
+*/
 
 pub enum CheckStatePH {
     EnvironmentPurged,
     GolfBallsPurged,
-}
+}/*
+CheckStatePH::EnvironmentPurged
+CheckStatePH::GolfBallsPurged
+*/
 
+pub enum CheckStateRT {
+    AddPhysicsQueryAndUpdateScene,
+    CameraHandlerCycleStateCamera,
+    GameHandlerGameStart,
+    GameHandlerGameStateExitRoutines,
+    GameHandlerGameStateStartRoutines,
+    GameHandlerStartLocalBackNine,
+    GameHandlerStartLocalFrontNine,
+    GameHandlerStartLocalSelectAHole,
+    GameHandlerStartLocalWholeCorse,
+    GameHandlerStartTutorial,
+    GolfBallHandlerEndGame,
+    GolfBallHandlerPartyStoreLocations,
+    GolfBallHandlerResetGolfBallLocations,
+    GolfBallHandlerSpawnGolfBallsForPartyMembers,
+    GolfBallHandlerUpdateLocationsPostBonk,
+    LeaderBoardLogGame,
+    LeaderBoardReviewLastGame,
+    LevelHandlerInitLevelGameHandlerCurrentLevel,
+    LevelHandlerNextTurnProtocol,
+    LevelHandlerPurgeProtocol,
+    LevelHandlerSetStateNextLevel,
+    LevelHandlerSetStateNextMapSet,
+    NetworkGetClientStateAll,
+    NetworkGetClientStateGame,
+    PartyHandlerActivePlayerAddBonk,
+    PartyHandlerActivePlayerSetHoleCompletionStateTrue,
+    PartyHandlerCycleActivePlayer,
+    PartyHandlerNewPlayerAi,
+    PartyHandlerNewPlayerLocal,
+    PartyHandlerNewPlayerRemote,
+    PartyHandlerRemoveAi,
+    PartyHandlerRemoveLastPlayer,
+    PartyHandlerRemoveLocalPlayer,
+    TurnHandlerEndGame,
+    TurnHandlerNextRoundPrep,
+    TurnHandlerSetTurnNext,
+    StartMovementListenerTurnHandlerSetTurnNext,
+}/*
+CheckStateRT::AddPhysicsQueryAndUpdateScene
+CheckStateRT::CameraHandlerCycleStateCamera
+CheckStateRT::GameHandlerGameStart
+CheckStateRT::GameHandlerGameStateExitRoutines
+CheckStateRT::GameHandlerGameStateStartRoutines
+CheckStateRT::GameHandlerStartLocalBackNine
+CheckStateRT::GameHandlerStartLocalFrontNine
+CheckStateRT::GameHandlerStartLocalSelectAHole
+CheckStateRT::GameHandlerStartLocalWholeCorse
+CheckStateRT::GameHandlerStartTutorial
+CheckStateRT::GolfBallHandlerEndGame
+CheckStateRT::GolfBallHandlerPartyStoreLocations
+CheckStateRT::GolfBallHandlerResetGolfBallLocations
+CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers
+CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk
+CheckStateRT::LeaderBoardLogGame
+CheckStateRT::LeaderBoardReviewLastGame
+CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel
+CheckStateRT::LevelHandlerNextTurnProtocol
+CheckStateRT::LevelHandlerPurgeProtocol
+CheckStateRT::LevelHandlerSetStateNextLevel
+CheckStateRT::LevelHandlerSetStateNextMapSet
+CheckStateRT::NetworkGetClientStateAll
+CheckStateRT::NetworkGetClientStateGame
+CheckStateRT::PartyHandlerActivePlayerAddBonk
+CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue
+CheckStateRT::PartyHandlerCycleActivePlayer
+CheckStateRT::PartyHandlerNewPlayerAi
+CheckStateRT::PartyHandlerNewPlayerLocal
+CheckStateRT::PartyHandlerNewPlayerRemote
+CheckStateRT::PartyHandlerRemoveAi
+CheckStateRT::PartyHandlerRemoveLastPlayer
+CheckStateRT::PartyHandlerRemoveLocalPlayer
+CheckStateRT::TurnHandlerEndGame
+CheckStateRT::TurnHandlerNextRoundPrep
+CheckStateRT::TurnHandlerSetTurnNext
+CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext
+*/
 
 #[derive(Clone, PartialEq, Eq, Hash, Resource,)]
 pub struct ClientProtocol {}
@@ -468,7 +559,6 @@ impl StatesRef {
 pub struct RunTrigger{
     add_physics_query_and_update_scene:bool,
     camera_handler_cycle_state_camera: bool,
-    camera_handler_cycle_state_camera_menu_target: bool,
     game_handler_game_start: bool,
     game_handler_game_state_exit_routines: bool,
     game_handler_game_state_start_routines: bool,

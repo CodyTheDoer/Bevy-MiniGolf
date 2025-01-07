@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::RunTrigger;
+use crate::{
+    CheckStateRT,
+    RunTrigger,
+};
 
 /*
 // Standard Trigger
@@ -33,7 +36,6 @@ impl RunTrigger {
         RunTrigger{
             add_physics_query_and_update_scene: false,
             camera_handler_cycle_state_camera: false,
-            camera_handler_cycle_state_camera_menu_target: false,
             game_handler_game_start: false,
             game_handler_game_state_exit_routines: false,
             game_handler_game_state_start_routines: false,
@@ -72,438 +74,272 @@ impl RunTrigger {
         }
     }
 
-    pub fn get(&self, target: &str) -> bool {
+    pub fn get(&self, target: CheckStateRT) -> bool {
         match target {
-            "add_physics_query_and_update_scene" => {
+            CheckStateRT::AddPhysicsQueryAndUpdateScene => {
                 self.add_physics_query_and_update_scene
             },
-            "camera_handler_cycle_state_camera" => {
+            CheckStateRT::CameraHandlerCycleStateCamera => {
                 self.camera_handler_cycle_state_camera
             },
-            "camera_handler_cycle_state_camera_menu_target" => {
-                self.camera_handler_cycle_state_camera_menu_target
-            },
-            "game_handler_game_start" => {
+            CheckStateRT::GameHandlerGameStart => {
                 self.game_handler_game_start
             },
-            "game_handler_game_state_exit_routines" => {
+            CheckStateRT::GameHandlerGameStateExitRoutines => {
                 self.game_handler_game_state_exit_routines
             },
-            "game_handler_game_state_start_routines" => {
+            CheckStateRT::GameHandlerGameStateStartRoutines => {
                 self.game_handler_game_state_start_routines
             },
-            "game_handler_start_local_back_nine" => {
+            CheckStateRT::GameHandlerStartLocalBackNine => {
                 self.game_handler_start_local_back_nine
             },
-            "game_handler_start_local_front_nine" => {
+            CheckStateRT::GameHandlerStartLocalFrontNine => {
                 self.game_handler_start_local_front_nine
             },
-            "game_handler_start_local_select_a_hole" => {
+            CheckStateRT::GameHandlerStartLocalSelectAHole => {
                 self.game_handler_start_local_select_a_hole
             },
-            "game_handler_start_local_whole_corse" => {
+            CheckStateRT::GameHandlerStartLocalWholeCorse => {
                 self.game_handler_start_local_whole_corse
             },
-            "game_handler_start_tutorial" => {
+            CheckStateRT::GameHandlerStartTutorial => {
                 self.game_handler_start_tutorial
             },
-            "golf_ball_handler_end_game" => {
+            CheckStateRT::GolfBallHandlerEndGame => {
                 self.golf_ball_handler_end_game 
             },
-            "golf_ball_handler_update_locations_post_bonk" => {
-                self.golf_ball_handler_update_locations_post_bonk 
-            },
-            "golf_ball_handler_party_store_locations" => {
+            CheckStateRT::GolfBallHandlerPartyStoreLocations => {
                 self.golf_ball_handler_party_store_locations 
             },
-            "golf_ball_handler_reset_golf_ball_locations" => {
-                self.golf_ball_handler_reset_golf_ball_locations 
+            CheckStateRT::GolfBallHandlerResetGolfBallLocations => {
+                self.golf_ball_handler_party_store_locations 
             },
-            "golf_ball_handler_spawn_golf_balls_for_party_members" => {
+            CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers => {
                 self.golf_ball_handler_spawn_golf_balls_for_party_members 
             },
-            "leader_board_log_game" => {
+            CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk => {
+                self.golf_ball_handler_update_locations_post_bonk 
+            },
+            CheckStateRT::LeaderBoardLogGame => {
                 self.leader_board_log_game
             },
-            "leader_board_review_last_game" => {
+            CheckStateRT::LeaderBoardReviewLastGame => {
                 self.leader_board_review_last_game
             },
-            "level_handler_init_level_game_handler_current_level" => {
+            CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel => {
                 self.level_handler_init_level_game_handler_current_level
             },
-            "level_handler_next_turn_protocol" => {
+            CheckStateRT::LevelHandlerNextTurnProtocol => {
                 self.level_handler_next_turn_protocol
             },
-            "level_handler_purge_protocol" => {
+            CheckStateRT::LevelHandlerPurgeProtocol => {
                 self.level_handler_purge_protocol
             },
-            "level_handler_set_state_next_level" => {
+            CheckStateRT::LevelHandlerSetStateNextLevel => {
                 self.level_handler_set_state_next_level
             },
-            "level_handler_set_state_next_map_set" => {
+            CheckStateRT::LevelHandlerSetStateNextMapSet => {
                 self.level_handler_set_state_next_map_set
             },
-            "network_get_client_state_all" => {
+            CheckStateRT::NetworkGetClientStateAll => {
                 self.network_get_client_state_all
             },
-            "network_get_client_state_game" => {
+            CheckStateRT::NetworkGetClientStateGame => {
                 self.network_get_client_state_game
             },
-            "party_handler_active_player_add_bonk" => {
+            CheckStateRT::PartyHandlerActivePlayerAddBonk => {
                 self.party_handler_active_player_add_bonk
             },
-            "party_handler_active_player_set_hole_completion_state_true" => {
+            CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue => {
                 self.party_handler_active_player_set_hole_completion_state_true
             },
-            "party_handler_cycle_active_player" => {
+            CheckStateRT::PartyHandlerCycleActivePlayer => {
                 self.party_handler_cycle_active_player
             },
-            "party_handler_new_player_ai" => {
+            CheckStateRT::PartyHandlerNewPlayerAi => {
                 self.party_handler_new_player_ai
             },
-            "party_handler_new_player_local" => {
+            CheckStateRT::PartyHandlerNewPlayerLocal => {
                 self.party_handler_new_player_local
             },
-            "party_handler_new_player_remote" => {
+            CheckStateRT::PartyHandlerNewPlayerRemote => {
                 self.party_handler_new_player_remote
             },
-            "party_handler_remove_ai" => {
+            CheckStateRT::PartyHandlerRemoveAi => {
                 self.party_handler_remove_ai
             },
-            "party_handler_remove_last_player" => {
+            CheckStateRT::PartyHandlerRemoveLastPlayer => {
                 self.party_handler_remove_last_player
             },
-            "party_handler_remove_local_player" => {
+            CheckStateRT::PartyHandlerRemoveLocalPlayer => {
                 self.party_handler_remove_local_player
             },
-            "turn_handler_end_game" => {
+            CheckStateRT::TurnHandlerEndGame => {
                 self.turn_handler_end_game
             },
-            "turn_handler_next_round_prep" => {
+            CheckStateRT::TurnHandlerNextRoundPrep => {
                 self.turn_handler_next_round_prep
             },
-            "turn_handler_set_turn_next" => {
+            CheckStateRT::TurnHandlerSetTurnNext => {
                 self.turn_handler_set_turn_next
             },
-            "start_movement_listener_turn_handler_set_turn_next" => {
+            CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext => {
                 self.start_movement_listener_turn_handler_set_turn_next
             },
-            _ => {
-                warn!("Target: [{}] does not exist!!!", target); 
-                false
-            },
         }
     }
 
-    pub fn set_target(&mut self, target: &str, state: bool) {
+    pub fn set_target(&mut self, target: CheckStateRT, state: bool) {
         match target {
-            "add_physics_query_and_update_scene" => {
+            CheckStateRT::AddPhysicsQueryAndUpdateScene => {
                 self.add_physics_query_and_update_scene = state;
-                info!("response: add_physics_query_and_update_scene: {}", self.get("add_physics_query_and_update_scene"));  
+                info!("response: add_physics_query_and_update_scene: {}", self.get(CheckStateRT::AddPhysicsQueryAndUpdateScene));  
             },
-            "camera_handler_cycle_state_camera" => {
+            CheckStateRT::CameraHandlerCycleStateCamera => {
                 self.camera_handler_cycle_state_camera = state;
-                info!("response: camera_handler_cycle_state_camera: {}", self.get("camera_handler_cycle_state_camera"));  
+                info!("response: camera_handler_cycle_state_camera: {}", self.get(CheckStateRT::CameraHandlerCycleStateCamera));  
             },
-            "camera_handler_cycle_state_camera_menu_target" => {
-                self.camera_handler_cycle_state_camera_menu_target = state;
-                info!("response: camera_handler_cycle_state_camera_menu_target: {}", self.get("camera_handler_cycle_state_camera_menu_target"));  
-            },
-            "game_handler_game_start" => {
+            CheckStateRT::GameHandlerGameStart => {
                 self.game_handler_game_start = state;
-                info!("response: game_handler_game_start: {}", self.get("game_handler_game_start"));
+                info!("response: game_handler_game_start: {}", self.get(CheckStateRT::GameHandlerGameStart));
             }
-            "game_handler_game_state_exit_routines" => {
+            CheckStateRT::GameHandlerGameStateExitRoutines => {
                 self.game_handler_game_state_exit_routines = state;
-                info!("response: game_handler_game_state_exit_routines: {}", self.get("game_handler_game_state_exit_routines"));
+                info!("response: game_handler_game_state_exit_routines: {}", self.get(CheckStateRT::GameHandlerGameStateExitRoutines));
             }
-            "game_handler_game_state_start_routines" => {
+            CheckStateRT::GameHandlerGameStateStartRoutines => {
                 self.game_handler_game_state_start_routines = state;
-                info!("response: game_handler_game_state_start_routines: {}", self.get("game_handler_game_state_start_routines"));
+                info!("response: game_handler_game_state_start_routines: {}", self.get(CheckStateRT::GameHandlerGameStateStartRoutines));
             }
-            "game_handler_start_local_back_nine" => {
+            CheckStateRT::GameHandlerStartLocalBackNine => {
                 self.game_handler_start_local_back_nine = state;
-                info!("response: game_handler_start_local_back_nine: {}", self.get("game_handler_start_local_back_nine"));
+                info!("response: game_handler_start_local_back_nine: {}", self.get(CheckStateRT::GameHandlerStartLocalBackNine));
             }
-            "game_handler_start_local_front_nine" => {
+            CheckStateRT::GameHandlerStartLocalFrontNine => {
                 self.game_handler_start_local_front_nine = state;
-                info!("response: game_handler_start_local_front_nine: {}", self.get("game_handler_start_local_front_nine"));
+                info!("response: game_handler_start_local_front_nine: {}", self.get(CheckStateRT::GameHandlerStartLocalFrontNine));
             }
-            "game_handler_start_local_select_a_hole" => {
+            CheckStateRT::GameHandlerStartLocalSelectAHole => {
                 self.game_handler_start_local_select_a_hole = state;
-                info!("response: game_handler_start_local_select_a_hole: {}", self.get("game_handler_start_local_select_a_hole"));
+                info!("response: game_handler_start_local_select_a_hole: {}", self.get(CheckStateRT::GameHandlerStartLocalSelectAHole));
             }
-            "game_handler_start_local_whole_corse" => {
+            CheckStateRT::GameHandlerStartLocalWholeCorse => {
                 self.game_handler_start_local_whole_corse = state;
-                info!("response: game_handler_start_local_whole_corse: {}", self.get("game_handler_start_local_whole_corse"));
+                info!("response: game_handler_start_local_whole_corse: {}", self.get(CheckStateRT::GameHandlerStartLocalWholeCorse));
             }
-            "game_handler_start_tutorial" => {
+            CheckStateRT::GameHandlerStartTutorial => {
                 self.game_handler_start_tutorial = state;
-                info!("response: game_handler_start_tutorial: {}", self.get("game_handler_start_tutorial"));
+                info!("response: game_handler_start_tutorial: {}", self.get(CheckStateRT::GameHandlerStartTutorial));
             }
-            "golf_ball_handler_end_game" => {
+            CheckStateRT::GolfBallHandlerEndGame => {
                 self.golf_ball_handler_end_game = state;
-                info!("response: golf_ball_handler_end_game: {}", self.get("golf_ball_handler_end_game"));
+                info!("response: golf_ball_handler_end_game: {}", self.get(CheckStateRT::GolfBallHandlerEndGame));
             }
-            "golf_ball_handler_update_locations_post_bonk" => {
-                self.golf_ball_handler_update_locations_post_bonk = state;
-                info!("response: golf_ball_handler_update_locations_post_bonk: {}", self.get("golf_ball_handler_update_locations_post_bonk"));
-            }
-            "golf_ball_handler_party_store_locations" => {
+            CheckStateRT::GolfBallHandlerPartyStoreLocations => {
                 self.golf_ball_handler_party_store_locations = state;
-                info!("response: golf_ball_handler_party_store_locations: {}", self.get("golf_ball_handler_party_store_locations"));
+                info!("response: golf_ball_handler_party_store_locations: {}", self.get(CheckStateRT::GolfBallHandlerPartyStoreLocations));
             }
-            "golf_ball_handler_reset_golf_ball_locations" => {
+            CheckStateRT::GolfBallHandlerResetGolfBallLocations => {
                 self.golf_ball_handler_reset_golf_ball_locations = state;
-                info!("response: golf_ball_handler_reset_golf_ball_locations: {}", self.get("golf_ball_handler_reset_golf_ball_locations"));
+                info!("response: golf_ball_handler_reset_golf_ball_locations: {}", self.get(CheckStateRT::GolfBallHandlerResetGolfBallLocations));
             }
-            "golf_ball_handler_spawn_golf_balls_for_party_members" => {
+            CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers => {
                 self.golf_ball_handler_spawn_golf_balls_for_party_members = state;
-                info!("response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", self.get("golf_ball_handler_spawn_golf_balls_for_party_members"));
+                info!("response: golf_ball_handler_spawn_golf_balls_for_party_members: {}", self.get(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers));
             }
-            "leader_board_log_game" => {
+            CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk => {
+                self.golf_ball_handler_update_locations_post_bonk = state;
+                info!("response: golf_ball_handler_update_locations_post_bonk: {}", self.get(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk));
+            }
+            CheckStateRT::LeaderBoardLogGame => {
                 self.leader_board_log_game = state;
-                info!("response: leader_board_log_game: {}", self.get("leader_board_log_game"));
+                info!("response: leader_board_log_game: {}", self.get(CheckStateRT::LeaderBoardLogGame));
             }
-            "leader_board_review_last_game" => {
+            CheckStateRT::LeaderBoardReviewLastGame => {
                 self.leader_board_review_last_game = state;
-                info!("response: leader_board_review_last_game: {}", self.get("leader_board_review_last_game"));
+                info!("response: leader_board_review_last_game: {}", self.get(CheckStateRT::LeaderBoardReviewLastGame));
             }
-            "level_handler_init_level_game_handler_current_level" => {
+            CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel => {
                 self.level_handler_init_level_game_handler_current_level = state;
-                info!("response: level_handler_init_level_game_handler_current_level: {}", self.get("level_handler_init_level_game_handler_current_level"));
+                info!("response: level_handler_init_level_game_handler_current_level: {}", self.get(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel));
             }
-            "level_handler_next_turn_protocol" => {
+            CheckStateRT::LevelHandlerNextTurnProtocol => {
                 self.level_handler_next_turn_protocol = state;
-                info!("response: level_handler_next_turn_protocol: {}", self.get("level_handler_next_turn_protocol"));
+                info!("response: level_handler_next_turn_protocol: {}", self.get(CheckStateRT::LevelHandlerNextTurnProtocol));
             }
-            "level_handler_purge_protocol" => {
+            CheckStateRT::LevelHandlerPurgeProtocol => {
                 self.level_handler_purge_protocol = state;
-                info!("response: level_handler_purge_protocol: {}", self.get("level_handler_purge_protocol"));
+                info!("response: level_handler_purge_protocol: {}", self.get(CheckStateRT::LevelHandlerPurgeProtocol));
             }
-            "level_handler_set_state_next_level" => {
+            CheckStateRT::LevelHandlerSetStateNextLevel => {
                 self.level_handler_set_state_next_level = state;
-                info!("response: level_handler_set_state_next_level: {}", self.get("level_handler_set_state_next_level"));  
+                info!("response: level_handler_set_state_next_level: {}", self.get(CheckStateRT::LevelHandlerSetStateNextLevel));  
             },
-            "level_handler_set_state_next_map_set" => {
+            CheckStateRT::LevelHandlerSetStateNextMapSet => {
                 self.level_handler_set_state_next_map_set = state;
-                info!("response: level_handler_set_state_next_map_set: {}", self.get("level_handler_set_state_next_map_set"));
+                info!("response: level_handler_set_state_next_map_set: {}", self.get(CheckStateRT::LevelHandlerSetStateNextMapSet));
             }
-            "network_get_client_state_all" => {
+            CheckStateRT::NetworkGetClientStateAll => {
                 self.network_get_client_state_all = state;
-                info!("response: network_get_client_state_all: {}", self.get("network_get_client_state_all"));  
+                info!("response: network_get_client_state_all: {}", self.get(CheckStateRT::NetworkGetClientStateAll));  
             },
-            "network_get_client_state_game" => {
+            CheckStateRT::NetworkGetClientStateGame => {
                 self.network_get_client_state_game = state;
-                info!("response: network_get_client_state_game: {}", self.get("network_get_client_state_game"));  
+                info!("response: network_get_client_state_game: {}", self.get(CheckStateRT::NetworkGetClientStateGame));  
             },
-            "party_handler_active_player_add_bonk" => {
+            CheckStateRT::PartyHandlerActivePlayerAddBonk => {
                 self.party_handler_active_player_add_bonk = state;
-                info!("response: party_handler_active_player_add_bonk: {}", self.get("party_handler_active_player_add_bonk"));  
+                info!("response: party_handler_active_player_add_bonk: {}", self.get(CheckStateRT::PartyHandlerActivePlayerAddBonk));  
             },
-            "party_handler_active_player_set_hole_completion_state_true" => {
+            CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue => {
                 self.party_handler_active_player_set_hole_completion_state_true = state;
-                info!("response: party_handler_active_player_set_hole_completion_state_true: {}", self.get("party_handler_active_player_set_hole_completion_state_true"));
+                info!("response: party_handler_active_player_set_hole_completion_state_true: {}", self.get(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue));
             }
-            "party_handler_cycle_active_player" => {
+            CheckStateRT::PartyHandlerCycleActivePlayer => {
                 self.party_handler_cycle_active_player = state;
-                info!("response: party_handler_cycle_active_player: {}", self.get("party_handler_cycle_active_player"));  
+                info!("response: party_handler_cycle_active_player: {}", self.get(CheckStateRT::PartyHandlerCycleActivePlayer));  
             },
-            "party_handler_new_player_ai" => {
+            CheckStateRT::PartyHandlerNewPlayerAi => {
                 self.party_handler_new_player_ai = state;
-                info!("response: party_handler_new_player_ai: {}", self.get("party_handler_new_player_ai"));  
+                info!("response: party_handler_new_player_ai: {}", self.get(CheckStateRT::PartyHandlerNewPlayerAi));  
             },
-            "party_handler_new_player_local" => {
+            CheckStateRT::PartyHandlerNewPlayerLocal => {
                 self.party_handler_new_player_local = state;
-                info!("response: party_handler_new_player_local: {}", self.get("party_handler_new_player_local"));  
+                info!("response: party_handler_new_player_local: {}", self.get(CheckStateRT::PartyHandlerNewPlayerLocal));  
             },
-            "party_handler_new_player_remote" => {
+            CheckStateRT::PartyHandlerNewPlayerRemote => {
                 self.party_handler_new_player_remote = state;
-                info!("response: party_handler_new_player_remote: {}", self.get("party_handler_new_player_remote"));  
+                info!("response: party_handler_new_player_remote: {}", self.get(CheckStateRT::PartyHandlerNewPlayerRemote));  
             },
-            "party_handler_remove_ai" => {
+            CheckStateRT::PartyHandlerRemoveAi => {
                 self.party_handler_remove_ai = state;
-                info!("response: party_handler_remove_ai: {}", self.get("party_handler_remove_ai"));  
+                info!("response: party_handler_remove_ai: {}", self.get(CheckStateRT::PartyHandlerRemoveAi));  
             },
-            "party_handler_remove_last_player" => {
+            CheckStateRT::PartyHandlerRemoveLastPlayer => {
                 self.party_handler_remove_last_player = state;
-                info!("response: party_handler_remove_last_player: {}", self.get("party_handler_remove_last_player"));  
+                info!("response: party_handler_remove_last_player: {}", self.get(CheckStateRT::PartyHandlerRemoveLastPlayer));  
             },
-            "party_handler_remove_local_player" => {
+            CheckStateRT::PartyHandlerRemoveLocalPlayer => {
                 self.party_handler_remove_local_player = state;
-                info!("response: party_handler_remove_local_player: {}", self.get("party_handler_remove_local_player"));  
+                info!("response: party_handler_remove_local_player: {}", self.get(CheckStateRT::PartyHandlerRemoveLocalPlayer));  
             },
-            "turn_handler_end_game" => {
+            CheckStateRT::TurnHandlerEndGame => {
                 self.turn_handler_end_game = state;
-                info!("response: turn_handler_end_game: {}", self.get("turn_handler_end_game"));
+                info!("response: turn_handler_end_game: {}", self.get(CheckStateRT::TurnHandlerEndGame));
             }
-            "turn_handler_next_round_prep" => {
+            CheckStateRT::TurnHandlerNextRoundPrep => {
                 self.turn_handler_next_round_prep = state;
-                info!("response: turn_handler_next_round_prep: {}", self.get("turn_handler_next_round_prep"));
+                info!("response: turn_handler_next_round_prep: {}", self.get(CheckStateRT::TurnHandlerNextRoundPrep));
             }
-            "turn_handler_set_turn_next" => {
+            CheckStateRT::TurnHandlerSetTurnNext => {
                 self.turn_handler_set_turn_next = state;
-                info!("response: turn_handler_set_turn_next: {}", self.get("turn_handler_set_turn_next"));
+                info!("response: turn_handler_set_turn_next: {}", self.get(CheckStateRT::TurnHandlerSetTurnNext));
             }
-            "start_movement_listener_turn_handler_set_turn_next" => {
+            CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext => {
                 self.start_movement_listener_turn_handler_set_turn_next = state;
-                info!("response: start_movement_listener_turn_handler_set_turn_next: {}", self.get("start_movement_listener_turn_handler_set_turn_next"));
+                info!("response: start_movement_listener_turn_handler_set_turn_next: {}", self.get(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext));
             }
-            _ => {
-                info!("Unrecognized Input: RunTrigger: {:?}", target);
-            },
         }
-    }
-
-    pub fn add_physics_query_and_update_scene(&self) -> bool {
-        self.add_physics_query_and_update_scene
-    }
-
-    pub fn camera_handler_cycle_state_camera(&self) -> bool {
-        self.camera_handler_cycle_state_camera
-    }
-
-    pub fn camera_handler_cycle_state_camera_menu_target(&self) -> bool {
-        self.camera_handler_cycle_state_camera_menu_target
-    }
-
-    pub fn game_handler_game_start(&self) -> bool {
-        self.game_handler_game_start
-    }
-
-    pub fn game_handler_game_state_exit_routines(&self) -> bool {
-        self.game_handler_game_state_exit_routines
-    }
-
-    pub fn game_handler_game_state_start_routines(&self) -> bool {
-        self.game_handler_game_state_start_routines
-    }
-
-    pub fn game_handler_start_local_back_nine(&self) -> bool {
-        self.game_handler_start_local_back_nine
-    }
-    
-    pub fn game_handler_start_local_front_nine(&self) -> bool {
-        self.game_handler_start_local_front_nine
-    }
-    
-    pub fn game_handler_start_local_select_a_hole(&self) -> bool {
-        self.game_handler_start_local_select_a_hole
-    }
-    
-    pub fn game_handler_start_local_whole_corse(&self) -> bool {
-        self.game_handler_start_local_whole_corse
-    }
-    
-    pub fn game_handler_start_tutorial(&self) -> bool {
-        self.game_handler_start_tutorial
-    }
-
-    pub fn golf_ball_handler_end_game(&self) -> bool {
-        self.golf_ball_handler_end_game 
-    }
-
-    pub fn golf_ball_handler_update_locations_post_bonk(&self) -> bool {
-        self.golf_ball_handler_update_locations_post_bonk 
-    }
-
-    pub fn golf_ball_handler_party_store_locations(&self) -> bool {
-        self.golf_ball_handler_party_store_locations 
-    }
-
-    pub fn golf_ball_handler_reset_golf_ball_locations(&self) -> bool {
-        self.golf_ball_handler_reset_golf_ball_locations 
-    }
-
-    pub fn golf_ball_handler_spawn_golf_balls_for_party_members(&self) -> bool {
-        self.golf_ball_handler_spawn_golf_balls_for_party_members 
-    }
-
-    pub fn leader_board_log_game(&self) -> bool {
-        self.leader_board_log_game
-    }
-
-    pub fn leader_board_review_last_game(&self) -> bool {
-        self.leader_board_review_last_game
-    }
-
-    pub fn level_handler_init_level_game_handler_current_level(&self) -> bool {
-        self.level_handler_init_level_game_handler_current_level
-    }
-
-    pub fn level_handler_next_turn_protocol(&self) -> bool {
-        self.level_handler_next_turn_protocol
-    }
-
-    pub fn level_handler_purge_protocol(&self) -> bool {
-        self.level_handler_purge_protocol
-    }
-
-    pub fn level_handler_set_state_next_level(&self) -> bool {
-        self.level_handler_set_state_next_level
-    }
-
-    pub fn level_handler_set_state_next_map_set(&self) -> bool {
-        self.level_handler_set_state_next_map_set
-    }
-
-    pub fn network_get_client_state_all(&self) -> bool {
-        self.network_get_client_state_all
-    }
-
-    pub fn network_get_client_state_game(&self) -> bool {
-        self.network_get_client_state_game
-    }
-
-    pub fn party_handler_active_player_add_bonk(&self) -> bool {
-        self.party_handler_active_player_add_bonk
-    }
-
-    pub fn party_handler_active_player_set_hole_completion_state_true(&self) -> bool {
-        self.party_handler_active_player_set_hole_completion_state_true
-    }
-
-    pub fn party_handler_cycle_active_player(&self) -> bool {
-        self.party_handler_cycle_active_player
-    }
-
-    pub fn party_handler_new_player_ai(&self) -> bool {
-        self.party_handler_new_player_ai
-    }
-
-    pub fn party_handler_new_player_local(&self) -> bool {
-        self.party_handler_new_player_local
-    }
-
-    pub fn party_handler_new_player_remote(&self) -> bool {
-        self.party_handler_new_player_remote
-    }
-
-    pub fn party_handler_remove_ai(&self) -> bool {
-        self.party_handler_remove_ai
-    }
-
-    pub fn party_handler_remove_last_player(&self) -> bool {
-        self.party_handler_remove_last_player
-    }
-
-    pub fn party_handler_remove_local_player(&self) -> bool {
-        self.party_handler_remove_local_player
-    }
-
-    pub fn turn_handler_end_game(&self) -> bool {
-        self.turn_handler_end_game
-    }
-
-    pub fn turn_handler_next_round_prep(&self) -> bool {
-        self.turn_handler_next_round_prep
-    }
-
-    pub fn turn_handler_set_turn_next(&self) -> bool {
-        self.turn_handler_set_turn_next
-    }
-
-    pub fn start_movement_listener_turn_handler_set_turn_next(&self) -> bool {
-        self.start_movement_listener_turn_handler_set_turn_next
     }
 }

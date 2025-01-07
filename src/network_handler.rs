@@ -22,6 +22,7 @@ use crate::{
 
 // --- Resources --- //
 use crate::{
+    CheckStateRT,
     ClientProtocol,
     DatabaseConnection,
     GameHandler,
@@ -177,8 +178,8 @@ pub fn network_get_client_state_all(
             socket.send(serialized_message.clone().into(), peer);
         }
     }
-    run_trigger.set_target("network_get_client_state_all", false);
-    info!("post response: network_get_client_state_all: [{}]", run_trigger.get("network_get_client_state_all")); 
+    run_trigger.set_target(CheckStateRT::NetworkGetClientStateAll, false);
+    info!("post response: network_get_client_state_all: [{}]", run_trigger.get(CheckStateRT::NetworkGetClientStateAll)); 
 }
 
 pub fn network_get_client_state_game(
@@ -202,8 +203,8 @@ pub fn network_get_client_state_game(
             socket.send(message.as_bytes().into(), peer);
         }
     }
-    run_trigger.set_target("network_get_client_state_game", false);
-    info!("post response: network_get_client_state_game: [{}]", run_trigger.get("network_get_client_state_game")); 
+    run_trigger.set_target(CheckStateRT::NetworkGetClientStateGame, false);
+    info!("post response: network_get_client_state_game: [{}]", run_trigger.get(CheckStateRT::NetworkGetClientStateGame)); 
 }
 
 pub fn receive_messages(
@@ -389,19 +390,134 @@ pub fn server_parse_message(
                 "RunTrigger" => {
                     if let Some(trigger) = caps.get(4).map(|m| m.as_str()) {
                         info!("run_trigger: {:?}", trigger);
-                        run_trigger.set_target(trigger, true);
+                        match trigger {
+                            "add_physics_query_and_update_scene" => {
+                                run_trigger.set_target(CheckStateRT::AddPhysicsQueryAndUpdateScene, true);
+                            },
+                            "camera_handler_cycle_state_camera" => {
+                                run_trigger.set_target(CheckStateRT::CameraHandlerCycleStateCamera, true);                                
+                            },
+                            "game_handler_game_start" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerGameStart, true);                                
+                            },
+                            "game_handler_game_state_exit_routines" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerGameStateExitRoutines, true);                                
+                            },
+                            "game_handler_game_state_start_routines" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerGameStateStartRoutines, true);                                
+                            },
+                            "game_handler_start_local_back_nine" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerStartLocalBackNine, true);                                
+                            },
+                            "game_handler_start_local_front_nine" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerStartLocalFrontNine, true);                                
+                            },
+                            "game_handler_start_local_select_a_hole" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerStartLocalSelectAHole, true);                                
+                            },
+                            "game_handler_start_local_whole_corse" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerStartLocalWholeCorse, true);                                
+                            },
+                            "game_handler_start_tutorial" => {
+                                run_trigger.set_target(CheckStateRT::GameHandlerStartTutorial, true);                                
+                            },
+                            "golf_ball_handler_end_game" => {
+                                run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);                                
+                            },
+                            "golf_ball_handler_party_store_locations" => {
+                                run_trigger.set_target(CheckStateRT::GolfBallHandlerPartyStoreLocations, true);                                
+                            },
+                            "golf_ball_handler_reset_golf_ball_locations" => {
+                                run_trigger.set_target(CheckStateRT::GolfBallHandlerResetGolfBallLocations, true);                                
+                            },
+                            "golf_ball_handler_spawn_golf_balls_for_party_members" => {
+                                run_trigger.set_target(CheckStateRT::GolfBallHandlerSpawnGolfBallsForPartyMembers, true);
+                            },
+                            "golf_ball_handler_update_locations_post_bonk" => {
+                                run_trigger.set_target(CheckStateRT::GolfBallHandlerUpdateLocationsPostBonk, true);                                
+                            },
+                            "leader_board_log_game" => {
+                                run_trigger.set_target(CheckStateRT::LeaderBoardLogGame, true);                                
+                            },
+                            "leader_board_review_last_game" => {
+                                run_trigger.set_target(CheckStateRT::LeaderBoardReviewLastGame, true);                                
+                            },
+                            "level_handler_init_level_game_handler_current_level" => {
+                                run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);                                
+                            },
+                            "level_handler_next_turn_protocol" => {
+                                run_trigger.set_target(CheckStateRT::LevelHandlerNextTurnProtocol, true);                                
+                            },
+                            "level_handler_purge_protocol" => {
+                                run_trigger.set_target(CheckStateRT::LevelHandlerPurgeProtocol, true);                                
+                            },
+                            "level_handler_set_state_next_level" => {
+                                run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextLevel, true);                                
+                            },
+                            "level_handler_set_state_next_map_set" => {
+                                run_trigger.set_target(CheckStateRT::LevelHandlerSetStateNextMapSet, true);                                
+                            },
+                            "network_get_client_state_all" => {
+                                run_trigger.set_target(CheckStateRT::NetworkGetClientStateAll, true);                                
+                            },
+                            "network_get_client_state_game" => {
+                                run_trigger.set_target(CheckStateRT::NetworkGetClientStateGame, true);                                
+                            },
+                            "party_handler_active_player_add_bonk" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerAddBonk, true);                                
+                            },
+                            "party_handler_active_player_set_hole_completion_state_true" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerActivePlayerSetHoleCompletionStateTrue, true);                                
+                            },
+                            "party_handler_cycle_active_player" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerCycleActivePlayer, true);                                
+                            },
+                            "party_handler_new_player_ai" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerAi, true);                                
+                            },
+                            "party_handler_new_player_local" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerLocal, true);                                
+                            },
+                            "party_handler_new_player_remote" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerNewPlayerRemote, true);                                
+                            },
+                            "party_handler_remove_ai" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerRemoveAi, true);                                
+                            },
+                            "party_handler_remove_last_player" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLastPlayer, true);                                
+                            },
+                            "party_handler_remove_local_player" => {
+                                run_trigger.set_target(CheckStateRT::PartyHandlerRemoveLocalPlayer, true);                                
+                            },
+                            "turn_handler_end_game" => {
+                                run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);                                
+                            },
+                            "turn_handler_next_round_prep" => {
+                                run_trigger.set_target(CheckStateRT::TurnHandlerNextRoundPrep, true);                                
+                            },
+                            "turn_handler_set_turn_next" => {
+                                run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, true);                                
+                            },
+                            "start_movement_listener_turn_handler_set_turn_next" => {
+                                run_trigger.set_target(CheckStateRT::StartMovementListenerTurnHandlerSetTurnNext, true);                                
+                            },
+                            _ => {
+                                error!("Trigger: [{}] is not valid!", trigger);
+                            }
+                        }
                     }
                 },
                 _ => {
                     // Handle unknown commands
-                    info!("Unknown command: {}", command);
+                    warn!("Unknown command: {}", command);
                 },
             }
         } else {
-            info!("Target client ID does not match player ID.");
+            warn!("Target client ID does not match player ID.");
         }
     } else {
-        info!("Invalid message format: {}", message);
+        warn!("Invalid message format: {}", message);
     }
 }
 

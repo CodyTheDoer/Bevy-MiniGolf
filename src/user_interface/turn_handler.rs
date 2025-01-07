@@ -12,8 +12,9 @@ use crate::{
 
 // Resources
 use crate::{
-    GameHandler,
     CheckStateGH,
+    CheckStateRT, 
+    GameHandler,
     Party, 
     RunTrigger,
     SpawnPhysicsCheckTimer,
@@ -40,31 +41,29 @@ pub fn turn_handler_set_turn_next(
         
                     } else {
                         let mut load_next_level = false;
-                        run_trigger.set_target("golf_ball_handler_party_store_locations", true);
+                        run_trigger.set_target(CheckStateRT::GolfBallHandlerPartyStoreLocations, true);
         
                         let owned_finished_count = party.all_players_get_finished_count();
                         let owned_party_size = party.party_size();
                         info!("\nFinished: [{:?}] vs Party: [{:?}]", owned_finished_count, owned_party_size);
+                        
+                        // if all players have completed the round:
                         if owned_finished_count == owned_party_size as i32 {
                             info!("Round Finished: All Players finished!");
                             match state_map_set.get() {
                                 StateMapSet::ToBeSelected => {warn!("Impossible non-selection of map state, crashing..."); panic!()},
                                 StateMapSet::Tutorial => {
-                                    run_trigger.set_target("turn_handler_end_game", true);
-                                    run_trigger.set_target("golf_ball_handler_end_game", true);
-                                    run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                                    run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);
+                                    run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);
+                                    run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                                 },
                                 StateMapSet::WholeCorse => {
                                     match state_level.get() {
                                         StateLevel::Hole18 => {
-                                            run_trigger.set_target("golf_ball_handler_end_game", true);
-                                            run_trigger.set_target("turn_handler_end_game", true);
+                                            run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);
+                                            run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);
                                         },
-                                        _ => {
-                                            run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", true);
-                                            run_trigger.set_target("turn_handler_next_round_prep", true);
-                                            run_trigger.set_target("level_handler_next_turn_protocol", true);
-                                            next_state_turn.set(StateTurn::Active);
+                                        _ => { // Cycling through map set levels
                                             load_next_level = true;
                                         },
                                     }
@@ -72,14 +71,10 @@ pub fn turn_handler_set_turn_next(
                                 StateMapSet::FrontNine => {
                                     match state_level.get() {
                                         StateLevel::Hole9 => {
-                                            run_trigger.set_target("turn_handler_end_game", true);
-                                            run_trigger.set_target("golf_ball_handler_end_game", true);
+                                            run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);
+                                            run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);
                                         },
-                                        _ => {
-                                            run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", true);
-                                            run_trigger.set_target("turn_handler_next_round_prep", true);
-                                            run_trigger.set_target("level_handler_next_turn_protocol", true);
-                                            next_state_turn.set(StateTurn::Active);
+                                        _ => { // Cycling through map set levels
                                             load_next_level = true;
                                         },
                                     }
@@ -87,33 +82,33 @@ pub fn turn_handler_set_turn_next(
                                 StateMapSet::BackNine => {
                                     match state_level.get() {
                                         StateLevel::Hole18 => {
-                                            run_trigger.set_target("turn_handler_end_game", true);
-                                            run_trigger.set_target("golf_ball_handler_end_game", true);
+                                            run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);
+                                            run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);
                                         },
-                                        _ => {
-                                            run_trigger.set_target("golf_ball_handler_reset_golf_ball_locations", true);
-                                            run_trigger.set_target("turn_handler_next_round_prep", true);
-                                            run_trigger.set_target("level_handler_next_turn_protocol", true);
-                                            next_state_turn.set(StateTurn::Active);
+                                        _ => { // Cycling through map set levels
                                             load_next_level = true;
                                         },
                                     }
                                 },
                                 StateMapSet::SelectAHole => {
-                                    run_trigger.set_target("turn_handler_end_game", true);
-                                    run_trigger.set_target("golf_ball_handler_end_game", true);
-                                    run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                                    run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, true);
+                                    run_trigger.set_target(CheckStateRT::GolfBallHandlerEndGame, true);
+                                    run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                                 },
                             };
                         } else { // Non Round switching turn logic below
-                            // run_trigger.set_target("golf_ball_handler_party_store_locations", true);
-                            run_trigger.set_target("party_handler_cycle_active_player", true);
+                            run_trigger.set_target(CheckStateRT::PartyHandlerCycleActivePlayer, true);
                             next_state_turn.set(StateTurn::Active);
                         }   
+                        
                         if load_next_level == true {
+                            run_trigger.set_target(CheckStateRT::GolfBallHandlerResetGolfBallLocations, true);
+                            run_trigger.set_target(CheckStateRT::TurnHandlerNextRoundPrep, true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerNextTurnProtocol, true);
+                            next_state_turn.set(StateTurn::Active);
                             physics_timer_check = true;
                             game_handler.current_level_set_next_level();
-                            run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
+                            run_trigger.set_target(CheckStateRT::LevelHandlerInitLevelGameHandlerCurrentLevel, true);
                         }         
                     }
                 }
@@ -128,8 +123,8 @@ pub fn turn_handler_set_turn_next(
             },
         ));
     };
-    run_trigger.set_target("turn_handler_set_turn_next", false);
-    info!("post response: turn_handler_set_turn_next: [{}]", run_trigger.get("turn_handler_set_turn_next"));  
+    run_trigger.set_target(CheckStateRT::TurnHandlerSetTurnNext, false);
+    info!("post response: turn_handler_set_turn_next: [{}]", run_trigger.get(CheckStateRT::TurnHandlerSetTurnNext));  
 }
 
 pub fn turn_handler_end_game(
@@ -137,11 +132,11 @@ pub fn turn_handler_end_game(
 ) {
     info!("function: turn_handler_end_game"); 
     {
-        run_trigger.set_target("leader_board_log_game", true);
-        run_trigger.set_target("game_handler_game_state_exit_routines", true);
+        run_trigger.set_target(CheckStateRT::LeaderBoardLogGame, true);
+        run_trigger.set_target(CheckStateRT::GameHandlerGameStateExitRoutines, true);
     }
-    run_trigger.set_target("turn_handler_end_game", false);
-    info!("post response: turn_handler_end_game: [{}]", run_trigger.get("turn_handler_end_game"));  
+    run_trigger.set_target(CheckStateRT::TurnHandlerEndGame, false);
+    info!("post response: turn_handler_end_game: [{}]", run_trigger.get(CheckStateRT::TurnHandlerEndGame));  
 }
 
 pub fn turn_handler_next_round_prep(
@@ -155,8 +150,8 @@ pub fn turn_handler_next_round_prep(
         party.next_round_prep();
         party.active_player_set(1);
     }
-    run_trigger.set_target("turn_handler_next_round_prep", false);
-    info!("post response: turn_handler_next_round_prep: [{}]", run_trigger.get("turn_handler_next_round_prep"));  
+    run_trigger.set_target(CheckStateRT::TurnHandlerNextRoundPrep, false);
+    info!("post response: turn_handler_next_round_prep: [{}]", run_trigger.get(CheckStateRT::TurnHandlerNextRoundPrep));  
 }
 
 /*
