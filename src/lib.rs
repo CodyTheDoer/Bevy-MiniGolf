@@ -40,6 +40,27 @@ pub struct CameraUi;
 #[derive(Asset, Component, TypePath)]
 pub struct CameraWorld;
 
+pub enum CheckStateGH {
+    AllSleeping,
+    ArrowState,
+    EnvironmentLoaded,
+    GolfBallsBonkTrigger,
+    GolfBallsLoaded,
+    GolfBallsReset,
+    GolfBallsStoreLocation,
+    InGame,
+    RoundStart,
+    NetworkServerConnection,
+    RemoteGame,
+}
+
+
+pub enum CheckStatePH {
+    EnvironmentPurged,
+    GolfBallsPurged,
+}
+
+
 #[derive(Clone, PartialEq, Eq, Hash, Resource,)]
 pub struct ClientProtocol {}
 
@@ -87,20 +108,6 @@ pub struct GameHandler {
     add_physics_attempts: i32,
     game_id: Option<Uuid>,
     remotely_pushed_state: Option<StateUpdateRef>,
-}
-
-pub enum CheckStateGH {
-    AllSleeping,
-    ArrowState,
-    EnvironmentLoaded,
-    GolfBallsBonkTrigger,
-    GolfBallsLoaded,
-    GolfBallsReset,
-    GolfBallsStoreLocation,
-    InGame,
-    RoundStart,
-    NetworkServerConnection,
-    RemoteGame,
 }
 
 #[derive(Clone, Resource)]

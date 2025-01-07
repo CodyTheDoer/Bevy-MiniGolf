@@ -21,6 +21,7 @@ use crate::{
     BonkHandler,
     XYMatrix,
     CameraWorld,
+    CheckStateGH,
     GameHandler,
     GolfBall,
     LeaderBoard,
@@ -61,7 +62,7 @@ pub fn bonk_gizmo(
     game_handler: Res<GameHandler>,
 ) {
     let arrow_color = { // Color the arrow Green/Blue if the ball is sleeping
-        if game_handler.check_all_sleeping() {
+        if game_handler.get(CheckStateGH::AllSleeping) {
             Color::srgb(0.0, 0.0, 1.0)
         } else { // Color the arrow Red if the ball is actively moving
             Color::srgb(1.0, 0.0, 0.0)
@@ -126,9 +127,8 @@ pub fn easy_vec_ui(
         left_data_vec.push(state.to_owned())
     }
 
-    let dedicated_data_vec = vec![
+    let dedicated_left_data_vec = vec![
         String::from(format!("___________________________________________________________________________________________________________________________")),
-        String::from(format!("Remote Game: {:?}", game_handler.check_remote_game())),
         String::from(format!("Current Level: {:?}", game_handler.current_level_get())),
         String::from(format!("Party Size: {:?}", party.party_size())),
         String::from(format!("Active Player: {:?}", party.active_player_get_index())), 
@@ -150,21 +150,22 @@ pub fn easy_vec_ui(
         String::from(format!("KeyY: last_game_record, Right Mouse: In-Game Bonk, Left mouse: Interact w/world")),
     ];
 
-    for entry in dedicated_data_vec.iter() {
+    for entry in dedicated_left_data_vec.iter() {
         left_data_vec.push(entry.to_owned());
     }
 
     let right_data_vec = vec![
-        String::from(format!("game_handler: All Sleeping: [{:?}]", game_handler.check_all_sleeping())),
-        String::from(format!("game_handler: Arrow State: [{:?}]", game_handler.check_arrow_state())),
-        String::from(format!("game_handler: Environment Loaded: [{:?}]", game_handler.check_environment_loaded())),
-        String::from(format!("game_handler: Golf Balls Bonk Trigger: [{:?}]", game_handler.check_golf_balls_bonk_trigger())),
-        String::from(format!("game_handler: Golf Balls Loaded: [{:?}]", game_handler.check_golf_balls_loaded())),
-        String::from(format!("game_handler: Golf Balls Reset: [{:?}]", game_handler.check_golf_balls_reset())),
-        String::from(format!("game_handler: Golf Balls Store Location: [{:?}]", game_handler.check_golf_balls_store_location())),
-        String::from(format!("game_handler: In Game: [{:?}]", game_handler.check_in_game())),
-        String::from(format!("game_handler: Network Server Connection: [{:?}]", game_handler.check_network_server_connection())),
-        String::from(format!("game_handler: Remote Game: [{:?}]", game_handler.check_remote_game())),
+        String::from(format!("game_handler: All Sleeping: [{:?}]", game_handler.get(CheckStateGH::AllSleeping))),
+        String::from(format!("game_handler: Arrow State: [{:?}]", game_handler.get(CheckStateGH::ArrowState))),
+        String::from(format!("game_handler: Environment Loaded: [{:?}]", game_handler.get(CheckStateGH::EnvironmentLoaded))),
+        String::from(format!("game_handler: Golf Balls Bonk Trigger: [{:?}]", game_handler.get(CheckStateGH::GolfBallsBonkTrigger))),
+        String::from(format!("game_handler: Golf Balls Loaded: [{:?}]", game_handler.get(CheckStateGH::GolfBallsLoaded))),
+        String::from(format!("game_handler: Golf Balls Reset: [{:?}]", game_handler.get(CheckStateGH::GolfBallsReset))),
+        String::from(format!("game_handler: Golf Balls Store Location: [{:?}]", game_handler.get(CheckStateGH::GolfBallsStoreLocation))),
+        String::from(format!("game_handler: In Game: [{:?}]", game_handler.get(CheckStateGH::InGame))),
+        String::from(format!("game_handler: Round Start: [{:?}]", game_handler.get(CheckStateGH::RoundStart))),
+        String::from(format!("game_handler: Network Server Connection: [{:?}]", game_handler.get(CheckStateGH::NetworkServerConnection))),
+        String::from(format!("game_handler: Remote Game: [{:?}]", game_handler.get(CheckStateGH::RemoteGame))),
         String::from(format!("______________________________________________________________________")),
         String::from(format!("purge_handler: Environment Purged: [{:?}]", purge_handler.get("environment_purged"))),
         String::from(format!("purge_handler: Golf Balls Purged: [{:?}]", purge_handler.get("golf_balls_purged"))),

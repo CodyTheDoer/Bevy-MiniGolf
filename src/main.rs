@@ -434,7 +434,7 @@ fn golf_ball_handler_respawn_golf_ball(
             let location = player.1;
             golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &player_id, &location, &mut asset_event_writer, &mut game_handler);
         };
-        if !game_handler.check_golf_balls_reset() {
+        if !game_handler.get(CheckStateGH::GolfBallsReset) {
             game_handler.set_target(CheckStateGH::GolfBallsReset, true);
             commands.spawn((
                 ResetTimer {
@@ -442,7 +442,7 @@ fn golf_ball_handler_respawn_golf_ball(
                 },
             ));
         } else {
-            if game_handler.check_in_game() && game_handler.check_golf_balls_reset() {
+            if game_handler.get(CheckStateGH::InGame) && game_handler.get(CheckStateGH::GolfBallsReset) {
                 run_trigger.set_target("add_physics_query_and_update_scene", true);
             }
         }
@@ -468,7 +468,7 @@ fn listening_function_local_all_finished(
     game_handler: Res<GameHandler>,
     party: Res<Party>,
 ) {
-    if party.all_finished() && !game_handler.check_remote_game() {
+    if party.all_finished() && !game_handler.get(CheckStateGH::RemoteGame) {
         run_trigger.set_target("turn_handler_set_turn_next", true);
     }
 }
@@ -479,18 +479,19 @@ fn listening_function_local_all_sleeping(
     golf_balls: Query<&GolfBall>,
 ) {
     if state_game.get() == &StateGame::InGame {
-        let mut sleeping: usize = 0;
-        let mut total: usize = 0;    
+        let mut sleeping_golf_balls: usize = 0;
+        let mut total_golf_balls: usize = 0;    
         for (idx, golf_ball) in golf_balls.iter().enumerate() {
-            total = idx + 1;
+            total_golf_balls = idx + 1;
             if golf_ball.0.sleeping == true {
-                sleeping += 1;
+                sleeping_golf_balls += 1;
             }
         }
         
-        if sleeping == total {
+        if sleeping_golf_balls == total_golf_balls && !game_handler.get(CheckStateGH::AllSleeping) {
             game_handler.set_target(CheckStateGH::AllSleeping, true);
-        } else {
+        } 
+        if sleeping_golf_balls != total_golf_balls && game_handler.get(CheckStateGH::AllSleeping) {
             game_handler.set_target(CheckStateGH::AllSleeping, false);
         }
     }
@@ -505,7 +506,7 @@ fn listening_function_local_add_physics(
     for _ in query.iter() {
         count += 1;
     }
-    if !game_handler.check_remote_game() && game_handler.check_in_game() && game_handler.check_round_start() && count == 0 {
+    if !game_handler.get(CheckStateGH::RemoteGame) && game_handler.get(CheckStateGH::InGame) && game_handler.get(CheckStateGH::RoundStart) && count == 0 {
         game_handler.set_target(CheckStateGH::RoundStart, false);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
@@ -578,7 +579,7 @@ fn listening_function_spawned_environment_events(
         info!("Entity: [{:?}]", event);
         purge_handler.set_target("environment_purged", false);
         game_handler.set_target(CheckStateGH::EnvironmentLoaded, true);
-        match game_handler.check_in_game() {
+        match game_handler.get(CheckStateGH::InGame) {
             true => {
                 info!("listening_function_spawned_environment_events: In Game: Triggering Golf Ball pipeline");
                 run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
@@ -614,7 +615,7 @@ fn start_movement_listener_turn_handler_set_turn_next(
     game_handler: Res<GameHandler>,
 ) {
     {
-        if game_handler.check_all_sleeping() {
+        if game_handler.get(CheckStateGH::AllSleeping) {
             info!("function: start_movement_listener_turn_handler_set_turn_next"); 
             run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
             run_trigger.set_target("golf_ball_handler_party_store_locations", true);

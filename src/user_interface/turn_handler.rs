@@ -34,9 +34,9 @@ pub fn turn_handler_set_turn_next(
     {
         match state_game.get() {
             StateGame::InGame => {
-                if !game_handler.check_golf_balls_reset() {    
+                if !game_handler.get(CheckStateGH::GolfBallsReset) {    
                     next_state_turn.set(StateTurn::NextTurn);
-                    if game_handler.check_remote_game() {
+                    if game_handler.get(CheckStateGH::RemoteGame) {
         
                     } else {
                         let mut load_next_level = false;

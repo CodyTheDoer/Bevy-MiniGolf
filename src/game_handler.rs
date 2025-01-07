@@ -48,93 +48,87 @@ impl GameHandler {
         match target {
             CheckStateGH::AllSleeping => {
                 self.check_all_sleeping = state;
-                // info!("response: all_sleeping: {}", self.get("all_sleeping"));  
+                info!("response: all_sleeping: {}", self.get(CheckStateGH::AllSleeping));  
             },
             CheckStateGH::ArrowState => {
                 self.check_arrow_state = state;
-                info!("response: arrow_state: {}", self.check_arrow_state());  
+                info!("response: arrow_state: {}", self.get(CheckStateGH::ArrowState));  
             },
             CheckStateGH::EnvironmentLoaded => {
                 self.check_environment_loaded = state;
-                info!("response: environment_loaded: {}", self.check_environment_loaded());  
+                info!("response: environment_loaded: {}", self.get(CheckStateGH::EnvironmentLoaded));  
             },
             CheckStateGH::GolfBallsBonkTrigger => {
                 self.check_golf_balls_bonk_trigger = state;
-                info!("response: golf_balls_bonk_trigger: {}", self.check_golf_balls_bonk_trigger());  
+                info!("response: golf_balls_bonk_trigger: {}", self.get(CheckStateGH::GolfBallsBonkTrigger));  
             },
             CheckStateGH::GolfBallsLoaded => {
                 self.check_golf_balls_loaded = state;
-                info!("response: golf_balls_loaded: {}", self.check_golf_balls_loaded());  
+                info!("response: golf_balls_loaded: {}", self.get(CheckStateGH::GolfBallsLoaded));  
             },
             CheckStateGH::GolfBallsReset => {
                 self.check_golf_balls_reset = state;
-                info!("response: golf_balls_reset: {}", self.check_golf_balls_reset());  
+                info!("response: golf_balls_reset: {}", self.get(CheckStateGH::GolfBallsReset));  
             },
             CheckStateGH::GolfBallsStoreLocation => {
                 self.check_golf_balls_store_location = state;
-                info!("response: golf_balls_store_location: {}", self.check_golf_balls_store_location());  
+                info!("response: golf_balls_store_location: {}", self.get(CheckStateGH::GolfBallsStoreLocation));  
             },
             CheckStateGH::InGame => {
                 self.check_in_game = state;
-                info!("response: in_game: {}", self.check_in_game());  
+                info!("response: in_game: {}", self.get(CheckStateGH::InGame));  
             },
             CheckStateGH::RoundStart => {
                 self.check_round_start = state;
-                info!("response: round_start: {}", self.check_round_start());  
+                info!("response: round_start: {}", self.get(CheckStateGH::RoundStart));  
             },
             CheckStateGH::NetworkServerConnection => {
                 self.check_network_server_connection = state;
-                info!("response: network_server_connection: {}", self.check_network_server_connection());  
+                info!("response: network_server_connection: {}", self.get(CheckStateGH::NetworkServerConnection));  
             },
             CheckStateGH::RemoteGame => {
                 self.check_remote_game = state;
-                info!("response: remote_game: {}", self.check_remote_game());  
+                info!("response: remote_game: {}", self.get(CheckStateGH::RemoteGame));  
             },
         }
     }
-
-    pub fn check_all_sleeping(&self) -> bool {
-        self.check_all_sleeping
-    }
-
-    pub fn check_arrow_state(&self) -> bool {
-        self.check_arrow_state
-    }
-
-    pub fn check_environment_loaded(&self) -> bool {
-        self.check_environment_loaded
-    }
-
-    pub fn check_golf_balls_bonk_trigger(&self) -> bool {
-        self.check_golf_balls_bonk_trigger
-    }
-
-    pub fn check_golf_balls_loaded(&self) -> bool {
-        self.check_golf_balls_loaded
-    }
-
-    pub fn check_golf_balls_store_location(&self) -> bool {
-        self.check_golf_balls_store_location
-    }
-
-    pub fn check_golf_balls_reset(&self) -> bool {
-        self.check_golf_balls_reset
-    }
-
-    pub fn check_in_game(&self) -> bool {
-        self.check_in_game
-    }
-
-    pub fn check_round_start(&self) -> bool {
-        self.check_round_start
-    }
-
-    pub fn check_network_server_connection(&self) -> bool {
-        self.check_network_server_connection
-    }
-
-    pub fn check_remote_game(&self) -> bool {
-        self.check_remote_game
+    
+    pub fn get(&self, target: CheckStateGH) -> bool {
+        match target {
+            CheckStateGH::AllSleeping => {
+                self.check_all_sleeping
+            },
+            CheckStateGH::ArrowState => {
+                self.check_arrow_state 
+            },
+            CheckStateGH::EnvironmentLoaded => {
+                self.check_environment_loaded 
+            },
+            CheckStateGH::GolfBallsBonkTrigger => {
+                self.check_golf_balls_bonk_trigger
+            },
+            CheckStateGH::GolfBallsLoaded => {
+                self.check_golf_balls_loaded
+            },
+            CheckStateGH::GolfBallsReset => {
+                self.check_golf_balls_reset
+            },
+            CheckStateGH::GolfBallsStoreLocation => {
+                self.check_golf_balls_store_location
+            },
+            CheckStateGH::InGame => {
+                self.check_in_game
+            },
+            CheckStateGH::RoundStart => {
+                self.check_round_start
+            },
+            CheckStateGH::NetworkServerConnection => {
+                self.check_network_server_connection
+            },
+            CheckStateGH::RemoteGame => {
+                self.check_remote_game
+            },
+        }
     }
 
     // add_physics_attempts logic 
@@ -265,7 +259,7 @@ pub fn game_handler_game_start (
 ) {
     info!("function: game_handler_game_start "); 
     {
-        if game_handler.check_remote_game() {
+        if game_handler.get(CheckStateGH::RemoteGame) {
 
         } else {
             let mut map_state_selected = false;
@@ -378,7 +372,7 @@ pub fn game_handler_game_state_start_routines(
         info!("Current Game State: {:?}", state_game.get());
         match state_game.get() {
             StateGame::NotInGame => {
-                if game_handler.check_remote_game() {
+                if game_handler.get(CheckStateGH::RemoteGame) {
                     info!("StateTurn::Idle");
                     next_state_turn.set(StateTurn::Idle);
                 } else {
