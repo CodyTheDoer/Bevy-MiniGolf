@@ -36,6 +36,7 @@ use minigolf::{
     ClientProtocol,
     DatabaseConnection,
     GameHandler,
+    CheckStateGH,
     GLBStorageID,
     GolfBall,
     LeaderBoard,
@@ -410,7 +411,7 @@ fn golf_ball_handler_respawn_timer_listener(
 
         // if it finished, despawn the bomb
         if reset_timer.timer.finished() {
-            game_handler.set_target("golf_balls_reset", false);
+            game_handler.set_target(CheckStateGH::GolfBallsReset, false);
             commands.entity(entity).despawn();
         }
     }
@@ -433,15 +434,15 @@ fn golf_ball_handler_respawn_golf_ball(
             let location = player.1;
             golf_ball_handler_respawn_golf_ball_uuid(&mut commands, &asset_server, &glb_storage, &player_id, &location, &mut asset_event_writer, &mut game_handler);
         };
-        if !game_handler.golf_balls_reset() {
-            game_handler.set_target("golf_balls_reset", true);
+        if !game_handler.check_golf_balls_reset() {
+            game_handler.set_target(CheckStateGH::GolfBallsReset, true);
             commands.spawn((
                 ResetTimer {
                     timer: Timer::new(Duration::from_millis(1750), TimerMode::Once), 
                 },
             ));
         } else {
-            if game_handler.in_game() && game_handler.golf_balls_reset() {
+            if game_handler.check_in_game() && game_handler.check_golf_balls_reset() {
                 run_trigger.set_target("add_physics_query_and_update_scene", true);
             }
         }
@@ -467,7 +468,7 @@ fn listening_function_local_all_finished(
     game_handler: Res<GameHandler>,
     party: Res<Party>,
 ) {
-    if party.all_finished() && !game_handler.remote_game() {
+    if party.all_finished() && !game_handler.check_remote_game() {
         run_trigger.set_target("turn_handler_set_turn_next", true);
     }
 }
@@ -488,9 +489,9 @@ fn listening_function_local_all_sleeping(
         }
         
         if sleeping == total {
-            game_handler.set_target("all_sleeping", true);
+            game_handler.set_target(CheckStateGH::AllSleeping, true);
         } else {
-            game_handler.set_target("all_sleeping", false);
+            game_handler.set_target(CheckStateGH::AllSleeping, false);
         }
     }
 }
@@ -504,8 +505,8 @@ fn listening_function_local_add_physics(
     for _ in query.iter() {
         count += 1;
     }
-    if !game_handler.remote_game() && game_handler.in_game() && game_handler.round_start() && count == 0 {
-        game_handler.set_target("round_start", false);
+    if !game_handler.check_remote_game() && game_handler.check_in_game() && game_handler.check_round_start() && count == 0 {
+        game_handler.set_target(CheckStateGH::RoundStart, false);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }
@@ -558,12 +559,12 @@ fn listening_function_purge_events(
     for event in purge_event_reader_environment.read() {
         info!("Environment Purged: [{:?}]", event);
         purge_handler.set_target("environment_purged", true);
-        game_handler.set_target("environment_loaded", false);
+        game_handler.set_target(CheckStateGH::EnvironmentLoaded, false);
     }
     for event in purge_event_reader_golf_balls.read() {
         info!("Environment Purged: [{:?}]", event);
         purge_handler.set_target("golf_balls_purged", true);
-        game_handler.set_target("golf_balls_loaded", false);
+        game_handler.set_target(CheckStateGH::GolfBallsLoaded, false);
     }
 }
 
@@ -576,8 +577,8 @@ fn listening_function_spawned_environment_events(
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
         purge_handler.set_target("environment_purged", false);
-        game_handler.set_target("environment_loaded", true);
-        match game_handler.in_game() {
+        game_handler.set_target(CheckStateGH::EnvironmentLoaded, true);
+        match game_handler.check_in_game() {
             true => {
                 info!("listening_function_spawned_environment_events: In Game: Triggering Golf Ball pipeline");
                 run_trigger.set_target("golf_ball_handler_spawn_golf_balls_for_party_members", true);
@@ -597,7 +598,7 @@ fn listening_function_spawned_golf_ball_events(
     for event in asset_event_reader.read() {
         info!("Entity: [{:?}]", event);
         purge_handler.set_target("golf_balls_purged", false);
-        game_handler.set_target("golf_balls_loaded", true);
+        game_handler.set_target(CheckStateGH::GolfBallsLoaded, true);
         run_trigger.set_target("add_physics_query_and_update_scene", true);
     }
 }
@@ -613,7 +614,7 @@ fn start_movement_listener_turn_handler_set_turn_next(
     game_handler: Res<GameHandler>,
 ) {
     {
-        if game_handler.all_sleeping() {
+        if game_handler.check_all_sleeping() {
             info!("function: start_movement_listener_turn_handler_set_turn_next"); 
             run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", true);
             run_trigger.set_target("golf_ball_handler_party_store_locations", true);

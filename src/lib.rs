@@ -72,21 +72,35 @@ pub struct Interactable;
 
 #[derive(Resource)]
 pub struct GameHandler {
-    all_sleeping: bool,
-    arrow_state: bool,
-    environment_loaded: bool,
-    golf_balls_bonk_trigger: bool,
-    golf_balls_loaded: bool,
-    golf_balls_reset: bool,
-    golf_balls_store_location: bool,
-    in_game: bool,
-    round_start: bool,
-    network_server_connection: bool,
-    remote_game: bool,
+    check_all_sleeping: bool,
+    check_arrow_state: bool,
+    check_environment_loaded: bool,
+    check_golf_balls_bonk_trigger: bool,
+    check_golf_balls_loaded: bool,
+    check_golf_balls_reset: bool,
+    check_golf_balls_store_location: bool,
+    check_in_game: bool,
+    check_round_start: bool,
+    check_network_server_connection: bool,
+    check_remote_game: bool,
     current_level: i32,
     add_physics_attempts: i32,
     game_id: Option<Uuid>,
     remotely_pushed_state: Option<StateUpdateRef>,
+}
+
+pub enum CheckStateGH {
+    AllSleeping,
+    ArrowState,
+    EnvironmentLoaded,
+    GolfBallsBonkTrigger,
+    GolfBallsLoaded,
+    GolfBallsReset,
+    GolfBallsStoreLocation,
+    InGame,
+    RoundStart,
+    NetworkServerConnection,
+    RemoteGame,
 }
 
 #[derive(Clone, Resource)]

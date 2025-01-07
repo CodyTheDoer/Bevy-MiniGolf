@@ -25,6 +25,7 @@ use crate::{
     ClientProtocol,
     DatabaseConnection,
     GameHandler,
+    CheckStateGH,
     HeartbeatTimer,
     OnlineStateChange,
     PacketAllStates,
@@ -261,7 +262,7 @@ pub fn remote_state_change_monitor(
             StateUpdateRef::StateEngineConnection(state_engine_connection) => {
                 info!("StateEngineConnection: {:?}", state_engine_connection);
                 next_state_connection.set(state_engine_connection); 
-                game_handler.set_target("network_server_connection", true);
+                game_handler.set_target(CheckStateGH::NetworkServerConnection, true);
             },
             StateUpdateRef::StateGame(state_game) => {
                 info!("StateGame: {:?}", state_game);
@@ -376,7 +377,7 @@ pub fn server_parse_message(
                 },
                 "InitPlayerConnection" => {
                     // Handle InitPlayerConnection command
-                    if game_handler.network_server_connection() == false {
+                    if game_handler.check_network_server_connection() == false {
                         let parsed_state = Some(StateUpdateRef::StateEngineConnection(
                             StateEngineConnection::Online,
                         ));

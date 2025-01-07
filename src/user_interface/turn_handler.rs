@@ -13,6 +13,7 @@ use crate::{
 // Resources
 use crate::{
     GameHandler,
+    CheckStateGH,
     Party, 
     RunTrigger,
     SpawnPhysicsCheckTimer,
@@ -33,9 +34,9 @@ pub fn turn_handler_set_turn_next(
     {
         match state_game.get() {
             StateGame::InGame => {
-                if !game_handler.golf_balls_reset() {    
+                if !game_handler.check_golf_balls_reset() {    
                     next_state_turn.set(StateTurn::NextTurn);
-                    if game_handler.remote_game() {
+                    if game_handler.check_remote_game() {
         
                     } else {
                         let mut load_next_level = false;
@@ -150,7 +151,7 @@ pub fn turn_handler_next_round_prep(
 ) {
     info!("function: turn_handler_next_round_prep"); 
     {
-        game_handler.set_target("round_start", true);
+        game_handler.set_target(CheckStateGH::RoundStart, true);
         party.next_round_prep();
         party.active_player_set(1);
     }

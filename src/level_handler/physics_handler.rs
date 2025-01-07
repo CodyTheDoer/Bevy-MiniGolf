@@ -16,6 +16,7 @@ use crate::{
     BonkHandler,
     XYMatrix,
     GameHandler,
+    CheckStateGH,
     GLBStorageID,
     GolfBall,
     GolfBallPosition,
@@ -100,8 +101,8 @@ pub fn add_physics_query_and_update_scene(
         run_trigger.set_target("level_handler_init_level_game_handler_current_level", true);
         game_handler.add_physics_attempts_reset();
     }
-    info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.environment_loaded()); 
-    if game_handler.environment_loaded() && game_handler.golf_balls_loaded() {
+    info!("function: add_physics_query_and_update_scene: Env Loaded: [{}]", game_handler.check_environment_loaded()); 
+    if game_handler.check_environment_loaded() && game_handler.check_golf_balls_loaded() {
         {
             commands
                 .spawn(Collider::cylinder(0.1, 2000.0))
@@ -213,7 +214,7 @@ pub fn bonk(
     run_trigger.set_target("party_handler_active_player_add_bonk", true); 
     match playstyle.get() {
         StateGamePlayStyle::SetOrder => {
-            game_handler.set_target("all_sleeping", false);
+            game_handler.set_target(CheckStateGH::AllSleeping, false);
             run_trigger.set_target("start_movement_listener_turn_handler_set_turn_next", true);
         }
         StateGamePlayStyle::Proximity => {}
@@ -304,7 +305,7 @@ pub fn bonk_step_end( // Fires bonk
     playstyle: Res<State<StateGamePlayStyle>>,
     golf_balls: Query<(Entity, &mut GolfBall, &Name)>,
 ) {
-    if game_handler.arrow_state() {
+    if game_handler.check_arrow_state() {
         toggle_arrow_state(&mut game_handler, arrow_state, next_arrow_state);
     }
 
@@ -398,7 +399,7 @@ pub fn collision_events_listener(
         }
     }
     if out_of_bounds == true {
-        game_handler.set_target("golf_balls_bonk_trigger", false);
+        game_handler.set_target(CheckStateGH::GolfBallsBonkTrigger, false);
         let mut info_vec: Vec<(Uuid, Vec3)> = Vec::new();
         
         for (_, golf_ball) in golf_balls.iter() {
@@ -460,7 +461,7 @@ pub fn golf_ball_handler_update_locations_post_bonk(
 ) {
     info!("function: golf_ball_handler_update_locations_post_bonk "); 
     {
-        if game_handler.golf_balls_bonk_trigger() {
+        if game_handler.check_golf_balls_bonk_trigger() {
             info!("golf_ball_handler_update_locations_post_bonk: ");
             let player_id = party.active_player_get_player_id();
             for (mut golf_ball, transform) in gb_query.iter_mut() {
@@ -471,7 +472,7 @@ pub fn golf_ball_handler_update_locations_post_bonk(
                 info!("golf_ball after: [{:?}]", golf_ball.0);
             };
         } else {
-            game_handler.set_target("golf_balls_bonk_trigger", true);
+            game_handler.set_target(CheckStateGH::GolfBallsBonkTrigger, true);
         }
     }
     run_trigger.set_target("golf_ball_handler_update_locations_post_bonk", false);
@@ -580,7 +581,7 @@ pub fn golf_ball_handler_respawn_golf_ball_uuid(
             }
         );
         
-        game_handler.set_target("golf_balls_store_location", false);
+        game_handler.set_target(CheckStateGH::GolfBallsStoreLocation, false);
     } else {
         warn!("Target was not valid. Refer to the GLBStorageID map in the library.");
     };
@@ -593,7 +594,7 @@ pub fn golf_ball_handler_party_store_locations(
 ) {
     info!("function: golf_ball_handler_party_store_locations "); 
     {
-        if game_handler.golf_balls_store_location() {
+        if game_handler.check_golf_balls_store_location() {
             for mut golf_ball in gb_query.iter_mut() {
                 info!("golf_ball before: [{:?}]", golf_ball.0);
                 golf_ball.0.last_position = golf_ball.0.position;
@@ -601,7 +602,7 @@ pub fn golf_ball_handler_party_store_locations(
             };
         } else {
             // This is a single fire trigger to stop the storing of location for reset golfballs.
-            game_handler.set_target("golf_balls_store_location", true);
+            game_handler.set_target(CheckStateGH::GolfBallsStoreLocation, true);
         };
     }
     run_trigger.set_target("golf_ball_handler_party_store_locations", false);
@@ -710,14 +711,14 @@ pub fn golf_ball_is_asleep(
             }
         }
     }
-    game_handler.all_sleeping()
+    game_handler.check_all_sleeping()
 }
 
 pub fn performance_physics_setup(mut rapier_config: ResMut<RapierConfiguration>) {
     // Set fixed timestep mode
     rapier_config.timestep_mode = TimestepMode::Fixed {
         dt: 1.0 / 60.0,       // Physics update rate
-        substeps: 8,          // Number of physics steps per frame
+        substeps: 12,          // Number of physics steps per frame
     };
 
     // Enable/disable physics systems
@@ -736,12 +737,12 @@ fn toggle_arrow_state(
     match state.get() {
         StateArrow::DrawingArrow => {
             info!("Entering StateArrow::Idle");
-            game_handler.set_target("arrow_state", false);
+            game_handler.set_target(CheckStateGH::ArrowState, false);
             next_state.set(StateArrow::Idle);
         },
         StateArrow::Idle => {
             info!("Entering StateArrow::DrawingArrow");
-            game_handler.set_target("arrow_state", true);
+            game_handler.set_target(CheckStateGH::ArrowState, true);
             next_state.set(StateArrow::DrawingArrow);
         },
     }
